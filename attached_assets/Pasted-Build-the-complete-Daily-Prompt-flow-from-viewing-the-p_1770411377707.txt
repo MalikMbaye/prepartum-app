@@ -1,0 +1,61 @@
+Build the complete Daily Prompt flow — from viewing the prompt to completing it.
+
+## Screen: Prompt Display
+
+### Layout:
+- Back button (top left)
+- Category pill at top (e.g., "Mindset" with pink background)
+- Date: "February 6, 2026"
+
+### Prompt Card:
+- Large, centered prompt text
+- Elegant typography (slightly larger, comfortable to read)
+- Example prompt: "What does your ideal postpartum support system look like? Who would be there, and what would they do?"
+
+### Response Area:
+- Text input field below prompt
+- Placeholder: "Take your time. There's no wrong answer."
+- Multi-line, expandable
+- Cream background, soft border
+
+### Actions:
+- "Complete" button (primary, soft pink)
+- "Save to Journal" checkbox/toggle
+- "Skip for now" text link (subtle)
+
+### After Completion:
+- Micro-celebration screen (1-2 seconds)
+- Gentle animation (soft glow, checkmark, or heart)
+- Message: "Reflection saved ✓" or "You're building something beautiful"
+- Auto-navigate back to Home OR show "Tomorrow's prompt unlocks in [X] hours"
+
+## Screen: Prompt History (accessible from Prompts tab)
+- List of completed prompts
+- Filter by category (tabs: All, Mindset, Relationships, Physical)
+- Each item shows:
+  - Date
+  - Category dot
+  - Prompt text (truncated)
+  - Tap to view full response
+
+## Screen: Single Prompt View (when tapping history item)
+- Full prompt text
+- Full response text
+- Option to edit response
+- Option to save to journal if not already saved
+- Delete option
+
+## Technical Requirements:
+- Save response to user_prompt_responses table
+- If "Save to Journal" checked, also create journal_entry
+- Mark prompt as completed
+- Update weekly progress
+- Only show today's prompt as active (can browse history)
+- If today's prompt already completed, show completion state
+
+## Edge Cases:
+- If user opens app late at night, still show today's prompt
+- If no prompt for current week (edge case), show encouraging message
+- Allow editing completed prompts within 24 hours
+
+Build all prompt screens with full functionality.
