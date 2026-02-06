@@ -1,0 +1,126 @@
+I'm building a mobile app called PrePartum — a pregnancy wellness app focused on mental and emotional preparation for motherhood.
+
+## APP OVERVIEW
+
+PrePartum is NOT a baby tracker. While other apps like The Bump tell mothers "your baby is the size of a lemon," PrePartum asks "Are YOU ready for what's coming?"
+
+The app helps expectant mothers prepare mentally, emotionally, and relationally for the transformation of motherhood through:
+- Daily prompts (Mindset, Relationships, Physical)
+- Memory Bank (save meaningful moments)
+- Task Board (preparation checklists)
+- Self-Discovery Quizzes
+- Role-Play Practice Conversations
+- Journal
+
+## DESIGN SYSTEM: "LUMINOUS EDITORIAL"
+
+This is a premium, luxury pregnancy app. Think Aesop-level sophistication.
+
+### Colors (EXACT HEX VALUES):
+- Base Canvas: #FFF8F5 (Warm Cream - main background)
+- Accent Pink: #F5D6D6 (Soft Pink - buttons, highlights, Mindset category)
+- Accent Blue: #BBD4E3 (Powder Blue - Relationships category)
+- Accent Peach: #F5E1DA (Warm Peach - Physical category)
+- Text Primary: #5D5066 (Deep Plum-Gray - all text)
+- Success/Celebration: Subtle glow effects, not harsh
+
+### Typography:
+- Headlines: Serif font (elegant, editorial feel)
+- Body: Clean sans-serif (highly readable)
+- Size hierarchy: Large headlines, comfortable body text
+
+### UI Principles:
+- Ample white space (let the design breathe)
+- Soft shadows, no harsh edges
+- Rounded corners on cards and buttons (16-20px radius)
+- Subtle animations (not flashy)
+- Cards with cream backgrounds, soft borders
+- Premium feeling without being cold
+
+### Component Style:
+- Buttons: Soft pink (#F5D6D6) with plum text, rounded
+- Cards: Cream background, subtle shadow, generous padding
+- Icons: Simple line icons in plum-gray
+- Progress indicators: Soft, not clinical
+
+## CORE FEATURES
+
+1. **Onboarding** (5 screens)
+   - Welcome screen
+   - Name + due date collection
+   - Focus area selection (Mindset, Relationships, Physical)
+   - Notification preferences
+   - "Let's begin" confirmation
+
+2. **Home Dashboard**
+   - Greeting with name
+   - Today's prompt card (main focus)
+   - Progress ring (weekly)
+   - Quick access to Memory Bank, Tasks, Journal
+   - Bottom navigation
+
+3. **Daily Prompts**
+   - 3 categories: Mindset (pink), Relationships (blue), Physical (peach)
+   - One prompt per day
+   - Text response area
+   - Save to journal option
+   - Micro-celebration on completion
+
+4. **Memory Bank**
+   - Timeline of saved memories
+   - Add photos, voice notes, text
+   - Tag by category
+   - Search functionality
+
+5. **Task Board**
+   - Tiered checklists (by trimester or theme)
+   - Check off tasks
+   - Progress tracking
+
+6. **Quizzes**
+   - Self-awareness assessments
+   - Multiple choice questions
+   - Results with insights
+   - Save results to profile
+
+7. **Role-Play / Practice Conversations**
+   - Scenario selection (e.g., "Telling your partner you need help")
+   - AI-powered conversation practice
+   - Feedback on responses
+   - Save insights
+
+8. **Profile & Settings**
+   - User info
+   - Preferences
+   - Notification settings
+   - Progress history
+
+## USER DATA TO STORE
+
+- User profile (name, due date, focus areas, pregnancy week)
+- Completed prompts (date, response, category)
+- Memories (type, content, date, tags)
+- Tasks (title, completed, category)
+- Quiz results (quiz ID, answers, score, date)
+- Journal entries
+- Settings (notifications, theme)
+
+## NAVIGATION
+
+Bottom tab navigation with 5 tabs:
+1. Home (house icon)
+2. Prompts (lightbulb or thought bubble)
+3. Memory Bank (heart or photo icon)
+4. Tasks (checklist icon)
+5. Profile (user icon)
+
+Quizzes and Role-Play accessible from Home or via menu.
+
+## TONE
+
+- Warm, supportive, empowering
+- Never clinical or preachy
+- Like a wise, calm friend
+- Encouraging but not over-the-top
+
+Now let's build this app step by step. Start with the database schema.
