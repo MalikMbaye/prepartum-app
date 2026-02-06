@@ -1,0 +1,112 @@
+Set up the Supabase database with the following tables and relationships. Create all tables with proper foreign keys and enable Row Level Security.
+
+## Tables to Create:
+
+### 1. users
+- id (uuid, primary key, references auth.users)
+- name (text)
+- email (text)
+- due_date (date)
+- pregnancy_week (integer, calculated)
+- focus_areas (text array) — values: "mindset", "relationships", "physical"
+- notification_time (time)
+- notifications_enabled (boolean, default true)
+- onboarding_completed (boolean, default false)
+- created_at (timestamp with time zone)
+- updated_at (timestamp with time zone)
+
+### 2. prompts (seeded data — the daily prompts library)
+- id (uuid, primary key)
+- title (text)
+- body (text)
+- category (text) — "mindset", "relationships", or "physical"
+- week_number (integer) — which pregnancy week (1-40)
+- day_of_week (integer) — 1-7
+- created_at (timestamp with time zone)
+
+### 3. user_prompt_responses
+- id (uuid, primary key)
+- user_id (uuid, references users)
+- prompt_id (uuid, references prompts)
+- response_text (text)
+- completed_at (timestamp with time zone)
+- saved_to_journal (boolean, default false)
+
+### 4. memories
+- id (uuid, primary key)
+- user_id (uuid, references users)
+- type (text) — "text", "photo", "voice"
+- content (text) — text content or URL to media
+- media_url (text, nullable)
+- tags (text array)
+- created_at (timestamp with time zone)
+
+### 5. tasks
+- id (uuid, primary key)
+- title (text)
+- description (text, nullable)
+- category (text) — "first_trimester", "second_trimester", "third_trimester", "hospital_bag", "partner_prep", etc.
+- is_template (boolean) — true for default tasks, false for user-created
+- created_at (timestamp with time zone)
+
+### 6. user_tasks
+- id (uuid, primary key)
+- user_id (uuid, references users)
+- task_id (uuid, references tasks)
+- completed (boolean, default false)
+- completed_at (timestamp with time zone, nullable)
+
+### 7. quizzes
+- id (uuid, primary key)
+- title (text)
+- description (text)
+- category (text)
+- created_at (timestamp with time zone)
+
+### 8. quiz_questions
+- id (uuid, primary key)
+- quiz_id (uuid, references quizzes)
+- question_text (text)
+- options (jsonb) — array of {text, value}
+- order_number (integer)
+
+### 9. user_quiz_results
+- id (uuid, primary key)
+- user_id (uuid, references users)
+- quiz_id (uuid, references quizzes)
+- answers (jsonb)
+- score (integer, nullable)
+- insights (text, nullable)
+- completed_at (timestamp with time zone)
+
+### 10. roleplay_scenarios
+- id (uuid, primary key)
+- title (text)
+- description (text)
+- category (text)
+- opening_prompt (text) — the AI's first message in the scenario
+- system_context (text) — instructions for the AI
+
+### 11. roleplay_sessions
+- id (uuid, primary key)
+- user_id (uuid, references users)
+- scenario_id (uuid, references roleplay_scenarios)
+- messages (jsonb) — array of {role, content, timestamp}
+- feedback (text, nullable)
+- completed_at (timestamp with time zone, nullable)
+
+### 12. journal_entries
+- id (uuid, primary key)
+- user_id (uuid, references users)
+- title (text, nullable)
+- content (text)
+- prompt_response_id (uuid, references user_prompt_responses, nullable) — if saved from a prompt
+- created_at (timestamp with time zone)
+
+## Enable RLS on all tables and create policies for authenticated users to only access their own data.
+
+## Create these helper functions:
+1. calculate_pregnancy_week(due_date) — returns current week based on due date
+2. get_daily_prompt(user_id) — returns today's prompt based on user's pregnancy week
+
+After creating the schema, confirm the tables are ready.
