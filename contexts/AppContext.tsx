@@ -85,8 +85,11 @@ interface AppContextValue {
   deleteJournalEntry: (id: string) => Promise<void>;
   prompts: DailyPrompt[];
   isLoading: boolean;
+  refreshing: boolean;
+  refreshData: () => Promise<void>;
   getWeeklyProgress: () => number;
   getPregnancyWeek: () => number;
+  getWeeklyCompletedCount: () => number;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -100,6 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [journalEntries, setJournalEntries] = useState<JournalEntryData[]>([]);
   const [prompts, setPrompts] = useState<DailyPrompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchFromApi = useCallback(async (path: string) => {
     const baseUrl = getApiUrl();
@@ -267,6 +271,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return Math.max(1, Math.min(week, 42));
   }
 
+  function getWeeklyCompletedCount(): number {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    return promptResponses.filter(r => {
+      const date = r.completedAt ? new Date(r.completedAt) : new Date();
+      return date >= weekStart;
+    }).length;
+  }
+
+  async function refreshData() {
+    if (!profile?.id) return;
+    setRefreshing(true);
+    try {
+      const [resps, mems, tks, jrnl, prts] = await Promise.all([
+        fetchFromApi(`/api/users/${profile.id}/prompt-responses`),
+        fetchFromApi(`/api/users/${profile.id}/memories`),
+        fetchFromApi(`/api/users/${profile.id}/tasks`),
+        fetchFromApi(`/api/users/${profile.id}/journal`),
+        fetchFromApi('/api/prompts'),
+      ]);
+      setPromptResponses(resps);
+      setMemories(mems);
+      setTasks(tks);
+      setJournalEntries(jrnl);
+      setPrompts(prts);
+    } catch (e) {
+      console.error('Error refreshing data:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   const value = useMemo(() => ({
     profile,
     setProfile,
@@ -282,9 +320,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteJournalEntry,
     prompts,
     isLoading,
+    refreshing,
+    refreshData,
     getWeeklyProgress,
     getPregnancyWeek,
-  }), [profile, promptResponses, memories, tasks, journalEntries, prompts, isLoading]);
+    getWeeklyCompletedCount,
+  }), [profile, promptResponses, memories, tasks, journalEntries, prompts, isLoading, refreshing]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
