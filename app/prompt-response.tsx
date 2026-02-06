@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Crypto from 'expo-crypto';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -24,24 +23,17 @@ export default function PromptResponseScreen() {
     if (!response.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const id = Crypto.randomUUID();
     await addPromptResponse({
-      id,
       promptId: promptId || '',
-      promptText: promptText || '',
-      category: (category as FocusArea) || 'mindset',
-      response: response.trim(),
-      date: new Date().toISOString(),
+      responseText: response.trim(),
       savedToJournal: saveToJournal,
     });
 
     if (saveToJournal) {
       await addJournalEntry({
-        id: Crypto.randomUUID(),
         title: `Reflection: ${getCategoryLabel(category || 'mindset')}`,
         content: `Prompt: ${promptText}\n\nMy Response: ${response.trim()}`,
         category: (category as FocusArea) || 'mindset',
-        date: new Date().toISOString(),
         fromPrompt: true,
       });
     }

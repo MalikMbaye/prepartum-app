@@ -16,7 +16,7 @@ export default function TasksScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('first-trimester');
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
-  const filteredTasks = tasks.filter(t => t.category === activeTab);
+  const filteredTasks = tasks.filter(t => t.task?.category === activeTab);
   const completedCount = filteredTasks.filter(t => t.completed).length;
   const totalCount = filteredTasks.length;
   const progress = totalCount > 0 ? completedCount / totalCount : 0;
@@ -76,7 +76,7 @@ export default function TasksScreen() {
               {task.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
             </View>
             <Text style={[styles.taskText, task.completed && styles.taskTextDone]}>
-              {task.title}
+              {task.task?.title || 'Untitled Task'}
             </Text>
           </Pressable>
         </Animated.View>

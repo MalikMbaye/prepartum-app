@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Crypto from 'expo-crypto';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
@@ -37,11 +36,9 @@ export default function NewMemoryScreen() {
     if (!content.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await addMemory({
-      id: Crypto.randomUUID(),
       content: content.trim(),
-      category,
+      type: category,
       tags,
-      date: new Date().toISOString(),
     });
     router.back();
   }

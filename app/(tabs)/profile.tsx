@@ -20,15 +20,9 @@ export default function ProfileScreen() {
 
   function formatDueDate(dateStr: string) {
     if (!dateStr) return 'Not set';
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthIdx = parseInt(parts[0], 10) - 1;
-      if (monthIdx >= 0 && monthIdx < 12) {
-        return `${months[monthIdx]} ${parts[1]}, ${parts[2]}`;
-      }
-    }
-    return dateStr;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   async function handleReset() {

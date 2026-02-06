@@ -7,17 +7,19 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { getTodayPrompt, getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
+import { getTodayPrompt, getCategoryColor, getCategoryLabel, getTodayPromptFromDb } from '@/lib/prompts-data';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, promptResponses, getWeeklyProgress, getPregnancyWeek, tasks, journalEntries, memories } = useApp();
+  const { profile, promptResponses, getWeeklyProgress, getPregnancyWeek, tasks, journalEntries, memories, prompts } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
   const weeklyProgress = getWeeklyProgress();
   const pregnancyWeek = getPregnancyWeek();
   const completedPromptIds = promptResponses.map(r => r.promptId);
-  const todayPrompt = getTodayPrompt(completedPromptIds, profile?.focusAreas || ['mindset', 'relationships', 'physical']);
+  const todayPrompt = prompts.length > 0
+    ? getTodayPromptFromDb(prompts, completedPromptIds, profile?.focusAreas || ['mindset', 'relationships', 'physical'])
+    : getTodayPrompt(completedPromptIds, profile?.focusAreas || ['mindset', 'relationships', 'physical']);
   const completedTasks = tasks.filter(t => t.completed).length;
   const totalTasks = tasks.length;
 
@@ -49,7 +51,7 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({ pathname: '/prompt-response', params: { promptId: todayPrompt.id, promptText: todayPrompt.text, category: todayPrompt.category } });
+              router.push({ pathname: '/prompt-response', params: { promptId: todayPrompt.id, promptText: (todayPrompt as any).body || (todayPrompt as any).text, category: todayPrompt.category } });
             }}
             style={({ pressed }) => [styles.promptCard, { borderLeftColor: getCategoryColor(todayPrompt.category) }, pressed && { opacity: 0.95, transform: [{ scale: 0.99 }] }]}
           >
@@ -57,7 +59,7 @@ export default function HomeScreen() {
               <Text style={styles.categoryBadgeText}>{getCategoryLabel(todayPrompt.category)}</Text>
             </View>
             <Text style={styles.promptTitle}>Today's Reflection</Text>
-            <Text style={styles.promptText} numberOfLines={3}>{todayPrompt.text}</Text>
+            <Text style={styles.promptText} numberOfLines={3}>{(todayPrompt as any).body || (todayPrompt as any).text}</Text>
             <View style={styles.promptAction}>
               <Text style={styles.promptActionText}>Reflect on this</Text>
               <Feather name="arrow-right" size={16} color={Colors.textPrimary} />
@@ -82,7 +84,7 @@ export default function HomeScreen() {
               const weekStart = new Date();
               weekStart.setDate(weekStart.getDate() - weekStart.getDay());
               weekStart.setHours(0, 0, 0, 0);
-              return new Date(r.date) >= weekStart;
+              return new Date(r.completedAt || '') >= weekStart;
             }).length} prompts completed</Text>
             <Text style={styles.progressSub}>Keep showing up for yourself</Text>
           </View>

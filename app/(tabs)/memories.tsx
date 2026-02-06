@@ -18,7 +18,7 @@ export default function MemoriesScreen() {
   const filtered = search.trim()
     ? memories.filter(m =>
         m.content.toLowerCase().includes(search.toLowerCase()) ||
-        m.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
+        (m.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
       )
     : memories;
 
@@ -85,20 +85,20 @@ export default function MemoriesScreen() {
             <Animated.View key={memory.id} entering={FadeInDown.delay(index * 60).duration(400)}>
               <View style={styles.memoryCard}>
                 <View style={styles.timelineDot}>
-                  <View style={[styles.dot, { backgroundColor: getCategoryColor(memory.category) }]} />
+                  <View style={[styles.dot, { backgroundColor: getCategoryColor(memory.type || 'general') }]} />
                   {index < filtered.length - 1 && <View style={styles.timelineLine} />}
                 </View>
                 <View style={styles.memoryContent}>
                   <View style={styles.memoryHeader}>
-                    <Text style={styles.memoryDate}>{formatDate(memory.date)}</Text>
+                    <Text style={styles.memoryDate}>{formatDate(memory.createdAt || '')}</Text>
                     <Pressable onPress={() => handleDelete(memory.id)} hitSlop={8}>
                       <Feather name="trash-2" size={14} color={Colors.textLight} />
                     </Pressable>
                   </View>
                   <Text style={styles.memoryText}>{memory.content}</Text>
-                  {memory.tags.length > 0 && (
+                  {(memory.tags || []).length > 0 && (
                     <View style={styles.tagRow}>
-                      {memory.tags.map((tag, i) => (
+                      {(memory.tags || []).map((tag, i) => (
                         <View key={i} style={styles.tag}>
                           <Text style={styles.tagText}>{tag}</Text>
                         </View>

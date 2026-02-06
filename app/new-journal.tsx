@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Crypto from 'expo-crypto';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
@@ -24,11 +23,9 @@ export default function NewJournalScreen() {
     if (!content.trim()) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await addJournalEntry({
-      id: Crypto.randomUUID(),
       title: title.trim() || 'Untitled',
       content: content.trim(),
       category,
-      date: new Date().toISOString(),
       fromPrompt: false,
     });
     router.back();

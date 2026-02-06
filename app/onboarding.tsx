@@ -35,13 +35,19 @@ export default function OnboardingScreen() {
 
   async function complete() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    let formattedDueDate: string | undefined;
+    if (dueDate) {
+      const parts = dueDate.split('/');
+      if (parts.length === 3) {
+        formattedDueDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+      }
+    }
     await setProfile({
       name: name.trim() || 'Mama',
-      dueDate,
+      dueDate: formattedDueDate || null,
       focusAreas: focusAreas.length > 0 ? focusAreas : ['mindset', 'relationships', 'physical'],
       notificationsEnabled,
-      onboardingComplete: true,
-      createdAt: new Date().toISOString(),
+      onboardingCompleted: true,
     });
     router.replace('/(tabs)');
   }

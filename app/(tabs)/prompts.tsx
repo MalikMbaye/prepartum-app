@@ -7,19 +7,19 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { dailyPrompts, getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
-import { FocusArea } from '@/lib/types';
+import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
 
+type FocusArea = 'mindset' | 'relationships' | 'physical';
 type FilterType = 'all' | FocusArea;
 
 export default function PromptsScreen() {
   const insets = useSafeAreaInsets();
-  const { promptResponses } = useApp();
+  const { promptResponses, prompts } = useApp();
   const [filter, setFilter] = useState<FilterType>('all');
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
   const completedIds = new Set(promptResponses.map(r => r.promptId));
-  const filtered = filter === 'all' ? dailyPrompts : dailyPrompts.filter(p => p.category === filter);
+  const filtered = filter === 'all' ? prompts : prompts.filter(p => p.category === filter);
 
   const filters: { key: FilterType; label: string; color: string }[] = [
     { key: 'all', label: 'All', color: Colors.textPrimary },
@@ -62,7 +62,7 @@ export default function PromptsScreen() {
               onPress={() => {
                 if (!isCompleted) {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push({ pathname: '/prompt-response', params: { promptId: prompt.id, promptText: prompt.text, category: prompt.category } });
+                  router.push({ pathname: '/prompt-response', params: { promptId: prompt.id, promptText: prompt.body, category: prompt.category } });
                 }
               }}
               style={({ pressed }) => [
@@ -81,11 +81,11 @@ export default function PromptsScreen() {
                 )}
               </View>
               <Text style={[styles.promptText, isCompleted && styles.promptTextCompleted]} numberOfLines={isCompleted ? 2 : 4}>
-                {prompt.text}
+                {prompt.body}
               </Text>
               {isCompleted && response && (
                 <Text style={styles.responsePreview} numberOfLines={2}>
-                  Your response: {response.response}
+                  Your response: {response.responseText}
                 </Text>
               )}
             </Pressable>

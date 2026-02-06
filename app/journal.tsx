@@ -64,7 +64,7 @@ export default function JournalScreen() {
               <View style={styles.entryCard}>
                 <View style={styles.entryHeader}>
                   <View style={styles.entryMeta}>
-                    <Text style={styles.entryDate}>{formatDate(entry.date)}</Text>
+                    <Text style={styles.entryDate}>{formatDate(entry.createdAt || '')}</Text>
                     {entry.fromPrompt && (
                       <View style={styles.promptBadge}>
                         <Ionicons name="bulb-outline" size={10} color={Colors.textSecondary} />

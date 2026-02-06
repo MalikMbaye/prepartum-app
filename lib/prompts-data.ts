@@ -24,6 +24,27 @@ export const dailyPrompts: DailyPrompt[] = [
   { id: 'p21', category: 'physical', text: 'How are you sleeping? What rituals could you create to honor your need for rest?', week: 7 },
 ];
 
+interface DbPrompt {
+  id: string;
+  title: string | null;
+  body: string;
+  category: string;
+  weekNumber: number | null;
+  dayOfWeek: number | null;
+}
+
+export function getTodayPromptFromDb(prompts: DbPrompt[], completedPromptIds: string[], focusAreas: string[]): DbPrompt | null {
+  const available = prompts.filter(
+    p => !completedPromptIds.includes(p.id) && focusAreas.includes(p.category)
+  );
+  if (available.length === 0) {
+    const anyAvailable = prompts.filter(p => !completedPromptIds.includes(p.id));
+    return anyAvailable.length > 0 ? anyAvailable[0] : null;
+  }
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  return available[dayOfYear % available.length];
+}
+
 export function getTodayPrompt(completedPromptIds: string[], focusAreas: string[]): DailyPrompt | null {
   const available = dailyPrompts.filter(
     p => !completedPromptIds.includes(p.id) && focusAreas.includes(p.category)
