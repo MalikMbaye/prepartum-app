@@ -1,0 +1,54 @@
+Build the complete onboarding flow with 5 screens. Follow the Luminous Editorial design system exactly.
+
+## Screen 1: Welcome
+- Full-screen warm cream background (#FFF8F5)
+- PrePartum logo or elegant text at top
+- Headline: "Every pregnancy app prepares you for the baby."
+- Subheadline: "PrePartum prepares YOU."
+- Elegant illustration or abstract shape (optional)
+- "Get Started" button (soft pink #F5D6D6, rounded corners)
+- Bottom text: "5 minutes a day to prepare for a lifetime."
+
+## Screen 2: About You
+- Header: "Let's personalize your journey"
+- Input field: "What should we call you?" (first name)
+- Date picker: "When is your due date?"
+- Both fields have cream backgrounds, soft borders
+- "Continue" button at bottom
+
+## Screen 3: Focus Areas
+- Header: "What matters most to you right now?"
+- Subheader: "Select all that apply"
+- Three selectable cards (toggle on/off):
+  1. **Mindset** (pink accent) — "Managing anxiety, building confidence, processing emotions"
+  2. **Relationships** (blue accent) — "Partner dynamics, family boundaries, asking for support"  
+  3. **Physical** (peach accent) — "Body changes, energy management, preparing for birth"
+- Each card has a checkbox or selected state with colored border
+- User can select 1, 2, or all 3
+- "Continue" button
+
+## Screen 4: Notifications
+- Header: "Stay on track"
+- Subheader: "A daily reminder helps build your practice"
+- Toggle: "Enable daily reminders"
+- Time picker: "Preferred time" (default 9:00 AM)
+- Illustration or icon of a gentle notification
+- "Continue" button
+- Skip option (subtle text link)
+
+## Screen 5: Ready
+- Centered content
+- Headline: "You're ready, [Name]"
+- Subheadline: "Your first prompt is waiting."
+- Elegant checkmark or celebration element (subtle, not confetti)
+- "Begin" button
+- This screen saves all data and marks onboarding complete
+
+## Technical Requirements:
+- Save user data to Supabase after each screen
+- Calculate pregnancy_week from due_date
+- Navigate to Home Dashboard after final screen
+- Add smooth transitions between screens (slide or fade)
+- Input validation (name required, due date must be future)
+
+Build all 5 screens with proper navigation between them.

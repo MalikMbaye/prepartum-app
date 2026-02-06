@@ -1,43 +1,113 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile, PromptResponse, Memory, Task, JournalEntry, FocusArea } from '@/lib/types';
-import { defaultTasks } from '@/lib/tasks-data';
+import { apiRequest, getApiUrl } from '@/lib/query-client';
+import { fetch } from 'expo/fetch';
+
+export type FocusArea = 'mindset' | 'relationships' | 'physical';
+
+interface UserProfile {
+  id: string;
+  name: string;
+  dueDate: string | null;
+  focusAreas: string[] | null;
+  notificationsEnabled: boolean | null;
+  onboardingCompleted: boolean | null;
+  pregnancyWeek: number | null;
+  createdAt: string | null;
+}
+
+interface DailyPrompt {
+  id: string;
+  title: string | null;
+  body: string;
+  category: string;
+  weekNumber: number | null;
+  dayOfWeek: number | null;
+}
+
+interface PromptResponseData {
+  id: string;
+  userId: string;
+  promptId: string;
+  responseText: string;
+  completedAt: string | null;
+  savedToJournal: boolean | null;
+  prompt?: DailyPrompt;
+}
+
+interface MemoryData {
+  id: string;
+  userId: string;
+  type: string;
+  content: string;
+  mediaUrl: string | null;
+  tags: string[] | null;
+  createdAt: string | null;
+}
+
+interface UserTaskData {
+  id: string;
+  userId: string;
+  taskId: string;
+  completed: boolean | null;
+  completedAt: string | null;
+  task: {
+    id: string;
+    title: string;
+    description: string | null;
+    category: string;
+    isTemplate: boolean | null;
+  };
+}
+
+interface JournalEntryData {
+  id: string;
+  userId: string;
+  title: string | null;
+  content: string;
+  category: string | null;
+  fromPrompt: boolean | null;
+  createdAt: string | null;
+}
 
 interface AppContextValue {
   profile: UserProfile | null;
-  setProfile: (profile: UserProfile) => Promise<void>;
-  promptResponses: PromptResponse[];
-  addPromptResponse: (response: PromptResponse) => Promise<void>;
-  memories: Memory[];
-  addMemory: (memory: Memory) => Promise<void>;
+  setProfile: (data: any) => Promise<void>;
+  promptResponses: PromptResponseData[];
+  addPromptResponse: (data: { promptId: string; responseText: string; savedToJournal?: boolean }) => Promise<void>;
+  memories: MemoryData[];
+  addMemory: (data: { content: string; type?: string; tags?: string[] }) => Promise<void>;
   deleteMemory: (id: string) => Promise<void>;
-  tasks: Task[];
+  tasks: UserTaskData[];
   toggleTask: (id: string) => Promise<void>;
-  journalEntries: JournalEntry[];
-  addJournalEntry: (entry: JournalEntry) => Promise<void>;
+  journalEntries: JournalEntryData[];
+  addJournalEntry: (data: { title?: string; content: string; category?: string; fromPrompt?: boolean }) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
+  prompts: DailyPrompt[];
   isLoading: boolean;
   getWeeklyProgress: () => number;
   getPregnancyWeek: () => number;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
-
-const STORAGE_KEYS = {
-  PROFILE: '@prepartum_profile',
-  PROMPT_RESPONSES: '@prepartum_prompts',
-  MEMORIES: '@prepartum_memories',
-  TASKS: '@prepartum_tasks',
-  JOURNAL: '@prepartum_journal',
-};
+const USER_ID_KEY = '@prepartum_user_id';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<UserProfile | null>(null);
-  const [promptResponses, setPromptResponses] = useState<PromptResponse[]>([]);
-  const [memories, setMemories] = useState<Memory[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [promptResponses, setPromptResponses] = useState<PromptResponseData[]>([]);
+  const [memories, setMemories] = useState<MemoryData[]>([]);
+  const [tasks, setTasks] = useState<UserTaskData[]>([]);
+  const [journalEntries, setJournalEntries] = useState<JournalEntryData[]>([]);
+  const [prompts, setPrompts] = useState<DailyPrompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const fetchFromApi = useCallback(async (path: string) => {
+    const baseUrl = getApiUrl();
+    const url = new URL(path, baseUrl);
+    const res = await fetch(url.toString(), { credentials: 'include' });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -45,24 +115,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function loadData() {
     try {
-      const [profileData, promptData, memoryData, taskData, journalData] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.PROFILE),
-        AsyncStorage.getItem(STORAGE_KEYS.PROMPT_RESPONSES),
-        AsyncStorage.getItem(STORAGE_KEYS.MEMORIES),
-        AsyncStorage.getItem(STORAGE_KEYS.TASKS),
-        AsyncStorage.getItem(STORAGE_KEYS.JOURNAL),
-      ]);
-
-      if (profileData) setProfileState(JSON.parse(profileData));
-      if (promptData) setPromptResponses(JSON.parse(promptData));
-      if (memoryData) setMemories(JSON.parse(memoryData));
-      if (taskData) {
-        setTasks(JSON.parse(taskData));
+      const storedUserId = await AsyncStorage.getItem(USER_ID_KEY);
+      if (storedUserId) {
+        try {
+          const user = await fetchFromApi(`/api/users/${storedUserId}`);
+          setProfileState(user);
+          const [resps, mems, tks, jrnl, prts] = await Promise.all([
+            fetchFromApi(`/api/users/${storedUserId}/prompt-responses`),
+            fetchFromApi(`/api/users/${storedUserId}/memories`),
+            fetchFromApi(`/api/users/${storedUserId}/tasks`),
+            fetchFromApi(`/api/users/${storedUserId}/journal`),
+            fetchFromApi('/api/prompts'),
+          ]);
+          setPromptResponses(resps);
+          setMemories(mems);
+          setTasks(tks);
+          setJournalEntries(jrnl);
+          setPrompts(prts);
+        } catch (e) {
+          console.error('Error loading user data:', e);
+          await AsyncStorage.removeItem(USER_ID_KEY);
+        }
       } else {
-        setTasks(defaultTasks);
-        await AsyncStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(defaultTasks));
+        try {
+          const prts = await fetchFromApi('/api/prompts');
+          setPrompts(prts);
+        } catch (e) {
+          console.error('Error loading prompts:', e);
+        }
       }
-      if (journalData) setJournalEntries(JSON.parse(journalData));
     } catch (e) {
       console.error('Error loading data:', e);
     } finally {
@@ -70,45 +151,98 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function setProfile(p: UserProfile) {
-    setProfileState(p);
-    await AsyncStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(p));
+  async function setProfile(data: any) {
+    try {
+      let user;
+      if (profile?.id) {
+        const res = await apiRequest('PUT', `/api/users/${profile.id}`, data);
+        user = await res.json();
+      } else {
+        const res = await apiRequest('POST', '/api/users', data);
+        user = await res.json();
+        await AsyncStorage.setItem(USER_ID_KEY, user.id);
+        const [tks, prts] = await Promise.all([
+          fetchFromApi(`/api/users/${user.id}/tasks`),
+          fetchFromApi('/api/prompts'),
+        ]);
+        setTasks(tks);
+        setPrompts(prts);
+      }
+      setProfileState(user);
+    } catch (e) {
+      console.error('Error saving profile:', e);
+      throw e;
+    }
   }
 
-  async function addPromptResponse(response: PromptResponse) {
-    const updated = [response, ...promptResponses];
-    setPromptResponses(updated);
-    await AsyncStorage.setItem(STORAGE_KEYS.PROMPT_RESPONSES, JSON.stringify(updated));
+  async function addPromptResponse(data: { promptId: string; responseText: string; savedToJournal?: boolean }) {
+    if (!profile?.id) return;
+    try {
+      const res = await apiRequest('POST', `/api/users/${profile.id}/prompt-responses`, data);
+      const response = await res.json();
+      setPromptResponses(prev => [response, ...prev]);
+    } catch (e) {
+      console.error('Error adding prompt response:', e);
+      throw e;
+    }
   }
 
-  async function addMemory(memory: Memory) {
-    const updated = [memory, ...memories];
-    setMemories(updated);
-    await AsyncStorage.setItem(STORAGE_KEYS.MEMORIES, JSON.stringify(updated));
+  async function addMemory(data: { content: string; type?: string; tags?: string[] }) {
+    if (!profile?.id) return;
+    try {
+      const res = await apiRequest('POST', `/api/users/${profile.id}/memories`, data);
+      const memory = await res.json();
+      setMemories(prev => [memory, ...prev]);
+    } catch (e) {
+      console.error('Error adding memory:', e);
+      throw e;
+    }
   }
 
   async function deleteMemory(id: string) {
-    const updated = memories.filter(m => m.id !== id);
-    setMemories(updated);
-    await AsyncStorage.setItem(STORAGE_KEYS.MEMORIES, JSON.stringify(updated));
+    if (!profile?.id) return;
+    try {
+      await apiRequest('DELETE', `/api/users/${profile.id}/memories/${id}`);
+      setMemories(prev => prev.filter(m => m.id !== id));
+    } catch (e) {
+      console.error('Error deleting memory:', e);
+      throw e;
+    }
   }
 
   async function toggleTask(id: string) {
-    const updated = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-    setTasks(updated);
-    await AsyncStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(updated));
+    if (!profile?.id) return;
+    try {
+      const res = await apiRequest('PUT', `/api/users/${profile.id}/tasks/${id}/toggle`);
+      const updated = await res.json();
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updated } : t));
+    } catch (e) {
+      console.error('Error toggling task:', e);
+      throw e;
+    }
   }
 
-  async function addJournalEntry(entry: JournalEntry) {
-    const updated = [entry, ...journalEntries];
-    setJournalEntries(updated);
-    await AsyncStorage.setItem(STORAGE_KEYS.JOURNAL, JSON.stringify(updated));
+  async function addJournalEntry(data: { title?: string; content: string; category?: string; fromPrompt?: boolean }) {
+    if (!profile?.id) return;
+    try {
+      const res = await apiRequest('POST', `/api/users/${profile.id}/journal`, data);
+      const entry = await res.json();
+      setJournalEntries(prev => [entry, ...prev]);
+    } catch (e) {
+      console.error('Error adding journal entry:', e);
+      throw e;
+    }
   }
 
   async function deleteJournalEntry(id: string) {
-    const updated = journalEntries.filter(e => e.id !== id);
-    setJournalEntries(updated);
-    await AsyncStorage.setItem(STORAGE_KEYS.JOURNAL, JSON.stringify(updated));
+    if (!profile?.id) return;
+    try {
+      await apiRequest('DELETE', `/api/users/${profile.id}/journal/${id}`);
+      setJournalEntries(prev => prev.filter(e => e.id !== id));
+    } catch (e) {
+      console.error('Error deleting journal entry:', e);
+      throw e;
+    }
   }
 
   function getWeeklyProgress(): number {
@@ -116,7 +250,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
-    const thisWeekResponses = promptResponses.filter(r => new Date(r.date) >= weekStart);
+    const thisWeekResponses = promptResponses.filter(r => {
+      const date = r.completedAt ? new Date(r.completedAt) : new Date();
+      return date >= weekStart;
+    });
     return Math.min(thisWeekResponses.length / 7, 1);
   }
 
@@ -143,10 +280,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     journalEntries,
     addJournalEntry,
     deleteJournalEntry,
+    prompts,
     isLoading,
     getWeeklyProgress,
     getPregnancyWeek,
-  }), [profile, promptResponses, memories, tasks, journalEntries, isLoading]);
+  }), [profile, promptResponses, memories, tasks, journalEntries, prompts, isLoading]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
