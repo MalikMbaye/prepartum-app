@@ -53,49 +53,52 @@ const promptData = [
 ];
 
 const taskData = [
-  { title: "Schedule your first prenatal appointment", category: "first_trimester", isTemplate: true },
-  { title: "Start taking prenatal vitamins", category: "first_trimester", isTemplate: true },
-  { title: "Research birth preferences and philosophies", category: "first_trimester", isTemplate: true },
-  { title: "Have a conversation with your partner about expectations", category: "first_trimester", isTemplate: true },
-  { title: "Start a gratitude or mindfulness practice", category: "first_trimester", isTemplate: true },
-  { title: "Create a pregnancy journal or start documenting", category: "first_trimester", isTemplate: true },
-  { title: "Research and choose your care provider", category: "first_trimester", isTemplate: true },
+  { title: "Find an OBGYN or midwife", description: "Research care providers in your area, read reviews, and schedule consultations to find the right fit for your birth experience.", category: "first-trimester", isTemplate: true },
+  { title: "Schedule first prenatal appointment", description: "Book your initial prenatal visit, usually around 8-10 weeks. Prepare any questions you want to ask.", category: "first-trimester", isTemplate: true },
+  { title: "Start prenatal vitamins", description: "Begin taking a daily prenatal vitamin with folic acid, iron, and DHA. Ask your provider for recommendations.", category: "first-trimester", isTemplate: true },
+  { title: "Research hospital vs birth center options", description: "Explore different birth settings and what each offers. Consider what matters most to you for your birth experience.", category: "first-trimester", isTemplate: true },
+  { title: "Share news with close family (when ready)", description: "There's no right time to share your news. Do it when it feels right for you and your partner.", category: "first-trimester", isTemplate: true },
 
-  { title: "Begin your birth plan outline", category: "second_trimester", isTemplate: true },
-  { title: "Take a childbirth education class", category: "second_trimester", isTemplate: true },
-  { title: "Discuss parenting roles and responsibilities", category: "second_trimester", isTemplate: true },
-  { title: "Create your postpartum support plan", category: "second_trimester", isTemplate: true },
-  { title: "Set up a self-care routine that works for you", category: "second_trimester", isTemplate: true },
-  { title: "Practice asking for help from loved ones", category: "second_trimester", isTemplate: true },
-  { title: "Tour your hospital or birth center", category: "second_trimester", isTemplate: true },
-  { title: "Start assembling baby essentials", category: "second_trimester", isTemplate: true },
+  { title: "Schedule anatomy scan", description: "Usually done between 18-22 weeks, this detailed ultrasound checks your baby's development and anatomy.", category: "second-trimester", isTemplate: true },
+  { title: "Start thinking about baby names", description: "Begin a running list of names you love. No pressure to decide yet \u2014 just start exploring.", category: "second-trimester", isTemplate: true },
+  { title: "Research childcare options", description: "Look into daycares, nannies, or family help. Waitlists can be long, so it's good to start early.", category: "second-trimester", isTemplate: true },
+  { title: "Begin baby registry", description: "Create a registry with essentials. Ask friends with kids what they actually used most.", category: "second-trimester", isTemplate: true },
+  { title: "Plan babymoon (optional)", description: "If you'd like a pre-baby getaway, the second trimester is often the most comfortable time to travel.", category: "second-trimester", isTemplate: true },
+  { title: "Sign up for prenatal classes", description: "Look into childbirth education, breastfeeding, infant CPR, and newborn care classes in your area.", category: "second-trimester", isTemplate: true },
 
-  { title: "Pack your hospital bag (including comfort items)", category: "third_trimester", isTemplate: true },
-  { title: "Write a letter to your future self as a mother", category: "third_trimester", isTemplate: true },
-  { title: "Finalize your birth plan with your care team", category: "third_trimester", isTemplate: true },
-  { title: "Set up your postpartum recovery space", category: "third_trimester", isTemplate: true },
-  { title: "Practice breathing and relaxation techniques", category: "third_trimester", isTemplate: true },
-  { title: "Have the 'village' conversation with your support network", category: "third_trimester", isTemplate: true },
-  { title: "Prepare freezer meals for postpartum", category: "third_trimester", isTemplate: true },
-  { title: "Install the car seat and have it inspected", category: "third_trimester", isTemplate: true },
+  { title: "Take hospital tour", description: "Schedule a tour of your birth facility to familiarize yourself with the space, parking, and check-in process.", category: "third-trimester", isTemplate: true },
+  { title: "Install car seat", description: "Install your infant car seat and have it inspected by a certified technician. Many fire stations offer free checks.", category: "third-trimester", isTemplate: true },
+  { title: "Wash baby clothes", description: "Wash newborn and 0-3 month clothes with gentle, fragrance-free detergent before baby arrives.", category: "third-trimester", isTemplate: true },
+  { title: "Set up nursery basics", description: "You don't need everything perfect \u2014 focus on a safe sleep space, changing area, and feeding station.", category: "third-trimester", isTemplate: true },
+  { title: "Pre-register at hospital", description: "Complete pre-registration paperwork so check-in is smoother when the big day arrives.", category: "third-trimester", isTemplate: true },
+  { title: "Pack hospital bag", description: "Pack your bag around 36 weeks. Include comfort items, documents, and outfits for you and baby.", category: "third-trimester", isTemplate: true },
+  { title: "Prepare freezer meals", description: "Cook and freeze easy meals for the postpartum period. Soups, casseroles, and burritos work great.", category: "third-trimester", isTemplate: true },
+  { title: "Create birth plan", description: "Write down your preferences for labor and delivery. Share with your care team and birth partner.", category: "third-trimester", isTemplate: true },
+  { title: "Choose pediatrician", description: "Research and interview pediatricians before baby arrives. Ask about their approach and availability.", category: "third-trimester", isTemplate: true },
 
-  { title: "Pack partner's hospital bag essentials", category: "partner_prep", isTemplate: true },
-  { title: "Discuss birth support preferences with partner", category: "partner_prep", isTemplate: true },
-  { title: "Create a postpartum plan together", category: "partner_prep", isTemplate: true },
-  { title: "Research paternity/partner leave options", category: "partner_prep", isTemplate: true },
+  { title: "Insurance cards and ID", description: "Pack copies of your insurance cards, photo ID, and any pre-registration confirmation.", category: "hospital-bag", isTemplate: true },
+  { title: "Birth plan copies", description: "Bring several copies of your birth plan to share with nurses and your care team.", category: "hospital-bag", isTemplate: true },
+  { title: "Comfortable robe", description: "A soft, open-front robe is great for skin-to-skin contact and nursing comfort.", category: "hospital-bag", isTemplate: true },
+  { title: "Nursing bras", description: "Pack 2-3 comfortable nursing bras or sleep bras for support and easy feeding access.", category: "hospital-bag", isTemplate: true },
+  { title: "Phone charger", description: "Don't forget a long charging cable and portable battery pack \u2014 you'll want your phone accessible.", category: "hospital-bag", isTemplate: true },
+  { title: "Toiletries", description: "Your own shampoo, body wash, toothbrush, lip balm, and any comfort items from home.", category: "hospital-bag", isTemplate: true },
+  { title: "Coming home outfit for you", description: "Pack something comfortable and stretchy. You'll still look about 6 months pregnant, and that's perfectly normal.", category: "hospital-bag", isTemplate: true },
+  { title: "Coming home outfit for baby", description: "A simple onesie or sleeper, hat, socks, and a blanket appropriate for the weather.", category: "hospital-bag", isTemplate: true },
+  { title: "Car seat (installed)", description: "Make sure the car seat is properly installed before you go to the hospital. You can't leave without one.", category: "hospital-bag", isTemplate: true },
+  { title: "Snacks", description: "Pack high-energy snacks like granola bars, dried fruit, crackers, and drinks for labor and recovery.", category: "hospital-bag", isTemplate: true },
 
-  { title: "Hospital bag: comfortable robe and slippers", category: "hospital_bag", isTemplate: true },
-  { title: "Hospital bag: nursing bra and nursing pads", category: "hospital_bag", isTemplate: true },
-  { title: "Hospital bag: toiletries and comfort items", category: "hospital_bag", isTemplate: true },
-  { title: "Hospital bag: going-home outfit for baby", category: "hospital_bag", isTemplate: true },
-  { title: "Hospital bag: phone charger and playlist", category: "hospital_bag", isTemplate: true },
-  { title: "Hospital bag: snacks and drinks", category: "hospital_bag", isTemplate: true },
+  { title: "Have a conversation about division of labor", description: "Talk openly about how household and baby duties will be shared. Write it down so you both have clarity.", category: "partner-prep", isTemplate: true },
+  { title: "Discuss parenting philosophies", description: "Talk about discipline approaches, screen time, religion, and values you want to instill.", category: "partner-prep", isTemplate: true },
+  { title: "Talk about visitors in hospital", description: "Decide together who you want visiting at the hospital and when. It's okay to set boundaries.", category: "partner-prep", isTemplate: true },
+  { title: "Plan paternity leave", description: "Research leave options and plan timing. Even a few weeks makes a huge difference for bonding and support.", category: "partner-prep", isTemplate: true },
+  { title: "Learn about postpartum warning signs", description: "Both partners should know the signs of postpartum depression, preeclampsia, and when to seek help.", category: "partner-prep", isTemplate: true },
+  { title: "Practice driving to hospital", description: "Do a practice drive during different times of day. Know the route, where to park, and where to check in.", category: "partner-prep", isTemplate: true },
 
-  { title: "Journal about your hopes and dreams for your baby", category: "general", isTemplate: true },
-  { title: "Create a playlist of songs that calm and ground you", category: "general", isTemplate: true },
-  { title: "Identify your emotional triggers and coping strategies", category: "general", isTemplate: true },
-  { title: "Write down your birth affirmations", category: "general", isTemplate: true },
-  { title: "Create a vision board for motherhood", category: "general", isTemplate: true },
+  { title: "Research lactation consultant", description: "Find a lactation consultant or breastfeeding support group in your area before baby arrives.", category: "postpartum", isTemplate: true },
+  { title: "Stock up on postpartum supplies", description: "Pads, peri bottle, stool softener, comfortable underwear, nursing pads, and nipple cream.", category: "postpartum", isTemplate: true },
+  { title: "Set up meal train", description: "Let friends and family sign up to bring meals in the first few weeks. Services like MealTrain make this easy.", category: "postpartum", isTemplate: true },
+  { title: "Identify support people", description: "Know who you can call at 2am, who will bring groceries, and who will just sit with you.", category: "postpartum", isTemplate: true },
+  { title: "Learn about postpartum depression signs", description: "Know the difference between baby blues and PPD. Have your provider's number and a crisis line accessible.", category: "postpartum", isTemplate: true },
 ];
 
 export async function seedDatabase() {
@@ -111,5 +114,13 @@ export async function seedDatabase() {
     console.log("Seeding tasks...");
     await db.insert(tasks).values(taskData);
     console.log(`Seeded ${taskData.length} tasks`);
+  } else {
+    const hasNewCategories = existingTasks.some(t => t.category === 'hospital-bag' || t.category === 'postpartum');
+    if (!hasNewCategories) {
+      console.log("Re-seeding tasks with updated categories...");
+      await db.delete(tasks);
+      await db.insert(tasks).values(taskData);
+      console.log(`Re-seeded ${taskData.length} tasks`);
+    }
   }
 }

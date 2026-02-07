@@ -1,0 +1,99 @@
+Build the Task Board feature — pregnancy preparation checklists organized by category.
+
+## Main Screen: Task Board
+
+### Header:
+- Title: "Task Board"
+- Subtitle: "Prepare at your own pace"
+- Optional: Add custom task button
+
+### Category Tabs (horizontal scroll):
+- All
+- First Trimester
+- Second Trimester  
+- Third Trimester
+- Hospital Bag
+- Partner Prep
+- Postpartum
+
+### Task List:
+- Checkbox on left
+- Task title
+- Optional description (expandable)
+- Completion checkmark/strikethrough when done
+- Category indicator (small colored dot)
+
+### Progress Header (per category):
+- "[X] of [Y] tasks complete"
+- Progress bar (soft, not aggressive)
+
+### Default Tasks to Seed:
+
+**First Trimester:**
+- Find an OBGYN or midwife
+- Schedule first prenatal appointment
+- Start prenatal vitamins
+- Research hospital vs birth center options
+- Share news with close family (when ready)
+
+**Second Trimester:**
+- Schedule anatomy scan
+- Start thinking about baby names
+- Research childcare options
+- Begin baby registry
+- Plan babymoon (optional)
+- Sign up for prenatal classes
+
+**Third Trimester:**
+- Take hospital tour
+- Install car seat
+- Wash baby clothes
+- Set up nursery basics
+- Pre-register at hospital
+- Pack hospital bag
+- Prepare freezer meals
+- Create birth plan
+- Choose pediatrician
+
+**Hospital Bag:**
+- Insurance cards and ID
+- Birth plan copies
+- Comfortable robe
+- Nursing bras
+- Phone charger
+- Toiletries
+- Coming home outfit for you
+- Coming home outfit for baby
+- Car seat (installed)
+- Snacks
+
+**Partner Prep:**
+- Have a conversation about division of labor
+- Discuss parenting philosophies
+- Talk about visitors in hospital
+- Plan paternity leave
+- Learn about postpartum warning signs
+- Practice driving to hospital
+
+**Postpartum:**
+- Research lactation consultant
+- Stock up on postpartum supplies
+- Set up meal train
+- Identify support people
+- Learn about postpartum depression signs
+
+## Screen: Add Custom Task
+- Title field
+- Description field (optional)
+- Category dropdown
+- Save button
+
+## Technical Requirements:
+- Seed default tasks in tasks table (is_template: true)
+- Create user_tasks entries when user first views category
+- Toggle completed state and save
+- Track completed_at timestamp
+- Allow adding custom tasks (is_template: false)
+- Show completed tasks at bottom or in separate section
+
+Build the Task Board with all categories and default tasks.

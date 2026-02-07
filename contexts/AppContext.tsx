@@ -82,6 +82,7 @@ interface AppContextValue {
   deleteMemory: (id: string) => Promise<void>;
   tasks: UserTaskData[];
   toggleTask: (id: string) => Promise<void>;
+  addCustomTask: (data: { title: string; description?: string; category: string }) => Promise<void>;
   journalEntries: JournalEntryData[];
   addJournalEntry: (data: { title?: string; content: string; category?: string; fromPrompt?: boolean }) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
@@ -252,6 +253,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function addCustomTask(data: { title: string; description?: string; category: string }) {
+    if (!profile?.id) return;
+    try {
+      const res = await apiRequest('POST', `/api/users/${profile.id}/tasks`, data);
+      const newTask = await res.json();
+      setTasks(prev => [...prev, newTask]);
+    } catch (e) {
+      console.error('Error adding custom task:', e);
+      throw e;
+    }
+  }
+
   async function addJournalEntry(data: { title?: string; content: string; category?: string; fromPrompt?: boolean }) {
     if (!profile?.id) return;
     try {
@@ -343,6 +356,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteMemory,
     tasks,
     toggleTask,
+    addCustomTask,
     journalEntries,
     addJournalEntry,
     deleteJournalEntry,

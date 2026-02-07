@@ -29,6 +29,7 @@ export interface IStorage {
   getTemplateTasks(): Promise<Task[]>;
   getUserTasks(userId: string): Promise<(UserTask & { task: Task })[]>;
   createUserTask(data: { userId: string; taskId: string }): Promise<UserTask>;
+  createCustomTask(userId: string, data: { title: string; description?: string; category: string }): Promise<UserTask & { task: Task }>;
   toggleUserTask(id: string, userId: string): Promise<UserTask | undefined>;
   initUserTasks(userId: string): Promise<void>;
 
@@ -168,6 +169,23 @@ export class DatabaseStorage implements IStorage {
       completed: false,
     }).returning();
     return ut;
+  }
+
+  async createCustomTask(userId: string, data: { title: string; description?: string; category: string }): Promise<UserTask & { task: Task }> {
+    const [task] = await db.insert(tasks).values({
+      title: data.title,
+      description: data.description || null,
+      category: data.category,
+      isTemplate: false,
+    }).returning();
+
+    const [ut] = await db.insert(userTasks).values({
+      userId,
+      taskId: task.id,
+      completed: false,
+    }).returning();
+
+    return { ...ut, task };
   }
 
   async toggleUserTask(id: string, userId: string): Promise<UserTask | undefined> {

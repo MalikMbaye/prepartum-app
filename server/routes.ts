@@ -129,6 +129,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/users/:userId/tasks", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.createCustomTask(req.params.userId, req.body);
+      res.json(result);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.put("/api/users/:userId/tasks/:id/toggle", async (req: Request, res: Response) => {
     try {
       const ut = await storage.toggleUserTask(req.params.id, req.params.userId);
