@@ -122,6 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users/:userId/tasks", async (req: Request, res: Response) => {
     try {
+      await storage.initUserTasks(req.params.userId);
       const result = await storage.getUserTasks(req.params.userId);
       res.json(result);
     } catch (e: any) {

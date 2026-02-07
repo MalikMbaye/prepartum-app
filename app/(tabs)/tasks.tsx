@@ -1,87 +1,226 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { getTaskCategoryLabel } from '@/lib/tasks-data';
 
-type TabType = 'first-trimester' | 'second-trimester' | 'third-trimester' | 'general';
+const CATEGORIES = [
+  { key: 'all', label: 'All' },
+  { key: 'first-trimester', label: '1st Trimester' },
+  { key: 'second-trimester', label: '2nd Trimester' },
+  { key: 'third-trimester', label: '3rd Trimester' },
+  { key: 'hospital-bag', label: 'Hospital Bag' },
+  { key: 'partner-prep', label: 'Partner Prep' },
+  { key: 'postpartum', label: 'Postpartum' },
+] as const;
+
+type CategoryKey = typeof CATEGORIES[number]['key'];
+
+function getCategoryColor(category: string): string {
+  switch (category) {
+    case 'first-trimester': return Colors.accentPink;
+    case 'second-trimester': return Colors.accentBlue;
+    case 'third-trimester': return Colors.accentPeach;
+    case 'hospital-bag': return '#D4E2D4';
+    case 'partner-prep': return '#D6D4E8';
+    case 'postpartum': return '#E8D4D6';
+    default: return Colors.border;
+  }
+}
+
+interface TaskItemProps {
+  task: {
+    id: string;
+    completed: boolean | null;
+    task: {
+      id: string;
+      title: string;
+      description: string | null;
+      category: string;
+      isTemplate: boolean | null;
+    };
+  };
+  index: number;
+  onToggle: (id: string) => void;
+}
+
+function TaskItem({ task, index, onToggle }: TaskItemProps) {
+  const [expanded, setExpanded] = useState(false);
+  const hasDescription = !!task.task.description;
+  const catColor = getCategoryColor(task.task.category);
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 30).duration(300)}>
+      <View style={[styles.taskCard, task.completed && styles.taskCardCompleted]}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onToggle(task.id);
+          }}
+          style={styles.taskMainRow}
+          testID={`task-toggle-${index}`}
+        >
+          <View style={[styles.checkbox, task.completed && styles.checkboxDone]}>
+            {task.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
+          </View>
+          <View style={styles.taskTextCol}>
+            <View style={styles.taskTitleRow}>
+              <View style={[styles.categoryDot, { backgroundColor: catColor }]} />
+              <Text style={[styles.taskText, task.completed && styles.taskTextDone]} numberOfLines={expanded ? undefined : 2}>
+                {task.task.title}
+              </Text>
+            </View>
+          </View>
+          {hasDescription && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setExpanded(!expanded);
+              }}
+              hitSlop={8}
+              style={styles.expandButton}
+            >
+              <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textLight} />
+            </Pressable>
+          )}
+        </Pressable>
+
+        {expanded && hasDescription && (
+          <View style={styles.descriptionWrap}>
+            <Text style={styles.descriptionText}>{task.task.description}</Text>
+          </View>
+        )}
+
+        {!task.task.isTemplate && (
+          <View style={styles.customBadge}>
+            <Text style={styles.customBadgeText}>Custom</Text>
+          </View>
+        )}
+      </View>
+    </Animated.View>
+  );
+}
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
-  const { tasks, toggleTask } = useApp();
-  const [activeTab, setActiveTab] = useState<TabType>('first-trimester');
+  const { tasks, toggleTask, refreshing, refreshData } = useApp();
+  const [activeTab, setActiveTab] = useState<CategoryKey>('all');
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
-  const filteredTasks = tasks.filter(t => t.task?.category === activeTab);
-  const completedCount = filteredTasks.filter(t => t.completed).length;
-  const totalCount = filteredTasks.length;
+  const filteredTasks = useMemo(() => {
+    const filtered = activeTab === 'all' ? tasks : tasks.filter(t => t.task?.category === activeTab);
+    const incomplete = filtered.filter(t => !t.completed);
+    const complete = filtered.filter(t => t.completed);
+    return { incomplete, complete, all: filtered };
+  }, [tasks, activeTab]);
+
+  const completedCount = filteredTasks.complete.length;
+  const totalCount = filteredTasks.all.length;
   const progress = totalCount > 0 ? completedCount / totalCount : 0;
 
-  const tabs: { key: TabType; label: string; short: string }[] = [
-    { key: 'first-trimester', label: 'First Trimester', short: '1st' },
-    { key: 'second-trimester', label: 'Second Trimester', short: '2nd' },
-    { key: 'third-trimester', label: 'Third Trimester', short: '3rd' },
-    { key: 'general', label: 'Anytime', short: 'Any' },
-  ];
-
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + webTopInset + 16, paddingBottom: 100 }]}
-      showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior="automatic"
-    >
-      <Text style={styles.title}>Preparation Board</Text>
-      <Text style={styles.subtitle}>Your readiness checklist</Text>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow} contentContainerStyle={styles.tabContent}>
-        {tabs.map(tab => (
+    <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>Task Board</Text>
+            <Text style={styles.subtitle}>Prepare at your own pace</Text>
+          </View>
           <Pressable
-            key={tab.key}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab(tab.key); }}
-            style={[styles.tabChip, activeTab === tab.key && styles.tabChipActive]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/add-task'); }}
+            style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}
+            testID="add-task-button"
           >
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.short}
-            </Text>
+            <Ionicons name="add" size={24} color={Colors.textPrimary} />
           </Pressable>
-        ))}
-      </ScrollView>
-
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress * 100}%` as any }]} />
         </View>
-        <Text style={styles.progressText}>{completedCount} of {totalCount} complete</Text>
       </View>
 
-      {filteredTasks.map((task, index) => (
-        <Animated.View key={task.id} entering={FadeInDown.delay(index * 50).duration(400)}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              toggleTask(task.id);
-            }}
-            style={({ pressed }) => [
-              styles.taskCard,
-              task.completed && styles.taskCardCompleted,
-              pressed && { opacity: 0.95 },
-            ]}
-          >
-            <View style={[styles.checkbox, task.completed && styles.checkboxDone]}>
-              {task.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
+      <View style={styles.tabContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabContent}
+        >
+          {CATEGORIES.map(cat => (
+            <Pressable
+              key={cat.key}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab(cat.key); }}
+              style={[styles.tabChip, activeTab === cat.key && styles.tabChipActive]}
+              testID={`tab-${cat.key}`}
+            >
+              <Text style={[styles.tabText, activeTab === cat.key && styles.tabTextActive]}>
+                {cat.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshData}
+            tintColor={Colors.textSecondary}
+            colors={[Colors.accentPink]}
+          />
+        }
+      >
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBarTrack}>
+            <Animated.View style={[styles.progressBarFill, { width: `${Math.round(progress * 100)}%` as any }]} />
+          </View>
+          <Text style={styles.progressText}>
+            {completedCount} of {totalCount} complete
+          </Text>
+        </View>
+
+        {totalCount === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconWrap}>
+              <Feather name="check-circle" size={40} color={Colors.textLight} />
             </View>
-            <Text style={[styles.taskText, task.completed && styles.taskTextDone]}>
-              {task.task?.title || 'Untitled Task'}
-            </Text>
-          </Pressable>
-        </Animated.View>
-      ))}
-    </ScrollView>
+            <Text style={styles.emptyTitle}>No tasks yet</Text>
+            <Text style={styles.emptyBody}>Tasks will appear here once your account is set up</Text>
+          </View>
+        ) : (
+          <>
+            {filteredTasks.incomplete.map((task, index) => (
+              <TaskItem key={task.id} task={task} index={index} onToggle={toggleTask} />
+            ))}
+
+            {filteredTasks.complete.length > 0 && (
+              <View style={styles.completedSection}>
+                <View style={styles.completedDivider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.completedLabel}>Completed ({filteredTasks.complete.length})</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                {filteredTasks.complete.map((task, index) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    index={filteredTasks.incomplete.length + index}
+                    onToggle={toggleTask}
+                  />
+                ))}
+              </View>
+            )}
+          </>
+        )}
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -90,8 +229,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.canvas,
   },
-  content: {
+  header: {
     paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   title: {
     fontFamily: 'PlayfairDisplay_700Bold',
@@ -103,18 +249,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textSecondary,
-    marginBottom: 20,
   },
-  tabRow: {
-    marginBottom: 20,
-    marginHorizontal: -20,
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.accentPeach,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  tabContainer: {
+    paddingVertical: 12,
   },
   tabContent: {
     paddingHorizontal: 20,
     gap: 8,
   },
   tabChip: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: Colors.white,
@@ -133,19 +286,24 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: Colors.white,
   },
+
+  listContent: {
+    paddingHorizontal: 20,
+  },
+
   progressContainer: {
     marginBottom: 20,
   },
-  progressBar: {
+  progressBarTrack: {
     height: 6,
     backgroundColor: Colors.border,
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 8,
   },
-  progressFill: {
+  progressBarFill: {
     height: '100%',
-    backgroundColor: Colors.accentPink,
+    backgroundColor: Colors.success,
     borderRadius: 3,
   },
   progressText: {
@@ -153,22 +311,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
   },
+
   taskCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     marginBottom: 8,
     shadowColor: Colors.textPrimary,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 1,
-    gap: 14,
   },
   taskCardCompleted: {
-    opacity: 0.6,
+    opacity: 0.55,
+  },
+  taskMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   checkbox: {
     width: 24,
@@ -178,10 +339,25 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   checkboxDone: {
     backgroundColor: Colors.success,
     borderColor: Colors.success,
+  },
+  taskTextCol: {
+    flex: 1,
+  },
+  taskTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
   },
   taskText: {
     fontFamily: 'Lato_400Regular',
@@ -193,5 +369,96 @@ const styles = StyleSheet.create({
   taskTextDone: {
     textDecorationLine: 'line-through' as const,
     color: Colors.textSecondary,
+  },
+  expandButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  descriptionWrap: {
+    marginTop: 10,
+    marginLeft: 44,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  descriptionText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  customBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.accentPeach,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  customBadgeText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 10,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.3,
+  },
+
+  completedSection: {
+    marginTop: 8,
+  },
+  completedDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  completedLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 12,
+    color: Colors.textLight,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    gap: 12,
+  },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  emptyTitle: {
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 20,
+    color: Colors.textPrimary,
+  },
+  emptyBody: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 40,
   },
 });
