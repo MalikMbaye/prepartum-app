@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Platform, Alert } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, RefreshControl, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -7,108 +7,180 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
+
+function getTypeIcon(type: string): { name: keyof typeof Feather.glyphMap; color: string } {
+  switch (type) {
+    case 'photo': return { name: 'camera', color: Colors.accentPink };
+    case 'voice': return { name: 'mic', color: Colors.accentBlue };
+    default: return { name: 'edit-3', color: Colors.accentPeach };
+  }
+}
+
+interface MemoryGroup {
+  label: string;
+  memories: Array<{
+    id: string;
+    userId: string;
+    type: string;
+    content: string;
+    mediaUrl: string | null;
+    tags: string[] | null;
+    createdAt: string | null;
+  }>;
+}
+
+function MemoryCard({ memory, index, isLast }: {
+  memory: MemoryGroup['memories'][0];
+  index: number;
+  isLast: boolean;
+}) {
+  const typeInfo = getTypeIcon(memory.type);
+  const dateStr = memory.createdAt
+    ? new Date(memory.createdAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : '';
+  const isPhoto = memory.type === 'photo' && memory.mediaUrl;
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 50).duration(350)}>
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push({ pathname: '/view-memory', params: { memoryId: memory.id } });
+        }}
+        style={({ pressed }) => [styles.cardRow, pressed && { opacity: 0.95 }]}
+      >
+        <View style={styles.timelineCol}>
+          <View style={[styles.typeIconCircle, { backgroundColor: typeInfo.color }]}>
+            <Feather name={typeInfo.name} size={14} color={Colors.textPrimary} />
+          </View>
+          {!isLast && <View style={styles.timelineLine} />}
+        </View>
+
+        <View style={styles.cardBody}>
+          <Text style={styles.cardDate}>{dateStr}</Text>
+
+          {isPhoto && (
+            <Image
+              source={{ uri: memory.mediaUrl! }}
+              style={styles.photoThumb}
+              resizeMode="cover"
+            />
+          )}
+
+          <Text style={styles.cardContent} numberOfLines={isPhoto ? 2 : 4}>
+            {memory.content}
+          </Text>
+
+          {(memory.tags || []).length > 0 && (
+            <View style={styles.tagRow}>
+              {(memory.tags || []).slice(0, 3).map((tag, i) => (
+                <View key={i} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))}
+              {(memory.tags || []).length > 3 && (
+                <Text style={styles.moreTagsText}>+{(memory.tags || []).length - 3}</Text>
+              )}
+            </View>
+          )}
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function MemoriesScreen() {
   const insets = useSafeAreaInsets();
-  const { memories, deleteMemory } = useApp();
-  const [search, setSearch] = useState('');
+  const { memories, refreshing, refreshData } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
-  const filtered = search.trim()
-    ? memories.filter(m =>
-        m.content.toLowerCase().includes(search.toLowerCase()) ||
-        (m.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
-      )
-    : memories;
-
-  function handleDelete(id: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (Platform.OS === 'web') {
-      deleteMemory(id);
-    } else {
-      Alert.alert('Delete Memory', 'Are you sure you want to remove this memory?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteMemory(id) },
-      ]);
+  const groupedMemories = useMemo<MemoryGroup[]>(() => {
+    const groups: Record<string, MemoryGroup['memories']> = {};
+    for (const mem of memories) {
+      const date = mem.createdAt ? new Date(mem.createdAt) : new Date();
+      const key = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`;
+      const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(mem);
     }
-  }
-
-  function formatDate(dateStr: string) {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
+    return Object.entries(groups)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, mems]) => {
+        const d = mems[0].createdAt ? new Date(mems[0].createdAt) : new Date();
+        return {
+          label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          memories: mems,
+        };
+      });
+  }, [memories]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.title}>Memory Bank</Text>
+          <View>
+            <Text style={styles.title}>Memory Bank</Text>
+            <Text style={styles.subtitle}>Your pregnancy moments, preserved</Text>
+          </View>
           <Pressable
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/new-memory'); }}
-            style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }]}
+            testID="add-memory-button"
           >
             <Ionicons name="add" size={24} color={Colors.textPrimary} />
           </Pressable>
-        </View>
-        <Text style={styles.subtitle}>Moments worth remembering</Text>
-
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={18} color={Colors.textLight} />
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search memories..."
-            placeholderTextColor={Colors.textLight}
-          />
         </View>
       </View>
 
       <ScrollView
         contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshData}
+            tintColor={Colors.textSecondary}
+            colors={[Colors.accentPink]}
+          />
+        }
       >
-        {filtered.length === 0 ? (
+        {memories.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="heart-outline" size={48} color={Colors.textLight} />
-            <Text style={styles.emptyTitle}>
-              {search ? 'No memories found' : 'Your memory bank is empty'}
-            </Text>
+            <View style={styles.emptyIconWrap}>
+              <Ionicons name="heart-outline" size={44} color={Colors.textLight} />
+            </View>
+            <Text style={styles.emptyTitle}>Start capturing moments</Text>
             <Text style={styles.emptyBody}>
-              {search ? 'Try a different search term' : 'Save meaningful moments from your pregnancy journey'}
+              These memories will be here for you to look back on throughout your journey
             </Text>
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/new-memory'); }}
+              style={({ pressed }) => [styles.emptyAddButton, pressed && { opacity: 0.9 }]}
+            >
+              <Ionicons name="add" size={20} color={Colors.textPrimary} />
+              <Text style={styles.emptyAddText}>Add your first memory</Text>
+            </Pressable>
           </View>
         ) : (
-          filtered.map((memory, index) => (
-            <Animated.View key={memory.id} entering={FadeInDown.delay(index * 60).duration(400)}>
-              <View style={styles.memoryCard}>
-                <View style={styles.timelineDot}>
-                  <View style={[styles.dot, { backgroundColor: getCategoryColor(memory.type || 'general') }]} />
-                  {index < filtered.length - 1 && <View style={styles.timelineLine} />}
-                </View>
-                <View style={styles.memoryContent}>
-                  <View style={styles.memoryHeader}>
-                    <Text style={styles.memoryDate}>{formatDate(memory.createdAt || '')}</Text>
-                    <Pressable onPress={() => handleDelete(memory.id)} hitSlop={8}>
-                      <Feather name="trash-2" size={14} color={Colors.textLight} />
-                    </Pressable>
-                  </View>
-                  <Text style={styles.memoryText}>{memory.content}</Text>
-                  {(memory.tags || []).length > 0 && (
-                    <View style={styles.tagRow}>
-                      {(memory.tags || []).map((tag, i) => (
-                        <View key={i} style={styles.tag}>
-                          <Text style={styles.tagText}>{tag}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              </View>
-            </Animated.View>
+          groupedMemories.map((group, gi) => (
+            <View key={gi} style={styles.monthGroup}>
+              <Text style={styles.monthLabel}>{group.label}</Text>
+              {group.memories.map((mem, mi) => (
+                <MemoryCard
+                  key={mem.id}
+                  memory={mem}
+                  index={gi * 10 + mi}
+                  isLast={mi === group.memories.length - 1 && gi === groupedMemories.length - 1}
+                />
+              ))}
+            </View>
           ))
+        )}
+
+        {memories.length > 0 && (
+          <View style={styles.countFooter}>
+            <Text style={styles.countText}>{memories.length} {memories.length === 1 ? 'memory' : 'memories'} saved</Text>
+          </View>
         )}
       </ScrollView>
     </View>
@@ -123,88 +195,63 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   title: {
     fontFamily: 'PlayfairDisplay_700Bold',
     fontSize: 28,
     color: Colors.textPrimary,
-  },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.accentPink,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 4,
   },
   subtitle: {
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textSecondary,
-    marginTop: 2,
-    marginBottom: 16,
   },
-  searchContainer: {
-    flexDirection: 'row',
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.accentPink,
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 10,
-    marginBottom: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontFamily: 'Lato_400Regular',
-    fontSize: 15,
-    color: Colors.textPrimary,
-    padding: 0,
+    justifyContent: 'center',
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 80,
-    gap: 12,
+
+  monthGroup: {
+    marginBottom: 8,
   },
-  emptyTitle: {
+  monthLabel: {
     fontFamily: 'PlayfairDisplay_600SemiBold',
-    fontSize: 18,
-    color: Colors.textPrimary,
-  },
-  emptyBody: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 14,
+    fontSize: 16,
     color: Colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 40,
+    marginBottom: 14,
+    marginLeft: 4,
   },
-  memoryCard: {
+
+  cardRow: {
     flexDirection: 'row',
     marginBottom: 4,
   },
-  timelineDot: {
-    width: 24,
+  timelineCol: {
+    width: 28,
     alignItems: 'center',
     marginRight: 14,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginTop: 6,
+  typeIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timelineLine: {
     width: 1.5,
@@ -212,7 +259,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginTop: 4,
   },
-  memoryContent: {
+  cardBody: {
     flex: 1,
     backgroundColor: Colors.white,
     borderRadius: 16,
@@ -224,18 +271,20 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 1,
   },
-  memoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  memoryDate: {
+  cardDate: {
     fontFamily: 'Lato_400Regular',
     fontSize: 12,
     color: Colors.textLight,
+    marginBottom: 8,
   },
-  memoryText: {
+  photoThumb: {
+    width: '100%',
+    height: 140,
+    borderRadius: 12,
+    marginBottom: 10,
+    backgroundColor: Colors.border,
+  },
+  cardContent: {
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textPrimary,
@@ -246,6 +295,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: 10,
+    alignItems: 'center',
   },
   tag: {
     backgroundColor: Colors.canvas,
@@ -257,5 +307,69 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     fontSize: 11,
     color: Colors.textSecondary,
+  },
+  moreTagsText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 11,
+    color: Colors.textLight,
+  },
+
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    gap: 14,
+  },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  emptyTitle: {
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 20,
+    color: Colors.textPrimary,
+  },
+  emptyBody: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+    lineHeight: 21,
+  },
+  emptyAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.accentPink,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  emptyAddText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+
+  countFooter: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  countText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textLight,
   },
 });

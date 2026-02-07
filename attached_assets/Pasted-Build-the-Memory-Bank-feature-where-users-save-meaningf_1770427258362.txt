@@ -1,0 +1,90 @@
+Build the Memory Bank feature — where users save meaningful moments from their pregnancy.
+
+## Main Screen: Memory Bank Timeline
+
+### Header:
+- Title: "Memory Bank"
+- Subtitle: "Your pregnancy moments, preserved"
+- Add button (+ icon) in top right
+
+### Timeline View:
+- Vertical scrolling list
+- Grouped by month or week
+- Each memory card shows:
+  - Date
+  - Type icon (photo, text, voice)
+  - Preview (text preview, image thumbnail, or audio indicator)
+  - Category tags if any
+- Cards alternate slightly for visual interest
+- Tap to expand/view full memory
+
+### Empty State:
+- Illustration or icon
+- "Start capturing moments"
+- "These memories will be here for you to look back on"
+- Add button
+
+### Filters (optional, at top):
+- All, Photos, Notes, Voice
+- Filter by tag
+
+## Screen: Add Memory
+
+### Header:
+- "Add Memory"
+- Cancel (X) button
+
+### Type Selector:
+- Three options (cards or buttons):
+  1. Photo (camera icon) — opens camera or photo picker
+  2. Note (pen icon) — text input
+  3. Voice (mic icon) — voice recording
+
+### Based on Type:
+
+**For Photo:**
+- Image picker (camera or library)
+- Preview of selected image
+- Optional caption field
+- Add tags field
+
+**For Note:**
+- Large text area
+- Placeholder: "What do you want to remember?"
+- Add tags field
+
+**For Voice:**
+- Record button (hold or tap)
+- Recording visualization
+- Play back preview
+- Optional title field
+- Add tags field
+
+### Tags:
+- Predefined tags: "First Kick", "Doctor Visit", "Milestone", "Feeling Grateful", "Partner Moment"
+- Option to add custom tag
+- Multi-select
+
+### Save Button:
+- "Save Memory"
+- Confirmation animation
+- Return to Memory Bank
+
+## Screen: View Single Memory
+
+- Full-screen view
+- Back button
+- Type-specific display (full image, full text, audio player)
+- Date and tags displayed
+- Edit button
+- Delete option (with confirmation)
+
+## Technical Requirements:
+- Store memories in memories table
+- For photos: upload to Supabase storage, save URL
+- For voice: record audio, upload to storage, save URL
+- Tags stored as text array
+- Fetch memories ordered by created_at descending
+- Support image compression for performance
+
+Build all Memory Bank screens with full functionality.

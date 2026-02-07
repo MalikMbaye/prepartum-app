@@ -100,6 +100,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/users/:userId/memories/:id", async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateMemory(req.params.id, req.params.userId, req.body);
+      if (!updated) return res.status(404).json({ message: "Memory not found" });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.delete("/api/users/:userId/memories/:id", async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteMemory(req.params.id, req.params.userId);

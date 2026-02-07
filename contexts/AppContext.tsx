@@ -77,7 +77,8 @@ interface AppContextValue {
   addPromptResponse: (data: { promptId: string; responseText: string; savedToJournal?: boolean }) => Promise<void>;
   updatePromptResponse: (id: string, data: { responseText: string; savedToJournal?: boolean }) => Promise<void>;
   memories: MemoryData[];
-  addMemory: (data: { content: string; type?: string; tags?: string[] }) => Promise<void>;
+  addMemory: (data: { content: string; type?: string; tags?: string[]; mediaUrl?: string }) => Promise<void>;
+  updateMemory: (id: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }) => Promise<void>;
   deleteMemory: (id: string) => Promise<void>;
   tasks: UserTaskData[];
   toggleTask: (id: string) => Promise<void>;
@@ -204,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function addMemory(data: { content: string; type?: string; tags?: string[] }) {
+  async function addMemory(data: { content: string; type?: string; tags?: string[]; mediaUrl?: string }) {
     if (!profile?.id) return;
     try {
       const res = await apiRequest('POST', `/api/users/${profile.id}/memories`, data);
@@ -212,6 +213,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMemories(prev => [memory, ...prev]);
     } catch (e) {
       console.error('Error adding memory:', e);
+      throw e;
+    }
+  }
+
+  async function updateMemory(id: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }) {
+    if (!profile?.id) return;
+    try {
+      const res = await apiRequest('PUT', `/api/users/${profile.id}/memories/${id}`, data);
+      const updated = await res.json();
+      setMemories(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+    } catch (e) {
+      console.error('Error updating memory:', e);
       throw e;
     }
   }
@@ -326,6 +339,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updatePromptResponse,
     memories,
     addMemory,
+    updateMemory,
     deleteMemory,
     tasks,
     toggleTask,

@@ -24,6 +24,7 @@ function RootLayoutNav() {
       <Stack.Screen name="new-memory" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="new-journal" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="prompt-detail" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="view-memory" options={{ headerShown: false, presentation: 'modal' }} />
     </Stack>
   );
 }

@@ -23,6 +23,7 @@ export interface IStorage {
 
   getUserMemories(userId: string): Promise<Memory[]>;
   createMemory(data: { userId: string; type: string; content: string; mediaUrl?: string; tags?: string[] }): Promise<Memory>;
+  updateMemory(id: string, userId: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }): Promise<Memory | undefined>;
   deleteMemory(id: string, userId: string): Promise<boolean>;
 
   getTemplateTasks(): Promise<Task[]>;
@@ -117,6 +118,24 @@ export class DatabaseStorage implements IStorage {
       tags: data.tags || [],
     }).returning();
     return memory;
+  }
+
+  async updateMemory(id: string, userId: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }): Promise<Memory | undefined> {
+    const [existing] = await db.select().from(memories)
+      .where(and(eq(memories.id, id), eq(memories.userId, userId)));
+    if (!existing) return undefined;
+
+    const updateData: any = {};
+    if (data.content !== undefined) updateData.content = data.content;
+    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.mediaUrl !== undefined) updateData.mediaUrl = data.mediaUrl;
+
+    const [updated] = await db.update(memories)
+      .set(updateData)
+      .where(eq(memories.id, id))
+      .returning();
+    return updated;
   }
 
   async deleteMemory(id: string, userId: string): Promise<boolean> {
