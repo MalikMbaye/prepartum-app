@@ -70,6 +70,9 @@ export const quizzes = pgTable("quizzes", {
   title: text("title").notNull(),
   description: text("description"),
   category: text("category"),
+  questionCount: integer("question_count"),
+  estimatedMinutes: integer("estimated_minutes"),
+  resultTypes: jsonb("result_types"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -86,6 +89,7 @@ export const userQuizResults = pgTable("user_quiz_results", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   quizId: uuid("quiz_id").notNull().references(() => quizzes.id, { onDelete: "cascade" }),
   answers: jsonb("answers"),
+  resultType: text("result_type"),
   score: integer("score"),
   insights: text("insights"),
   completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow(),

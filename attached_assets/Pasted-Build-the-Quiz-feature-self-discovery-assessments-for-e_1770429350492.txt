@@ -1,0 +1,105 @@
+Build the Quiz feature — self-discovery assessments for expectant mothers.
+
+## Main Screen: Quiz Library
+
+### Header:
+- Title: "Self-Discovery"
+- Subtitle: "Learn more about yourself"
+
+### Quiz Cards (grid or list):
+Each quiz card shows:
+- Title
+- Description (1-2 lines)
+- Number of questions
+- Estimated time
+- Completion badge (if taken)
+- Category color accent
+
+### Default Quizzes to Create:
+
+**Quiz 1: "What's Your Support Style?"**
+- Category: Relationships
+- 8 questions
+- Helps identify whether user prefers acts of service, quality time, etc. during postpartum
+
+**Quiz 2: "Birth Preferences Explorer"**
+- Category: Physical
+- 10 questions
+- Helps clarify birth plan preferences
+
+**Quiz 3: "Postpartum Readiness Check"**
+- Category: Mindset
+- 8 questions
+- Assesses mental/emotional preparation level
+
+**Quiz 4: "Partner Communication Style"**
+- Category: Relationships
+- 8 questions
+- Identifies communication patterns with partner
+
+**Quiz 5: "Anxiety Triggers Awareness"**
+- Category: Mindset
+- 6 questions
+- Helps identify common anxiety triggers
+
+## Screen: Take Quiz
+
+### Progress Indicator:
+- "Question 2 of 8"
+- Progress bar at top
+
+### Question Display:
+- Question text (large, readable)
+- Answer options (multiple choice cards)
+- Tapping an option selects it (visual feedback)
+- Next button (enabled after selection)
+- Back button to previous question
+
+### Answer Options Format:
+- 3-5 options per question
+- Each option is a tappable card
+- Selected state: colored border, subtle background
+
+### Example Questions (Support Style Quiz):
+
+**Q1:** "When you're feeling overwhelmed, what helps most?"
+- A) Someone taking tasks off my plate
+- B) Someone sitting with me and listening
+- C) Someone giving me space to process alone
+- D) Someone making me laugh and distracting me
+
+**Q2:** "How do you prefer to receive information about baby care?"
+- A) Written guides I can reference
+- B) Demonstrations and hands-on practice
+- C) Conversations with experienced parents
+- D) Videos I can watch at my own pace
+
+Continue with similar questions...
+
+## Screen: Quiz Results
+
+### Header:
+- "Your Results"
+- Quiz title
+
+### Result Display:
+- Main result (e.g., "You're an Acts of Service person")
+- Description paragraph explaining what this means
+- Personalized insights (2-3 bullet points)
+- Recommendations
+
+### Actions:
+- "Save Results" button
+- "Share with Partner" (optional)
+- "Retake Quiz" link
+- "Back to Quizzes" button
+
+## Technical Requirements:
+- Store quiz structure in quizzes and quiz_questions tables
+- Save user answers and results in user_quiz_results
+- Calculate result based on answer values
+- Generate insights (can be simple or AI-enhanced)
+- Track completion status
+- Allow retaking quizzes
+
+Build the complete quiz flow with at least 2 fully working quizzes.
