@@ -75,6 +75,7 @@ interface AppContextValue {
   setProfile: (data: any) => Promise<void>;
   promptResponses: PromptResponseData[];
   addPromptResponse: (data: { promptId: string; responseText: string; savedToJournal?: boolean }) => Promise<void>;
+  updatePromptResponse: (id: string, data: { responseText: string; savedToJournal?: boolean }) => Promise<void>;
   memories: MemoryData[];
   addMemory: (data: { content: string; type?: string; tags?: string[] }) => Promise<void>;
   deleteMemory: (id: string) => Promise<void>;
@@ -187,6 +188,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPromptResponses(prev => [response, ...prev]);
     } catch (e) {
       console.error('Error adding prompt response:', e);
+      throw e;
+    }
+  }
+
+  async function updatePromptResponse(id: string, data: { responseText: string; savedToJournal?: boolean }) {
+    if (!profile?.id) return;
+    try {
+      const res = await apiRequest('PUT', `/api/users/${profile.id}/prompt-responses/${id}`, data);
+      const updated = await res.json();
+      setPromptResponses(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+    } catch (e) {
+      console.error('Error updating prompt response:', e);
       throw e;
     }
   }
@@ -310,6 +323,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProfile,
     promptResponses,
     addPromptResponse,
+    updatePromptResponse,
     memories,
     addMemory,
     deleteMemory,

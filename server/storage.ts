@@ -19,6 +19,7 @@ export interface IStorage {
 
   getUserPromptResponses(userId: string): Promise<(PromptResponse & { prompt?: Prompt })[]>;
   createPromptResponse(data: { userId: string; promptId: string; responseText: string; savedToJournal?: boolean }): Promise<PromptResponse>;
+  updatePromptResponse(id: string, userId: string, data: { responseText: string; savedToJournal?: boolean }): Promise<PromptResponse | undefined>;
 
   getUserMemories(userId: string): Promise<Memory[]>;
   createMemory(data: { userId: string; type: string; content: string; mediaUrl?: string; tags?: string[] }): Promise<Memory>;
@@ -84,6 +85,21 @@ export class DatabaseStorage implements IStorage {
       savedToJournal: data.savedToJournal ?? false,
     }).returning();
     return response;
+  }
+
+  async updatePromptResponse(id: string, userId: string, data: { responseText: string; savedToJournal?: boolean }): Promise<PromptResponse | undefined> {
+    const [existing] = await db.select().from(userPromptResponses)
+      .where(and(eq(userPromptResponses.id, id), eq(userPromptResponses.userId, userId)));
+    if (!existing) return undefined;
+
+    const updateData: any = { responseText: data.responseText };
+    if (data.savedToJournal !== undefined) updateData.savedToJournal = data.savedToJournal;
+
+    const [updated] = await db.update(userPromptResponses)
+      .set(updateData)
+      .where(eq(userPromptResponses.id, id))
+      .returning();
+    return updated;
   }
 
   async getUserMemories(userId: string): Promise<Memory[]> {
