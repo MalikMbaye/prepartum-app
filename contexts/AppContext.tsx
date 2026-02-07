@@ -70,6 +70,27 @@ interface JournalEntryData {
   createdAt: string | null;
 }
 
+interface QuizData {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  questionCount: number | null;
+  estimatedMinutes: number | null;
+  resultTypes: any;
+}
+
+interface QuizResultData {
+  id: string;
+  userId: string;
+  quizId: string;
+  answers: any;
+  resultType: string | null;
+  score: number | null;
+  insights: string | null;
+  completedAt: string | null;
+}
+
 interface AppContextValue {
   profile: UserProfile | null;
   setProfile: (data: any) => Promise<void>;
@@ -86,6 +107,9 @@ interface AppContextValue {
   journalEntries: JournalEntryData[];
   addJournalEntry: (data: { title?: string; content: string; category?: string; fromPrompt?: boolean }) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
+  quizzes: QuizData[];
+  quizResults: QuizResultData[];
+  submitQuizResult: (data: { quizId: string; answers: any; resultType: string; score: number; insights: string }) => Promise<QuizResultData>;
   prompts: DailyPrompt[];
   isLoading: boolean;
   refreshing: boolean;
@@ -104,6 +128,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [memories, setMemories] = useState<MemoryData[]>([]);
   const [tasks, setTasks] = useState<UserTaskData[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntryData[]>([]);
+  const [quizzesData, setQuizzesData] = useState<QuizData[]>([]);
+  const [quizResults, setQuizResults] = useState<QuizResultData[]>([]);
   const [prompts, setPrompts] = useState<DailyPrompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -127,26 +153,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
         try {
           const user = await fetchFromApi(`/api/users/${storedUserId}`);
           setProfileState(user);
-          const [resps, mems, tks, jrnl, prts] = await Promise.all([
+          const [resps, mems, tks, jrnl, prts, qzs, qrs] = await Promise.all([
             fetchFromApi(`/api/users/${storedUserId}/prompt-responses`),
             fetchFromApi(`/api/users/${storedUserId}/memories`),
             fetchFromApi(`/api/users/${storedUserId}/tasks`),
             fetchFromApi(`/api/users/${storedUserId}/journal`),
             fetchFromApi('/api/prompts'),
+            fetchFromApi('/api/quizzes'),
+            fetchFromApi(`/api/users/${storedUserId}/quiz-results`),
           ]);
           setPromptResponses(resps);
           setMemories(mems);
           setTasks(tks);
           setJournalEntries(jrnl);
           setPrompts(prts);
+          setQuizzesData(qzs);
+          setQuizResults(qrs);
         } catch (e) {
           console.error('Error loading user data:', e);
           await AsyncStorage.removeItem(USER_ID_KEY);
         }
       } else {
         try {
-          const prts = await fetchFromApi('/api/prompts');
+          const [prts, qzs] = await Promise.all([
+            fetchFromApi('/api/prompts'),
+            fetchFromApi('/api/quizzes'),
+          ]);
           setPrompts(prts);
+          setQuizzesData(qzs);
         } catch (e) {
           console.error('Error loading prompts:', e);
         }
@@ -168,12 +202,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const res = await apiRequest('POST', '/api/users', data);
         user = await res.json();
         await AsyncStorage.setItem(USER_ID_KEY, user.id);
-        const [tks, prts] = await Promise.all([
+        const [tks, prts, qzs] = await Promise.all([
           fetchFromApi(`/api/users/${user.id}/tasks`),
           fetchFromApi('/api/prompts'),
+          fetchFromApi('/api/quizzes'),
         ]);
         setTasks(tks);
         setPrompts(prts);
+        setQuizzesData(qzs);
       }
       setProfileState(user);
     } catch (e) {
@@ -265,6 +301,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function submitQuizResult(data: { quizId: string; answers: any; resultType: string; score: number; insights: string }): Promise<QuizResultData> {
+    if (!profile?.id) throw new Error('No profile');
+    try {
+      const res = await apiRequest('POST', `/api/users/${profile.id}/quiz-results`, data);
+      const result = await res.json();
+      setQuizResults(prev => [result, ...prev]);
+      return result;
+    } catch (e) {
+      console.error('Error submitting quiz result:', e);
+      throw e;
+    }
+  }
+
   async function addJournalEntry(data: { title?: string; content: string; category?: string; fromPrompt?: boolean }) {
     if (!profile?.id) return;
     try {
@@ -325,18 +374,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!profile?.id) return;
     setRefreshing(true);
     try {
-      const [resps, mems, tks, jrnl, prts] = await Promise.all([
+      const [resps, mems, tks, jrnl, prts, qzs, qrs] = await Promise.all([
         fetchFromApi(`/api/users/${profile.id}/prompt-responses`),
         fetchFromApi(`/api/users/${profile.id}/memories`),
         fetchFromApi(`/api/users/${profile.id}/tasks`),
         fetchFromApi(`/api/users/${profile.id}/journal`),
         fetchFromApi('/api/prompts'),
+        fetchFromApi('/api/quizzes'),
+        fetchFromApi(`/api/users/${profile.id}/quiz-results`),
       ]);
       setPromptResponses(resps);
       setMemories(mems);
       setTasks(tks);
       setJournalEntries(jrnl);
       setPrompts(prts);
+      setQuizzesData(qzs);
+      setQuizResults(qrs);
     } catch (e) {
       console.error('Error refreshing data:', e);
     } finally {
@@ -360,6 +413,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     journalEntries,
     addJournalEntry,
     deleteJournalEntry,
+    quizzes: quizzesData,
+    quizResults,
+    submitQuizResult,
     prompts,
     isLoading,
     refreshing,
@@ -367,7 +423,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getWeeklyProgress,
     getPregnancyWeek,
     getWeeklyCompletedCount,
-  }), [profile, promptResponses, memories, tasks, journalEntries, prompts, isLoading, refreshing]);
+  }), [profile, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, prompts, isLoading, refreshing]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

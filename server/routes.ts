@@ -177,6 +177,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/quizzes", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.getAllQuizzes();
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/quizzes/:id", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.getQuizWithQuestions(req.params.id);
+      if (!result) return res.status(404).json({ message: "Quiz not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/users/:userId/quiz-results", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.getUserQuizResults(req.params.userId);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/users/:userId/quiz-results", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.createQuizResult({
+        userId: req.params.userId,
+        ...req.body,
+      });
+      res.json(result);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

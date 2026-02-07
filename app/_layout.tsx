@@ -26,6 +26,8 @@ function RootLayoutNav() {
       <Stack.Screen name="prompt-detail" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="view-memory" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="add-task" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="take-quiz" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="quiz-results" options={{ headerShown: false, presentation: 'modal' }} />
     </Stack>
   );
 }

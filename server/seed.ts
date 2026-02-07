@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { prompts, tasks } from "@shared/schema";
+import { prompts, tasks, quizzes, quizQuestions } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const promptData = [
@@ -101,6 +101,263 @@ const taskData = [
   { title: "Learn about postpartum depression signs", description: "Know the difference between baby blues and PPD. Have your provider's number and a crisis line accessible.", category: "postpartum", isTemplate: true },
 ];
 
+const quizData = [
+  {
+    title: "What's Your Support Style?",
+    description: "Discover how you prefer to receive support during your postpartum journey. Understanding your support style helps you communicate needs to your partner and loved ones.",
+    category: "relationships",
+    questionCount: 8,
+    estimatedMinutes: 5,
+    resultTypes: {
+      "acts-of-service": {
+        title: "Acts of Service",
+        description: "You feel most supported when people take tangible tasks off your plate. Whether it's cooking a meal, doing laundry, or handling errands, actions speak louder than words for you.",
+        insights: [
+          "Create a specific list of helpful tasks to share with visitors",
+          "Let your partner know that doing dishes means 'I love you'",
+          "Accept offers of help gracefully — people genuinely want to support you"
+        ]
+      },
+      "quality-time": {
+        title: "Quality Time",
+        description: "You feel most supported when someone is fully present with you. Having someone sit beside you, listen without distraction, and simply be there fills your cup.",
+        insights: [
+          "Schedule regular one-on-one time with your partner, even just 15 minutes",
+          "Ask a friend to sit with you during feeding times for company",
+          "Quality over quantity — a focused 20 minutes beats a distracted hour"
+        ]
+      },
+      "solo-processing": {
+        title: "Solo Processing",
+        description: "You recharge and process emotions best when given space. You're not pushing people away — you need solitude to sort through your feelings before sharing them.",
+        insights: [
+          "Communicate to your partner that alone time is self-care, not withdrawal",
+          "Create a small sanctuary space in your home just for you",
+          "Journal or take short walks to process the big emotions of new parenthood"
+        ]
+      },
+      "humor-distraction": {
+        title: "Humor & Distraction",
+        description: "You cope best when someone lightens the mood. Laughter and lighthearted distraction help you reset when things feel overwhelming.",
+        insights: [
+          "Keep a playlist of your favorite comedy shows for tough moments",
+          "Let your partner know that making you laugh is genuinely helpful",
+          "Don't feel guilty about needing levity — humor is a valid coping tool"
+        ]
+      }
+    },
+    questions: [
+      {
+        questionText: "When you're feeling overwhelmed, what helps most?",
+        options: [
+          { text: "Someone taking tasks off my plate", value: "acts-of-service" },
+          { text: "Someone sitting with me and listening", value: "quality-time" },
+          { text: "Someone giving me space to process alone", value: "solo-processing" },
+          { text: "Someone making me laugh and distracting me", value: "humor-distraction" }
+        ],
+        orderNumber: 1
+      },
+      {
+        questionText: "How do you prefer to receive information about baby care?",
+        options: [
+          { text: "Written guides I can reference on my own", value: "solo-processing" },
+          { text: "Hands-on demonstrations from someone I trust", value: "acts-of-service" },
+          { text: "Conversations with experienced parents", value: "quality-time" },
+          { text: "Fun, lighthearted videos at my own pace", value: "humor-distraction" }
+        ],
+        orderNumber: 2
+      },
+      {
+        questionText: "After a particularly hard day, you most want your partner to:",
+        options: [
+          { text: "Handle dinner and cleanup without being asked", value: "acts-of-service" },
+          { text: "Put their phone away and really talk with me", value: "quality-time" },
+          { text: "Give me an hour alone while they take the baby", value: "solo-processing" },
+          { text: "Tell me a funny story or put on our favorite show", value: "humor-distraction" }
+        ],
+        orderNumber: 3
+      },
+      {
+        questionText: "When a friend visits with your new baby, the ideal visit looks like:",
+        options: [
+          { text: "They bring a meal and help tidy up a bit", value: "acts-of-service" },
+          { text: "They hold the baby while we catch up over tea", value: "quality-time" },
+          { text: "A brief, warm visit — I appreciate them but get tired quickly", value: "solo-processing" },
+          { text: "They make me laugh and remind me of my pre-baby self", value: "humor-distraction" }
+        ],
+        orderNumber: 4
+      },
+      {
+        questionText: "Which statement resonates most with you?",
+        options: [
+          { text: "Don't ask if I need help — just do something helpful", value: "acts-of-service" },
+          { text: "The best gift is your undivided attention", value: "quality-time" },
+          { text: "I need time alone to feel like myself again", value: "solo-processing" },
+          { text: "If we're not laughing, we're not surviving", value: "humor-distraction" }
+        ],
+        orderNumber: 5
+      },
+      {
+        questionText: "When you're anxious about something, you tend to:",
+        options: [
+          { text: "Channel it into action — organizing, cleaning, planning", value: "acts-of-service" },
+          { text: "Talk it through with someone I trust", value: "quality-time" },
+          { text: "Need quiet time to think before I can talk about it", value: "solo-processing" },
+          { text: "Look for the silver lining or something to lighten the mood", value: "humor-distraction" }
+        ],
+        orderNumber: 6
+      },
+      {
+        questionText: "The best postpartum support group would be:",
+        options: [
+          { text: "One that shares practical tips, meal prep ideas, and life hacks", value: "acts-of-service" },
+          { text: "A small, intimate circle where everyone really listens", value: "quality-time" },
+          { text: "An online community I can engage with on my own schedule", value: "solo-processing" },
+          { text: "A group that's warm, funny, and doesn't take things too seriously", value: "humor-distraction" }
+        ],
+        orderNumber: 7
+      },
+      {
+        questionText: "If you could choose one gift for your postpartum self:",
+        options: [
+          { text: "A month of house cleaning service", value: "acts-of-service" },
+          { text: "Weekly date nights with my partner", value: "quality-time" },
+          { text: "A cozy reading nook just for me", value: "solo-processing" },
+          { text: "A subscription to my favorite comedy streaming service", value: "humor-distraction" }
+        ],
+        orderNumber: 8
+      }
+    ]
+  },
+  {
+    title: "Postpartum Readiness Check",
+    description: "Assess your mental and emotional preparation for the postpartum period. This isn't about being perfectly ready — it's about knowing where you stand and what to work on.",
+    category: "mindset",
+    questionCount: 8,
+    estimatedMinutes: 5,
+    resultTypes: {
+      "well-prepared": {
+        title: "Confidently Prepared",
+        description: "You've done thoughtful preparation for the postpartum period. You have realistic expectations, a support system in place, and self-awareness about your emotional needs.",
+        insights: [
+          "Your preparation is a strength — trust the work you've put in",
+          "Stay flexible; even the best plans change when baby arrives",
+          "Consider sharing what you've learned with other expecting mothers"
+        ]
+      },
+      "mostly-ready": {
+        title: "Almost There",
+        description: "You're on a solid path with good awareness and some plans in place. A few areas could use more attention, but you have a strong foundation to build on.",
+        insights: [
+          "Focus on the 1-2 areas that feel least certain to you",
+          "Talk to your partner about the topics you haven't covered yet",
+          "Remember that 'good enough' preparation is truly good enough"
+        ]
+      },
+      "building-awareness": {
+        title: "Building Awareness",
+        description: "You're in the early stages of postpartum preparation, and that's perfectly okay. Awareness is the first step, and you're taking it by engaging with this quiz.",
+        insights: [
+          "Start with one small step: talk to one person who has been through it",
+          "Write down your top 3 worries and discuss them with your provider",
+          "You have more time than you think — start small and build from there"
+        ]
+      },
+      "needs-attention": {
+        title: "Time to Focus",
+        description: "Your postpartum preparation could benefit from more attention. This isn't a criticism — many people don't think about postpartum until it's upon them. You're already ahead by recognizing this now.",
+        insights: [
+          "Schedule a conversation with your healthcare provider about postpartum planning",
+          "Ask a trusted friend or family member about their postpartum experience",
+          "Consider a prenatal class that includes postpartum preparation content"
+        ]
+      }
+    },
+    questions: [
+      {
+        questionText: "How confident do you feel about recognizing signs of postpartum depression?",
+        options: [
+          { text: "I've researched it and know the warning signs well", value: "well-prepared", score: 4 },
+          { text: "I have a general idea but could learn more", value: "mostly-ready", score: 3 },
+          { text: "I've heard of it but don't know specifics", value: "building-awareness", score: 2 },
+          { text: "I haven't thought much about it", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 1
+      },
+      {
+        questionText: "Do you have a plan for who will support you in the first two weeks after birth?",
+        options: [
+          { text: "Yes, I have a detailed schedule of helpers", value: "well-prepared", score: 4 },
+          { text: "I have some people in mind but nothing formal", value: "mostly-ready", score: 3 },
+          { text: "I'm still figuring this out", value: "building-awareness", score: 2 },
+          { text: "I assumed I'd handle it mostly on my own", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 2
+      },
+      {
+        questionText: "How do you feel about asking for help when you need it?",
+        options: [
+          { text: "Comfortable — I know it's essential, not weakness", value: "well-prepared", score: 4 },
+          { text: "Working on it — I know I should but it's hard", value: "mostly-ready", score: 3 },
+          { text: "Uncomfortable but willing to try", value: "building-awareness", score: 2 },
+          { text: "Very uncomfortable — I prefer to do things myself", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 3
+      },
+      {
+        questionText: "Have you and your partner discussed division of nighttime duties?",
+        options: [
+          { text: "Yes, we have a specific plan that works for both of us", value: "well-prepared", score: 4 },
+          { text: "We've talked about it loosely", value: "mostly-ready", score: 3 },
+          { text: "We've mentioned it but haven't planned details", value: "building-awareness", score: 2 },
+          { text: "We haven't discussed this at all", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 4
+      },
+      {
+        questionText: "What are your expectations about your emotional state after birth?",
+        options: [
+          { text: "I expect a full range of emotions and have coping strategies ready", value: "well-prepared", score: 4 },
+          { text: "I know it'll be emotional but feel reasonably prepared", value: "mostly-ready", score: 3 },
+          { text: "I hope I'll feel happy but I'm a little nervous", value: "building-awareness", score: 2 },
+          { text: "I expect to feel naturally bonded and happy right away", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 5
+      },
+      {
+        questionText: "How prepared are you for changes in your relationship with your partner?",
+        options: [
+          { text: "We've openly discussed how things might shift and made plans", value: "well-prepared", score: 4 },
+          { text: "We've acknowledged changes are coming", value: "mostly-ready", score: 3 },
+          { text: "I know things will change but we haven't discussed it much", value: "building-awareness", score: 2 },
+          { text: "I don't think our relationship will change much", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 6
+      },
+      {
+        questionText: "Do you have your healthcare provider's contact information for postpartum emergencies?",
+        options: [
+          { text: "Yes, programmed in my phone along with crisis resources", value: "well-prepared", score: 4 },
+          { text: "I have my doctor's number somewhere", value: "mostly-ready", score: 3 },
+          { text: "I could find it if I needed to", value: "building-awareness", score: 2 },
+          { text: "I haven't thought about postpartum emergencies", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 7
+      },
+      {
+        questionText: "How do you feel about your body changing after pregnancy?",
+        options: [
+          { text: "I've made peace with it — recovery takes time and that's okay", value: "well-prepared", score: 4 },
+          { text: "I'm trying to have realistic expectations", value: "mostly-ready", score: 3 },
+          { text: "I'm a bit anxious about bouncing back", value: "building-awareness", score: 2 },
+          { text: "I expect to get back to normal quickly", value: "needs-attention", score: 1 }
+        ],
+        orderNumber: 8
+      }
+    ]
+  }
+];
+
 export async function seedDatabase() {
   const existingPrompts = await db.select().from(prompts);
   if (existingPrompts.length === 0) {
@@ -122,5 +379,23 @@ export async function seedDatabase() {
       await db.insert(tasks).values(taskData);
       console.log(`Re-seeded ${taskData.length} tasks`);
     }
+  }
+
+  const existingQuizzes = await db.select().from(quizzes);
+  if (existingQuizzes.length === 0) {
+    console.log("Seeding quizzes...");
+    for (const quiz of quizData) {
+      const { questions, ...quizRow } = quiz;
+      const [inserted] = await db.insert(quizzes).values(quizRow).returning();
+      for (const q of questions) {
+        await db.insert(quizQuestions).values({
+          quizId: inserted.id,
+          questionText: q.questionText,
+          options: q.options,
+          orderNumber: q.orderNumber,
+        });
+      }
+    }
+    console.log(`Seeded ${quizData.length} quizzes with questions`);
   }
 }

@@ -6,6 +6,7 @@ import {
   roleplayScenarios, roleplaySessions,
   type User, type InsertUser, type Prompt, type PromptResponse,
   type Memory, type Task, type UserTask, type JournalEntry,
+  type Quiz, type QuizQuestion, type QuizResult,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -36,6 +37,11 @@ export interface IStorage {
   getUserJournalEntries(userId: string): Promise<JournalEntry[]>;
   createJournalEntry(data: { userId: string; title?: string; content: string; category?: string; fromPrompt?: boolean; promptResponseId?: string }): Promise<JournalEntry>;
   deleteJournalEntry(id: string, userId: string): Promise<boolean>;
+
+  getAllQuizzes(): Promise<Quiz[]>;
+  getQuizWithQuestions(quizId: string): Promise<{ quiz: Quiz; questions: QuizQuestion[] } | undefined>;
+  getUserQuizResults(userId: string): Promise<QuizResult[]>;
+  createQuizResult(data: { userId: string; quizId: string; answers: any; resultType: string; score: number; insights: string }): Promise<QuizResult>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -231,6 +237,37 @@ export class DatabaseStorage implements IStorage {
   async deleteJournalEntry(id: string, userId: string): Promise<boolean> {
     const result = await db.delete(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.userId, userId))).returning();
     return result.length > 0;
+  }
+
+  async getAllQuizzes(): Promise<Quiz[]> {
+    return db.select().from(quizzes).orderBy(quizzes.createdAt);
+  }
+
+  async getQuizWithQuestions(quizId: string): Promise<{ quiz: Quiz; questions: QuizQuestion[] } | undefined> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, quizId));
+    if (!quiz) return undefined;
+    const questions = await db.select().from(quizQuestions)
+      .where(eq(quizQuestions.quizId, quizId))
+      .orderBy(quizQuestions.orderNumber);
+    return { quiz, questions };
+  }
+
+  async getUserQuizResults(userId: string): Promise<QuizResult[]> {
+    return db.select().from(userQuizResults)
+      .where(eq(userQuizResults.userId, userId))
+      .orderBy(desc(userQuizResults.completedAt));
+  }
+
+  async createQuizResult(data: { userId: string; quizId: string; answers: any; resultType: string; score: number; insights: string }): Promise<QuizResult> {
+    const [result] = await db.insert(userQuizResults).values({
+      userId: data.userId,
+      quizId: data.quizId,
+      answers: data.answers,
+      resultType: data.resultType,
+      score: data.score,
+      insights: data.insights,
+    }).returning();
+    return result;
   }
 }
 
