@@ -35,6 +35,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deleteUser(req.params.id);
+      if (!deleted) return res.status(404).json({ message: "User not found" });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/prompts", async (req: Request, res: Response) => {
     try {
       const { week, category } = req.query;

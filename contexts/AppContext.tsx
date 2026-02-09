@@ -145,6 +145,9 @@ interface AppContextValue {
   getWeeklyProgress: () => number;
   getPregnancyWeek: () => number;
   getWeeklyCompletedCount: () => number;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
+  getCurrentStreak: () => number;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -445,6 +448,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }).length;
   }
 
+  async function signOut() {
+    await AsyncStorage.clear();
+    setProfileState(null);
+    setPromptResponses([]);
+    setMemories([]);
+    setTasks([]);
+    setJournalEntries([]);
+    setQuizResults([]);
+    setRoleplaySessionsData([]);
+  }
+
+  async function deleteAccount() {
+    if (!profile?.id) return;
+    try {
+      await apiRequest('DELETE', `/api/users/${profile.id}`);
+      await signOut();
+    } catch (e) {
+      console.error('Error deleting account:', e);
+      throw e;
+    }
+  }
+
+  function getCurrentStreak(): number {
+    if (promptResponses.length === 0) return 0;
+    const dates = promptResponses
+      .filter(r => r.completedAt)
+      .map(r => {
+        const d = new Date(r.completedAt!);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      });
+    const uniqueDates = [...new Set(dates)].sort().reverse();
+    if (uniqueDates.length === 0) return 0;
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+    if (uniqueDates[0] !== todayStr && uniqueDates[0] !== yesterdayStr) return 0;
+
+    let streak = 1;
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const curr = new Date(uniqueDates[i - 1]);
+      const prev = new Date(uniqueDates[i]);
+      const diffDays = Math.round((curr.getTime() - prev.getTime()) / (86400000));
+      if (diffDays === 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
   async function refreshData() {
     if (!profile?.id) return;
     setRefreshing(true);
@@ -507,6 +565,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getWeeklyProgress,
     getPregnancyWeek,
     getWeeklyCompletedCount,
+    signOut,
+    deleteAccount,
+    getCurrentStreak,
   }), [profile, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, scenariosData, roleplaySessionsData, prompts, isLoading, refreshing]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
