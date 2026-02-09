@@ -76,7 +76,7 @@ export default function JournalScreen() {
                     <Feather name="trash-2" size={14} color={Colors.textLight} />
                   </Pressable>
                 </View>
-                <View style={[styles.categoryDot, { backgroundColor: getCategoryColor(entry.category) }]} />
+                <View style={[styles.categoryDot, { backgroundColor: getCategoryColor(entry.category || 'general') }]} />
                 <Text style={styles.entryTitle}>{entry.title}</Text>
                 <Text style={styles.entryContent} numberOfLines={4}>{entry.content}</Text>
               </View>

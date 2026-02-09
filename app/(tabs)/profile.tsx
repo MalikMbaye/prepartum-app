@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
@@ -12,69 +11,77 @@ import { getCategoryLabel, getCategoryColor } from '@/lib/prompts-data';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, promptResponses, memories, tasks, journalEntries, getPregnancyWeek } = useApp();
+  const {
+    profile, promptResponses, memories, tasks, journalEntries,
+    quizResults, roleplaySessions, getPregnancyWeek, getCurrentStreak,
+  } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
   const pregnancyWeek = getPregnancyWeek();
   const completedTasks = tasks.filter(t => t.completed).length;
+  const streak = getCurrentStreak();
+  const completedSessions = roleplaySessions.filter(s => s.completedAt).length;
 
   function formatDueDate(dateStr: string) {
     if (!dateStr) return 'Not set';
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   }
 
-  async function handleReset() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const doReset = async () => {
-      await AsyncStorage.clear();
-      router.replace('/');
-    };
-    if (Platform.OS === 'web') {
-      doReset();
-    } else {
-      Alert.alert(
-        'Reset App',
-        'This will erase all your data and start fresh. Are you sure?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Reset', style: 'destructive', onPress: doReset },
-        ]
-      );
-    }
+  function getDaysRemaining() {
+    if (!profile?.dueDate) return null;
+    const due = new Date(profile.dueDate);
+    const now = new Date();
+    const diff = Math.ceil((due.getTime() - now.getTime()) / (86400000));
+    return Math.max(0, diff);
   }
+
+  const daysLeft = getDaysRemaining();
 
   const stats = [
-    { label: 'Prompts Answered', value: promptResponses.length, icon: 'bulb-outline' as const, color: Colors.accentPink },
-    { label: 'Memories Saved', value: memories.length, icon: 'heart-outline' as const, color: Colors.accentPeach },
-    { label: 'Tasks Completed', value: completedTasks, icon: 'checkbox-outline' as const, color: Colors.accentBlue },
-    { label: 'Journal Entries', value: journalEntries.length, icon: 'book-outline' as const, color: '#E8E0EC' },
+    { label: 'Day Streak', value: streak, icon: 'flame-outline' as const, color: '#FDDCB5' },
+    { label: 'Reflections', value: promptResponses.length, icon: 'bulb-outline' as const, color: Colors.accentPink },
+    { label: 'Memories', value: memories.length, icon: 'heart-outline' as const, color: Colors.accentPeach },
+    { label: 'Tasks Done', value: completedTasks, icon: 'checkbox-outline' as const, color: Colors.accentBlue },
+  ];
+
+  const quickLinks = [
+    { label: 'Journal', icon: 'book-open' as const, route: '/journal', count: journalEntries.length },
+    { label: 'Quiz Results', icon: 'award' as const, route: '/quiz-results-history' as any, count: quizResults.length },
+    { label: 'Practice History', icon: 'message-circle' as const, route: '/practice-history' as any, count: completedSessions },
   ];
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + webTopInset + 16, paddingBottom: 100 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + webTopInset + 16, paddingBottom: 120 }]}
       showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior="automatic"
     >
       <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.profileHeader}>
-        <View style={styles.avatar}>
-          <Ionicons name="flower-outline" size={32} color={Colors.textPrimary} />
+        <View style={styles.avatarOuter}>
+          <View style={styles.avatar}>
+            <Ionicons name="flower-outline" size={34} color={Colors.textPrimary} />
+          </View>
+          {pregnancyWeek > 0 && (
+            <View style={styles.weekBadge}>
+              <Text style={styles.weekBadgeText}>W{pregnancyWeek}</Text>
+            </View>
+          )}
         </View>
         <Text style={styles.name}>{profile?.name || 'Mama'}</Text>
-        {pregnancyWeek > 0 && (
-          <Text style={styles.weekText}>Week {pregnancyWeek}</Text>
-        )}
         {profile?.dueDate && (
           <Text style={styles.dueText}>Due {formatDueDate(profile.dueDate)}</Text>
+        )}
+        {daysLeft !== null && daysLeft > 0 && (
+          <View style={styles.countdownPill}>
+            <Text style={styles.countdownText}>{daysLeft} days to go</Text>
+          </View>
         )}
       </Animated.View>
 
       {profile?.focusAreas && profile.focusAreas.length > 0 && (
         <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.focusSection}>
-          <Text style={styles.sectionLabel}>Your Focus Areas</Text>
           <View style={styles.focusRow}>
             {profile.focusAreas.map(area => (
               <View key={area} style={[styles.focusBadge, { backgroundColor: getCategoryColor(area) }]}>
@@ -100,23 +107,43 @@ export default function ProfileScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.actionsSection}>
-        <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.8 }]}
-        >
-          <Feather name="book-open" size={20} color={Colors.textPrimary} />
-          <Text style={styles.actionText}>View Journal</Text>
-          <Feather name="chevron-right" size={18} color={Colors.textLight} />
-        </Pressable>
+      <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.linksSection}>
+        {quickLinks.map((link, i) => (
+          <Pressable
+            key={i}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (link.route === '/journal') {
+                router.push('/journal');
+              }
+            }}
+            style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.7 }]}
+          >
+            <View style={styles.linkIconWrap}>
+              <Feather name={link.icon} size={18} color={Colors.textPrimary} />
+            </View>
+            <Text style={styles.linkText}>{link.label}</Text>
+            {link.count > 0 && (
+              <View style={styles.linkCountBadge}>
+                <Text style={styles.linkCountText}>{link.count}</Text>
+              </View>
+            )}
+            <Feather name="chevron-right" size={16} color={Colors.textLight} />
+          </Pressable>
+        ))}
+      </Animated.View>
 
+      <Animated.View entering={FadeInDown.delay(500).duration(500)}>
         <Pressable
-          onPress={handleReset}
-          style={({ pressed }) => [styles.actionRow, styles.actionRowDanger, pressed && { opacity: 0.8 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/settings');
+          }}
+          style={({ pressed }) => [styles.settingsButton, pressed && { opacity: 0.7 }]}
         >
-          <Feather name="refresh-cw" size={20} color={Colors.error} />
-          <Text style={[styles.actionText, { color: Colors.error }]}>Reset App Data</Text>
-          <Feather name="chevron-right" size={18} color={Colors.error} />
+          <Feather name="settings" size={18} color={Colors.textSecondary} />
+          <Text style={styles.settingsText}>Settings</Text>
+          <Feather name="chevron-right" size={16} color={Colors.textLight} />
         </Pressable>
       </Animated.View>
     </ScrollView>
@@ -133,56 +160,91 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
+  },
+  avatarOuter: {
+    position: 'relative',
+    marginBottom: 14,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: Colors.accentPink,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    borderWidth: 3,
+    borderColor: Colors.white,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  weekBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: Colors.textPrimary,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 2,
+    borderColor: Colors.canvas,
+  },
+  weekBadgeText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 11,
+    color: Colors.white,
   },
   name: {
     fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 26,
+    fontSize: 28,
     color: Colors.textPrimary,
     marginBottom: 4,
-  },
-  weekText: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 15,
-    color: Colors.textSecondary,
-    marginBottom: 2,
   },
   dueText: {
     fontFamily: 'Lato_400Regular',
     fontSize: 14,
-    color: Colors.textLight,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  countdownPill: {
+    backgroundColor: Colors.accentPeach,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  countdownText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 13,
+    color: Colors.textPrimary,
   },
   focusSection: {
     marginBottom: 24,
+    alignItems: 'center',
+  },
+  focusRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  focusBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  focusBadgeText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 12,
+    color: Colors.textPrimary,
   },
   sectionLabel: {
     fontFamily: 'PlayfairDisplay_600SemiBold',
     fontSize: 18,
     color: Colors.textPrimary,
     marginBottom: 12,
-  },
-  focusRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  focusBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  focusBadgeText: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 13,
-    color: Colors.textPrimary,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -222,24 +284,59 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
   },
-  actionsSection: {
-    gap: 1,
+  linksSection: {
+    marginBottom: 20,
+    gap: 6,
   },
-  actionRow: {
+  linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderRadius: 14,
-    marginBottom: 8,
-    gap: 14,
+    gap: 12,
   },
-  actionRowDanger: {},
-  actionText: {
+  linkIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: Colors.canvas,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkText: {
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textPrimary,
+    flex: 1,
+  },
+  linkCountBadge: {
+    backgroundColor: Colors.accentPink,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  linkCountText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 12,
+    color: Colors.textPrimary,
+  },
+  settingsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: Colors.white,
+    gap: 12,
+  },
+  settingsText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 15,
+    color: Colors.textSecondary,
     flex: 1,
   },
 });
