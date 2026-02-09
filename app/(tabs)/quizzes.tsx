@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -84,20 +84,96 @@ function QuizCard({ quiz, index, isCompleted, latestResult }: {
   );
 }
 
-export default function QuizzesScreen() {
+function ScenarioCard({ scenario, index, sessionCount }: {
+  scenario: any;
+  index: number;
+  sessionCount: number;
+}) {
+  const categoryColor = CATEGORY_COLORS[scenario.category || 'mindset'] || Colors.accentPink;
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 100).duration(400)}>
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push({ pathname: '/scenario-intro', params: { scenarioId: scenario.id } });
+        }}
+        style={({ pressed }) => [styles.scenarioCard, pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
+        testID={`scenario-card-${index}`}
+      >
+        <View style={[styles.scenarioAccent, { backgroundColor: categoryColor }]} />
+        <View style={styles.scenarioContent}>
+          <View style={styles.scenarioTopRow}>
+            <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+              <Text style={styles.categoryBadgeText}>
+                {CATEGORY_LABELS[scenario.category || 'mindset'] || scenario.category}
+              </Text>
+            </View>
+            {sessionCount > 0 && (
+              <View style={styles.practicedBadge}>
+                <Ionicons name="chatbubble-ellipses" size={14} color={Colors.textSecondary} />
+                <Text style={styles.practicedText}>{sessionCount}x practiced</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.scenarioTitle}>{scenario.title}</Text>
+
+          <View style={styles.roleRow}>
+            <Ionicons name="person-circle-outline" size={16} color={Colors.textLight} />
+            <Text style={styles.roleText}>Practice with: {scenario.role}</Text>
+          </View>
+
+          <Text style={styles.scenarioDescription} numberOfLines={2}>{scenario.description}</Text>
+
+          <View style={styles.cardFooter}>
+            <Text style={styles.ctaText}>
+              {sessionCount > 0 ? 'Practice Again' : 'Start Practice'}
+            </Text>
+            <Ionicons name="chatbubbles-outline" size={16} color={Colors.textPrimary} />
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
-  const { quizzes, quizResults, refreshData, refreshing } = useApp();
+  const { quizzes, quizResults, scenarios, roleplaySessions, refreshData, refreshing } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
+  const [activeTab, setActiveTab] = useState<'roleplay' | 'quizzes'>('roleplay');
 
   function getLatestResult(quizId: string) {
     return quizResults.find(r => r.quizId === quizId);
   }
 
+  function getSessionCount(scenarioId: string) {
+    return roleplaySessions.filter(s => s.scenarioId === scenarioId).length;
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Self-Discovery</Text>
-        <Text style={styles.subtitle}>Learn more about yourself</Text>
+        <Text style={styles.title}>Discover</Text>
+        <Text style={styles.subtitle}>Practice & self-discovery tools</Text>
+      </View>
+
+      <View style={styles.tabBar}>
+        <Pressable
+          onPress={() => { setActiveTab('roleplay'); Haptics.selectionAsync(); }}
+          style={[styles.tab, activeTab === 'roleplay' && styles.tabActive]}
+        >
+          <Ionicons name="chatbubbles-outline" size={16} color={activeTab === 'roleplay' ? Colors.textPrimary : Colors.textLight} />
+          <Text style={[styles.tabText, activeTab === 'roleplay' && styles.tabTextActive]}>Practice</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { setActiveTab('quizzes'); Haptics.selectionAsync(); }}
+          style={[styles.tab, activeTab === 'quizzes' && styles.tabActive]}
+        >
+          <Feather name="compass" size={16} color={activeTab === 'quizzes' ? Colors.textPrimary : Colors.textLight} />
+          <Text style={[styles.tabText, activeTab === 'quizzes' && styles.tabTextActive]}>Quizzes</Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -111,25 +187,48 @@ export default function QuizzesScreen() {
           />
         }
       >
-        {quizzes.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Feather name="compass" size={48} color={Colors.textLight} />
-            <Text style={styles.emptyTitle}>No quizzes available yet</Text>
-            <Text style={styles.emptyBody}>Check back soon for self-discovery assessments</Text>
-          </View>
+        {activeTab === 'roleplay' ? (
+          <>
+            {scenarios.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="chatbubbles-outline" size={48} color={Colors.textLight} />
+                <Text style={styles.emptyTitle}>No practice scenarios yet</Text>
+                <Text style={styles.emptyBody}>Check back soon for conversation practice</Text>
+              </View>
+            ) : (
+              scenarios.map((scenario, index) => (
+                <ScenarioCard
+                  key={scenario.id}
+                  scenario={scenario}
+                  index={index}
+                  sessionCount={getSessionCount(scenario.id)}
+                />
+              ))
+            )}
+          </>
         ) : (
-          quizzes.map((quiz, index) => {
-            const latestResult = getLatestResult(quiz.id);
-            return (
-              <QuizCard
-                key={quiz.id}
-                quiz={quiz}
-                index={index}
-                isCompleted={!!latestResult}
-                latestResult={latestResult}
-              />
-            );
-          })
+          <>
+            {quizzes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Feather name="compass" size={48} color={Colors.textLight} />
+                <Text style={styles.emptyTitle}>No quizzes available yet</Text>
+                <Text style={styles.emptyBody}>Check back soon for self-discovery assessments</Text>
+              </View>
+            ) : (
+              quizzes.map((quiz, index) => {
+                const latestResult = getLatestResult(quiz.id);
+                return (
+                  <QuizCard
+                    key={quiz.id}
+                    quiz={quiz}
+                    index={index}
+                    isCompleted={!!latestResult}
+                    latestResult={latestResult}
+                  />
+                );
+              })
+            )}
+          </>
         )}
 
         <View style={{ height: 100 }} />
@@ -158,6 +257,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textSecondary,
     marginTop: 4,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 4,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 11,
+  },
+  tabActive: {
+    backgroundColor: Colors.canvas,
+  },
+  tabText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textLight,
+  },
+  tabTextActive: {
+    fontFamily: 'Lato_700Bold',
+    color: Colors.textPrimary,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -235,6 +366,64 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     fontSize: 13,
     color: Colors.textLight,
+  },
+  scenarioCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    marginBottom: 16,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  scenarioAccent: {
+    width: 5,
+  },
+  scenarioContent: {
+    flex: 1,
+    padding: 20,
+  },
+  scenarioTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  practicedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  practicedText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  scenarioTitle: {
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 19,
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    lineHeight: 25,
+  },
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  roleText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textLight,
+    fontStyle: 'italic',
+  },
+  scenarioDescription: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 14,
   },
   cardFooter: {
     flexDirection: 'row',

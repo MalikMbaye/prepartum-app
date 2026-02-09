@@ -28,6 +28,9 @@ function RootLayoutNav() {
       <Stack.Screen name="add-task" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="take-quiz" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="quiz-results" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="scenario-intro" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="roleplay-chat" options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
+      <Stack.Screen name="roleplay-feedback" options={{ headerShown: false, presentation: 'modal' }} />
     </Stack>
   );
 }
