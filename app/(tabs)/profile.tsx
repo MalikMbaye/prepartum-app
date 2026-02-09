@@ -47,9 +47,8 @@ export default function ProfileScreen() {
   ];
 
   const quickLinks = [
-    { label: 'Journal', icon: 'book-open' as const, route: '/journal', count: journalEntries.length },
-    { label: 'Quiz Results', icon: 'award' as const, route: '/quiz-results-history' as any, count: quizResults.length },
-    { label: 'Practice History', icon: 'message-circle' as const, route: '/practice-history' as any, count: completedSessions },
+    { label: 'Journal', icon: 'book-open' as const, route: '/journal' },
+    { label: 'Quizzes & Practice', icon: 'sparkles-outline' as const, route: '/(tabs)/quizzes', isIonicon: true },
   ];
 
   return (
@@ -113,21 +112,18 @@ export default function ProfileScreen() {
             key={i}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              if (link.route === '/journal') {
-                router.push('/journal');
-              }
+              router.push(link.route as any);
             }}
             style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.linkIconWrap}>
-              <Feather name={link.icon} size={18} color={Colors.textPrimary} />
+              {(link as any).isIonicon ? (
+                <Ionicons name={link.icon as any} size={18} color={Colors.textPrimary} />
+              ) : (
+                <Feather name={link.icon as any} size={18} color={Colors.textPrimary} />
+              )}
             </View>
             <Text style={styles.linkText}>{link.label}</Text>
-            {link.count > 0 && (
-              <View style={styles.linkCountBadge}>
-                <Text style={styles.linkCountText}>{link.count}</Text>
-              </View>
-            )}
             <Feather name="chevron-right" size={16} color={Colors.textLight} />
           </Pressable>
         ))}
@@ -310,19 +306,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textPrimary,
     flex: 1,
-  },
-  linkCountBadge: {
-    backgroundColor: Colors.accentPink,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 24,
-    alignItems: 'center',
-  },
-  linkCountText: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 12,
-    color: Colors.textPrimary,
   },
   settingsButton: {
     flexDirection: 'row',

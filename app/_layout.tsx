@@ -32,6 +32,8 @@ function RootLayoutNav() {
       <Stack.Screen name="roleplay-chat" options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
       <Stack.Screen name="roleplay-feedback" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="settings" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="sign-in" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="sign-up" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
   );
 }

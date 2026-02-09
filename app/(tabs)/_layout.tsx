@@ -27,10 +27,6 @@ function NativeTabLayout() {
         <Icon sf={{ default: "checklist", selected: "checklist" }} />
         <Label>Tasks</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="quizzes">
-        <Icon sf={{ default: "sparkles", selected: "sparkles" }} />
-        <Label>Discover</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
         <Label>Profile</Label>
@@ -114,10 +110,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="quizzes"
         options={{
-          title: "Discover",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "sparkles" : "sparkles-outline"} size={22} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen

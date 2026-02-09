@@ -2,8 +2,79 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 import Anthropic from "@anthropic-ai/sdk";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.SESSION_SECRET || "prepartum-secret-key";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+      const { email, password, name } = req.body;
+      if (!email || !password || !name) {
+        return res.status(400).json({ message: "Email, password, and name are required" });
+      }
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      const existing = await storage.getUserByEmail(email.toLowerCase().trim());
+      if (existing) {
+        return res.status(409).json({ message: "An account with this email already exists" });
+      }
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = await storage.createUser({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        passwordHash,
+      });
+      await storage.initUserTasks(user.id);
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
+      const { passwordHash: _, ...safeUser } = user;
+      res.json({ user: safeUser, token });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      const user = await storage.getUserByEmail(email.toLowerCase().trim());
+      if (!user || !user.passwordHash) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
+      const { passwordHash: _, ...safeUser } = user;
+      res.json({ user: safeUser, token });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const token = authHeader.slice(7);
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const user = await storage.getUser(decoded.userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const { passwordHash: _, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (e: any) {
+      res.status(401).json({ message: "Invalid or expired token" });
+    }
+  });
 
   app.post("/api/users", async (req: Request, res: Response) => {
     try {

@@ -15,6 +15,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
+  getUserByEmail(email: string): Promise<User | undefined>;
 
   getPromptsByWeek(weekNumber: number): Promise<Prompt[]>;
   getPromptsByCategory(category: string): Promise<Prompt[]>;
@@ -72,6 +73,11 @@ export class DatabaseStorage implements IStorage {
   async deleteUser(id: string): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id)).returning();
     return result.length > 0;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async getPromptsByWeek(weekNumber: number): Promise<Prompt[]> {

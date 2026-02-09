@@ -117,6 +117,9 @@ export interface RoleplaySessionData {
 interface AppContextValue {
   profile: UserProfile | null;
   setProfile: (data: any) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  authToken: string | null;
   promptResponses: PromptResponseData[];
   addPromptResponse: (data: { promptId: string; responseText: string; savedToJournal?: boolean }) => Promise<void>;
   updatePromptResponse: (id: string, data: { responseText: string; savedToJournal?: boolean }) => Promise<void>;
@@ -152,9 +155,11 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 const USER_ID_KEY = '@prepartum_user_id';
+const AUTH_TOKEN_KEY = '@prepartum_auth_token';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<UserProfile | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [promptResponses, setPromptResponses] = useState<PromptResponseData[]>([]);
   const [memories, setMemories] = useState<MemoryData[]>([]);
   const [tasks, setTasks] = useState<UserTaskData[]>([]);
@@ -179,33 +184,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadData();
   }, []);
 
+  async function loadUserData(userId: string) {
+    const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions] = await Promise.all([
+      fetchFromApi(`/api/users/${userId}/prompt-responses`),
+      fetchFromApi(`/api/users/${userId}/memories`),
+      fetchFromApi(`/api/users/${userId}/tasks`),
+      fetchFromApi(`/api/users/${userId}/journal`),
+      fetchFromApi('/api/prompts'),
+      fetchFromApi('/api/quizzes'),
+      fetchFromApi(`/api/users/${userId}/quiz-results`),
+      fetchFromApi('/api/scenarios'),
+      fetchFromApi(`/api/users/${userId}/roleplay-sessions`),
+    ]);
+    setPromptResponses(resps);
+    setMemories(mems);
+    setTasks(tks);
+    setJournalEntries(jrnl);
+    setPrompts(prts);
+    setQuizzesData(qzs);
+    setQuizResults(qrs);
+    setScenariosData(scns);
+    setRoleplaySessionsData(rpSessions);
+  }
+
   async function loadData() {
     try {
+      const storedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
       const storedUserId = await AsyncStorage.getItem(USER_ID_KEY);
-      if (storedUserId) {
+
+      if (storedToken) {
+        setAuthToken(storedToken);
+        try {
+          const baseUrl = getApiUrl();
+          const res = await fetch(new URL('/api/auth/me', baseUrl).toString(), {
+            headers: { 'Authorization': `Bearer ${storedToken}` },
+          });
+          if (res.ok) {
+            const user = await res.json();
+            setProfileState(user);
+            await loadUserData(user.id);
+          } else {
+            await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+            await AsyncStorage.removeItem(USER_ID_KEY);
+            setAuthToken(null);
+          }
+        } catch (e) {
+          console.error('Error restoring auth session:', e);
+          await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+          setAuthToken(null);
+        }
+      } else if (storedUserId) {
         try {
           const user = await fetchFromApi(`/api/users/${storedUserId}`);
           setProfileState(user);
-          const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions] = await Promise.all([
-            fetchFromApi(`/api/users/${storedUserId}/prompt-responses`),
-            fetchFromApi(`/api/users/${storedUserId}/memories`),
-            fetchFromApi(`/api/users/${storedUserId}/tasks`),
-            fetchFromApi(`/api/users/${storedUserId}/journal`),
-            fetchFromApi('/api/prompts'),
-            fetchFromApi('/api/quizzes'),
-            fetchFromApi(`/api/users/${storedUserId}/quiz-results`),
-            fetchFromApi('/api/scenarios'),
-            fetchFromApi(`/api/users/${storedUserId}/roleplay-sessions`),
-          ]);
-          setPromptResponses(resps);
-          setMemories(mems);
-          setTasks(tks);
-          setJournalEntries(jrnl);
-          setPrompts(prts);
-          setQuizzesData(qzs);
-          setQuizResults(qrs);
-          setScenariosData(scns);
-          setRoleplaySessionsData(rpSessions);
+          await loadUserData(storedUserId);
         } catch (e) {
           console.error('Error loading user data:', e);
           await AsyncStorage.removeItem(USER_ID_KEY);
@@ -229,6 +261,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function login(email: string, password: string) {
+    const baseUrl = getApiUrl();
+    const url = new URL('/api/auth/login', baseUrl);
+    const res = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Login failed');
+    await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    await AsyncStorage.setItem(USER_ID_KEY, data.user.id);
+    setAuthToken(data.token);
+    setProfileState(data.user);
+    await loadUserData(data.user.id);
+  }
+
+  async function register(name: string, email: string, password: string) {
+    const baseUrl = getApiUrl();
+    const url = new URL('/api/auth/register', baseUrl);
+    const res = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Registration failed');
+    await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    await AsyncStorage.setItem(USER_ID_KEY, data.user.id);
+    setAuthToken(data.token);
+    setProfileState(data.user);
+    await loadUserData(data.user.id);
   }
 
   async function setProfile(data: any) {
@@ -451,6 +517,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await AsyncStorage.clear();
     setProfileState(null);
+    setAuthToken(null);
     setPromptResponses([]);
     setMemories([]);
     setTasks([]);
@@ -537,6 +604,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     profile,
     setProfile,
+    login,
+    register,
+    authToken,
     promptResponses,
     addPromptResponse,
     updatePromptResponse,
@@ -568,7 +638,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     signOut,
     deleteAccount,
     getCurrentStreak,
-  }), [profile, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, scenariosData, roleplaySessionsData, prompts, isLoading, refreshing]);
+  }), [profile, authToken, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, scenariosData, roleplaySessionsData, prompts, isLoading, refreshing]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
