@@ -1,0 +1,126 @@
+Build the Role-Play feature — AI-powered conversation practice for difficult discussions.
+
+## Main Screen: Scenario Library
+
+### Header:
+- Title: "Practice Conversations"
+- Subtitle: "Build confidence for real moments"
+
+### Scenario Cards:
+Each card shows:
+- Scenario title
+- Brief description
+- Category tag
+- Completion indicator (if practiced before)
+
+### Default Scenarios:
+
+**1. "Asking Your Partner for Help"**
+- Category: Relationships
+- Practice asking for specific support without feeling guilty
+
+**2. "Setting Boundaries with In-Laws"**
+- Category: Relationships
+- Communicate needs around visitors and unsolicited advice
+
+**3. "Expressing Fears About Birth"**
+- Category: Mindset
+- Practice articulating worries to your care provider
+
+**4. "Discussing Parenting Differences"**
+- Category: Relationships
+- Navigate disagreements about parenting approaches
+
+**5. "Asking for Alone Time"**
+- Category: Mindset
+- Communicate need for personal space postpartum
+
+**6. "Talking to Your Employer About Leave"**
+- Category: Physical (Practical)
+- Practice having the maternity leave conversation
+
+## Screen: Start Scenario
+
+### Intro Screen:
+- Scenario title
+- Full description
+- "What you'll practice" bullets
+- "Begin Conversation" button
+
+### Context Display:
+- Brief setup: "Your partner just got home from work. You've been with the baby all day and you're exhausted..."
+- "Remember: This is practice. There's no wrong answer."
+
+## Screen: Conversation Interface
+
+### Layout (chat style):
+- Messages appear in bubbles
+- AI messages on left (different color)
+- User messages on right (soft pink)
+- Timestamp optional
+
+### Initial AI Message:
+Based on scenario opening_prompt. Example:
+> "Hey babe, what's for dinner?"
+
+### User Response:
+- Text input at bottom
+- Send button
+- Suggested response buttons (optional helper)
+- Example suggestions: "Be direct", "Use 'I feel' statements"
+
+### AI Response Logic:
+- Use Claude API for realistic, contextual responses
+- System prompt includes scenario context and coaching role
+- AI responds naturally as the other person in the scenario
+- Conversation continues 4-8 turns
+
+### End Conversation:
+- "End Practice" button
+- Triggers feedback generation
+
+## Screen: Feedback & Insights
+
+### Header:
+- "How'd you do?"
+- Scenario title
+
+### Feedback Sections:
+
+**What Went Well:**
+- 2-3 positive observations
+- "You clearly expressed your need"
+- "You used 'I feel' language"
+
+**Growth Areas:**
+- 1-2 gentle suggestions
+- "Consider being more specific about what help you need"
+- "Try acknowledging their perspective first"
+
+**Key Takeaways:**
+- Actionable insights
+- "Next time, try: 'I feel overwhelmed when I don't get a break. Could you take the baby for 30 minutes tonight?'"
+
+### Actions:
+- "Save Insights" button
+- "Try Again" button
+- "Try Different Scenario" button
+- "Back to Library" button
+
+## Technical Requirements:
+- Store scenarios in roleplay_scenarios table
+- Store conversation and feedback in roleplay_sessions
+- Integrate Claude API for conversation responses
+- Generate feedback using Claude after conversation ends
+- Track practice history
+- Allow re-practicing scenarios
+
+## AI Integration Notes:
+When calling Claude API for conversation:
+- System prompt: "You are role-playing as [role] in this scenario: [context]. Respond naturally and realistically. Help the user practice this conversation. If they communicate well, respond positively. If they struggle, respond realistically but not harshly."
+
+When calling Claude for feedback:
+- Include full conversation transcript
+- Ask for: What went well, Growth areas, Key takeaway
+
+Build the complete role-play flow with at least 3 working scenarios.
