@@ -102,6 +102,9 @@ export const roleplayScenarios = pgTable("roleplay_scenarios", {
   category: text("category"),
   openingPrompt: text("opening_prompt"),
   systemContext: text("system_context"),
+  role: text("role"),
+  practicePoints: jsonb("practice_points"),
+  contextSetup: text("context_setup"),
 });
 
 export const roleplaySessions = pgTable("roleplay_sessions", {
@@ -109,8 +112,9 @@ export const roleplaySessions = pgTable("roleplay_sessions", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   scenarioId: uuid("scenario_id").notNull().references(() => roleplayScenarios.id, { onDelete: "cascade" }),
   messages: jsonb("messages"),
-  feedback: text("feedback"),
+  feedback: jsonb("feedback"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const journalEntries = pgTable("journal_entries", {

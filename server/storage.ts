@@ -7,6 +7,7 @@ import {
   type User, type InsertUser, type Prompt, type PromptResponse,
   type Memory, type Task, type UserTask, type JournalEntry,
   type Quiz, type QuizQuestion, type QuizResult,
+  type RoleplayScenario, type RoleplaySession,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -42,6 +43,13 @@ export interface IStorage {
   getQuizWithQuestions(quizId: string): Promise<{ quiz: Quiz; questions: QuizQuestion[] } | undefined>;
   getUserQuizResults(userId: string): Promise<QuizResult[]>;
   createQuizResult(data: { userId: string; quizId: string; answers: any; resultType: string; score: number; insights: string }): Promise<QuizResult>;
+
+  getAllScenarios(): Promise<RoleplayScenario[]>;
+  getScenario(id: string): Promise<RoleplayScenario | undefined>;
+  getUserSessions(userId: string): Promise<(RoleplaySession & { scenario?: RoleplayScenario })[]>;
+  getSession(id: string): Promise<(RoleplaySession & { scenario?: RoleplayScenario }) | undefined>;
+  createSession(data: { userId: string; scenarioId: string; messages: any[] }): Promise<RoleplaySession>;
+  updateSession(id: string, data: { messages?: any[]; feedback?: any; completedAt?: Date | null }): Promise<RoleplaySession | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -268,6 +276,52 @@ export class DatabaseStorage implements IStorage {
       insights: data.insights,
     }).returning();
     return result;
+  }
+
+  async getAllScenarios(): Promise<RoleplayScenario[]> {
+    return db.select().from(roleplayScenarios);
+  }
+
+  async getScenario(id: string): Promise<RoleplayScenario | undefined> {
+    const [scenario] = await db.select().from(roleplayScenarios).where(eq(roleplayScenarios.id, id));
+    return scenario;
+  }
+
+  async getUserSessions(userId: string): Promise<(RoleplaySession & { scenario?: RoleplayScenario })[]> {
+    const sessions = await db.select().from(roleplaySessions)
+      .where(eq(roleplaySessions.userId, userId))
+      .orderBy(desc(roleplaySessions.createdAt));
+    const result = [];
+    for (const s of sessions) {
+      const [scenario] = await db.select().from(roleplayScenarios).where(eq(roleplayScenarios.id, s.scenarioId));
+      result.push({ ...s, scenario });
+    }
+    return result;
+  }
+
+  async getSession(id: string): Promise<(RoleplaySession & { scenario?: RoleplayScenario }) | undefined> {
+    const [session] = await db.select().from(roleplaySessions).where(eq(roleplaySessions.id, id));
+    if (!session) return undefined;
+    const [scenario] = await db.select().from(roleplayScenarios).where(eq(roleplayScenarios.id, session.scenarioId));
+    return { ...session, scenario };
+  }
+
+  async createSession(data: { userId: string; scenarioId: string; messages: any[] }): Promise<RoleplaySession> {
+    const [session] = await db.insert(roleplaySessions).values({
+      userId: data.userId,
+      scenarioId: data.scenarioId,
+      messages: data.messages,
+    }).returning();
+    return session;
+  }
+
+  async updateSession(id: string, data: { messages?: any[]; feedback?: any; completedAt?: Date | null }): Promise<RoleplaySession | undefined> {
+    const updateData: any = {};
+    if (data.messages !== undefined) updateData.messages = data.messages;
+    if (data.feedback !== undefined) updateData.feedback = data.feedback;
+    if (data.completedAt !== undefined) updateData.completedAt = data.completedAt;
+    const [updated] = await db.update(roleplaySessions).set(updateData).where(eq(roleplaySessions.id, id)).returning();
+    return updated;
   }
 }
 

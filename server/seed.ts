@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { prompts, tasks, quizzes, quizQuestions } from "@shared/schema";
+import { prompts, tasks, quizzes, quizQuestions, roleplayScenarios } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const promptData = [
@@ -358,6 +358,69 @@ const quizData = [
   }
 ];
 
+const scenarioData = [
+  {
+    title: "Asking Your Partner for Help",
+    description: "Practice asking for specific support without feeling guilty. Many new mothers struggle with asking for help — this is a safe space to practice being direct about your needs.",
+    category: "relationships",
+    role: "Your partner",
+    openingPrompt: "Hey babe, what's for dinner?",
+    contextSetup: "Your partner just got home from work. You've been with the baby all day and you're exhausted. The house is messy, the baby has been fussy, and you haven't eaten since morning. You need help but feel guilty asking.",
+    systemContext: "You are role-playing as the user's partner who just got home from work. You're tired too but generally loving and supportive. Respond naturally and realistically. If they communicate their needs clearly using 'I feel' statements, respond positively and supportively. If they are passive-aggressive or unclear, respond realistically — confused or slightly defensive but not hostile. Keep responses to 2-3 sentences. Never break character.",
+    practicePoints: ["Expressing needs directly without guilt", "Using 'I feel' statements effectively", "Asking for specific, actionable help", "Setting the stage for ongoing support"],
+  },
+  {
+    title: "Setting Boundaries with In-Laws",
+    description: "Communicate your needs around visitors and unsolicited advice. Learn to be firm but kind when establishing boundaries with well-meaning family members.",
+    category: "relationships",
+    role: "Your mother-in-law",
+    openingPrompt: "I was thinking I'd come stay for the first two weeks after the baby arrives! I've already started planning what I'll cook and how I'll set up the nursery.",
+    contextSetup: "Your mother-in-law has just called, excited about the upcoming baby. She means well but tends to take over. You want her help but on your terms — maybe a shorter visit, and definitely not rearranging your nursery.",
+    systemContext: "You are role-playing as the user's mother-in-law. You are excited, well-meaning, and genuinely want to help. However, you tend to be a bit overbearing and assume you know best because you've 'been through it before.' If the user sets boundaries kindly and firmly, accept gracefully. If they're wishy-washy, push a little more. If they're harsh, act hurt. Keep responses to 2-3 sentences. Never break character.",
+    practicePoints: ["Setting boundaries with love", "Acknowledging good intentions while redirecting", "Being specific about what help you want", "Maintaining your authority as the parent"],
+  },
+  {
+    title: "Expressing Fears About Birth",
+    description: "Practice articulating your worries to your care provider. It's normal to have fears — what matters is being able to voice them so you can get the support you need.",
+    category: "mindset",
+    role: "Your OB/midwife",
+    openingPrompt: "So everything's looking great with your pregnancy! Any questions for me today?",
+    contextSetup: "You're at a prenatal appointment. Your care provider has just finished the routine check and everything is fine. But you have fears about the birth that you haven't voiced yet — maybe about pain, complications, or losing control.",
+    systemContext: "You are role-playing as the user's OB/midwife. You are warm, professional, and experienced. Take their concerns seriously and validate their feelings. If they express fears clearly, offer reassurance and practical information. If they minimize their concerns, gently probe deeper. Keep responses to 2-3 sentences and be empathetic. Never break character.",
+    practicePoints: ["Naming specific fears out loud", "Advocating for your preferences", "Asking clarifying questions", "Building trust with your care team"],
+  },
+  {
+    title: "Discussing Parenting Differences",
+    description: "Navigate disagreements about parenting approaches with your partner. Different backgrounds mean different assumptions — practice finding common ground.",
+    category: "relationships",
+    role: "Your partner",
+    openingPrompt: "So my mom was saying we should start sleep training right away. She did it with me and I turned out fine.",
+    contextSetup: "You and your partner have different ideas about parenting, shaped by how you were each raised. They've just mentioned something their parent suggested that doesn't align with your approach. You need to express your perspective without dismissing theirs.",
+    systemContext: "You are role-playing as the user's partner. You genuinely believe your parents did a good job raising you and tend to default to their advice. You're not trying to be difficult — you just don't realize there are other valid approaches. If the user explains their perspective calmly and finds compromise, be open to it. If they dismiss your family's approach, get defensive. Keep responses to 2-3 sentences. Never break character.",
+    practicePoints: ["Validating your partner's perspective first", "Sharing research or feelings without lecturing", "Finding compromise on parenting decisions", "Establishing a 'same team' mentality"],
+  },
+  {
+    title: "Asking for Alone Time",
+    description: "Communicate your need for personal space postpartum. Taking time for yourself isn't selfish — it's essential for your mental health.",
+    category: "mindset",
+    role: "Your partner",
+    openingPrompt: "Where are you going? The baby just fell asleep — I thought we'd watch something together.",
+    contextSetup: "It's been a long week of constant caregiving. The baby finally fell asleep and you desperately need some time alone — to take a bath, read, or just sit in silence. Your partner wants to spend time together, which is sweet, but right now you need solitude.",
+    systemContext: "You are role-playing as the user's partner. You miss spending quality time together since the baby arrived and are a little hurt when they want alone time instead. You're not trying to be controlling — you just miss your partner. If they explain their need kindly and suggest an alternative time for togetherness, be understanding. If they just brush you off, express feeling rejected. Keep responses to 2-3 sentences. Never break character.",
+    practicePoints: ["Expressing needs without apologizing for them", "Differentiating between alone time and rejection", "Suggesting alternatives to maintain connection", "Normalizing self-care as part of good parenting"],
+  },
+  {
+    title: "Talking to Your Employer About Leave",
+    description: "Practice having the maternity leave conversation with your boss. Know your rights, communicate your timeline, and plan for a smooth transition.",
+    category: "physical",
+    role: "Your manager",
+    openingPrompt: "You mentioned wanting to chat about something — what's on your mind?",
+    contextSetup: "You've scheduled a meeting with your manager to discuss your maternity leave. You need to communicate your timeline, discuss coverage for your responsibilities, and advocate for what you need without feeling like you're being a burden.",
+    systemContext: "You are role-playing as the user's manager. You are generally supportive but also concerned about how work will be covered during their absence. You want to be accommodating but may push back on longer leave durations or unclear timelines. If they present a clear plan, be receptive. If they seem uncertain, ask practical questions about coverage. Keep responses to 2-3 sentences. Be professional and fair. Never break character.",
+    practicePoints: ["Presenting your leave timeline clearly", "Proposing a coverage plan proactively", "Advocating for your full leave entitlement", "Maintaining professionalism while being firm"],
+  },
+];
+
 export async function seedDatabase() {
   const existingPrompts = await db.select().from(prompts);
   if (existingPrompts.length === 0) {
@@ -397,5 +460,12 @@ export async function seedDatabase() {
       }
     }
     console.log(`Seeded ${quizData.length} quizzes with questions`);
+  }
+
+  const existingScenarios = await db.select().from(roleplayScenarios);
+  if (existingScenarios.length === 0) {
+    console.log("Seeding roleplay scenarios...");
+    await db.insert(roleplayScenarios).values(scenarioData);
+    console.log(`Seeded ${scenarioData.length} roleplay scenarios`);
   }
 }
