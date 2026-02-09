@@ -39,7 +39,8 @@ export default function JournalScreen() {
         </Pressable>
         <Text style={styles.headerTitle}>Journal</Text>
         <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/new-journal'); }}
+          testID="journal-add-button"
+          onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTimeout(() => router.push('/new-journal'), 50); }}
           style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.8 }]}
         >
           <Ionicons name="add" size={22} color={Colors.textPrimary} />
