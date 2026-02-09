@@ -18,8 +18,8 @@ Preferred communication style: Simple, everyday language.
 - **Routing**: Expo Router v6 with file-based routing (`app/` directory). Uses typed routes.
 - **Navigation Structure**: 
   - Root index screen redirects to onboarding or main tabs based on profile state
-  - Tab navigator with 5 tabs: Home, Prompts, Memories, Tasks, Profile
-  - Modal screens: prompt-response, journal, new-journal, new-memory
+  - Tab navigator with 5 tabs: Home, Prompts, Memories, Tasks, Discover (renamed from Profile), Profile
+  - Modal screens: prompt-response, journal, new-journal, new-memory, take-quiz, quiz-results, scenario-intro, roleplay-chat, roleplay-feedback
 - **State Management**: React Context (`AppContext`) as the central state manager, backed by AsyncStorage for local persistence and server API calls for remote persistence
 - **Data Fetching**: TanStack React Query (v5) with a custom `apiRequest` helper that constructs URLs from `EXPO_PUBLIC_DOMAIN` environment variable
 - **Animations**: React Native Reanimated for entrance animations (FadeIn, SlideIn patterns)
