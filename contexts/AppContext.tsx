@@ -91,6 +91,29 @@ interface QuizResultData {
   completedAt: string | null;
 }
 
+export interface ScenarioData {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  openingPrompt: string | null;
+  systemContext: string | null;
+  role: string | null;
+  practicePoints: string[] | null;
+  contextSetup: string | null;
+}
+
+export interface RoleplaySessionData {
+  id: string;
+  userId: string;
+  scenarioId: string;
+  messages: { role: string; content: string }[] | null;
+  feedback: any;
+  completedAt: string | null;
+  createdAt: string | null;
+  scenario?: ScenarioData;
+}
+
 interface AppContextValue {
   profile: UserProfile | null;
   setProfile: (data: any) => Promise<void>;
@@ -110,6 +133,11 @@ interface AppContextValue {
   quizzes: QuizData[];
   quizResults: QuizResultData[];
   submitQuizResult: (data: { quizId: string; answers: any; resultType: string; score: number; insights: string }) => Promise<QuizResultData>;
+  scenarios: ScenarioData[];
+  roleplaySessions: RoleplaySessionData[];
+  createRoleplaySession: (scenarioId: string) => Promise<RoleplaySessionData>;
+  sendRoleplayMessage: (sessionId: string, content: string) => Promise<RoleplaySessionData>;
+  generateRoleplayFeedback: (sessionId: string) => Promise<RoleplaySessionData>;
   prompts: DailyPrompt[];
   isLoading: boolean;
   refreshing: boolean;
@@ -130,6 +158,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [journalEntries, setJournalEntries] = useState<JournalEntryData[]>([]);
   const [quizzesData, setQuizzesData] = useState<QuizData[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResultData[]>([]);
+  const [scenariosData, setScenariosData] = useState<ScenarioData[]>([]);
+  const [roleplaySessionsData, setRoleplaySessionsData] = useState<RoleplaySessionData[]>([]);
   const [prompts, setPrompts] = useState<DailyPrompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -153,7 +183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         try {
           const user = await fetchFromApi(`/api/users/${storedUserId}`);
           setProfileState(user);
-          const [resps, mems, tks, jrnl, prts, qzs, qrs] = await Promise.all([
+          const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions] = await Promise.all([
             fetchFromApi(`/api/users/${storedUserId}/prompt-responses`),
             fetchFromApi(`/api/users/${storedUserId}/memories`),
             fetchFromApi(`/api/users/${storedUserId}/tasks`),
@@ -161,6 +191,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             fetchFromApi('/api/prompts'),
             fetchFromApi('/api/quizzes'),
             fetchFromApi(`/api/users/${storedUserId}/quiz-results`),
+            fetchFromApi('/api/scenarios'),
+            fetchFromApi(`/api/users/${storedUserId}/roleplay-sessions`),
           ]);
           setPromptResponses(resps);
           setMemories(mems);
@@ -169,18 +201,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setPrompts(prts);
           setQuizzesData(qzs);
           setQuizResults(qrs);
+          setScenariosData(scns);
+          setRoleplaySessionsData(rpSessions);
         } catch (e) {
           console.error('Error loading user data:', e);
           await AsyncStorage.removeItem(USER_ID_KEY);
         }
       } else {
         try {
-          const [prts, qzs] = await Promise.all([
+          const [prts, qzs, scns] = await Promise.all([
             fetchFromApi('/api/prompts'),
             fetchFromApi('/api/quizzes'),
+            fetchFromApi('/api/scenarios'),
           ]);
           setPrompts(prts);
           setQuizzesData(qzs);
+          setScenariosData(scns);
         } catch (e) {
           console.error('Error loading prompts:', e);
         }
@@ -202,14 +238,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const res = await apiRequest('POST', '/api/users', data);
         user = await res.json();
         await AsyncStorage.setItem(USER_ID_KEY, user.id);
-        const [tks, prts, qzs] = await Promise.all([
+        const [tks, prts, qzs, scns] = await Promise.all([
           fetchFromApi(`/api/users/${user.id}/tasks`),
           fetchFromApi('/api/prompts'),
           fetchFromApi('/api/quizzes'),
+          fetchFromApi('/api/scenarios'),
         ]);
         setTasks(tks);
         setPrompts(prts);
         setQuizzesData(qzs);
+        setScenariosData(scns);
       }
       setProfileState(user);
     } catch (e) {
@@ -314,6 +352,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function createRoleplaySession(scenarioId: string): Promise<RoleplaySessionData> {
+    if (!profile?.id) throw new Error('No profile');
+    try {
+      const res = await apiRequest('POST', `/api/users/${profile.id}/roleplay-sessions`, { scenarioId });
+      const session = await res.json();
+      setRoleplaySessionsData(prev => [session, ...prev]);
+      return session;
+    } catch (e) {
+      console.error('Error creating roleplay session:', e);
+      throw e;
+    }
+  }
+
+  async function sendRoleplayMessage(sessionId: string, content: string): Promise<RoleplaySessionData> {
+    try {
+      const res = await apiRequest('POST', `/api/roleplay-sessions/${sessionId}/message`, { content });
+      const updated = await res.json();
+      setRoleplaySessionsData(prev => prev.map(s => s.id === sessionId ? updated : s));
+      return updated;
+    } catch (e) {
+      console.error('Error sending roleplay message:', e);
+      throw e;
+    }
+  }
+
+  async function generateRoleplayFeedback(sessionId: string): Promise<RoleplaySessionData> {
+    try {
+      const res = await apiRequest('POST', `/api/roleplay-sessions/${sessionId}/feedback`);
+      const updated = await res.json();
+      setRoleplaySessionsData(prev => prev.map(s => s.id === sessionId ? updated : s));
+      return updated;
+    } catch (e) {
+      console.error('Error generating feedback:', e);
+      throw e;
+    }
+  }
+
   async function addJournalEntry(data: { title?: string; content: string; category?: string; fromPrompt?: boolean }) {
     if (!profile?.id) return;
     try {
@@ -374,7 +449,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!profile?.id) return;
     setRefreshing(true);
     try {
-      const [resps, mems, tks, jrnl, prts, qzs, qrs] = await Promise.all([
+      const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions] = await Promise.all([
         fetchFromApi(`/api/users/${profile.id}/prompt-responses`),
         fetchFromApi(`/api/users/${profile.id}/memories`),
         fetchFromApi(`/api/users/${profile.id}/tasks`),
@@ -382,6 +457,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         fetchFromApi('/api/prompts'),
         fetchFromApi('/api/quizzes'),
         fetchFromApi(`/api/users/${profile.id}/quiz-results`),
+        fetchFromApi('/api/scenarios'),
+        fetchFromApi(`/api/users/${profile.id}/roleplay-sessions`),
       ]);
       setPromptResponses(resps);
       setMemories(mems);
@@ -390,6 +467,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPrompts(prts);
       setQuizzesData(qzs);
       setQuizResults(qrs);
+      setScenariosData(scns);
+      setRoleplaySessionsData(rpSessions);
     } catch (e) {
       console.error('Error refreshing data:', e);
     } finally {
@@ -416,6 +495,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     quizzes: quizzesData,
     quizResults,
     submitQuizResult,
+    scenarios: scenariosData,
+    roleplaySessions: roleplaySessionsData,
+    createRoleplaySession,
+    sendRoleplayMessage,
+    generateRoleplayFeedback,
     prompts,
     isLoading,
     refreshing,
@@ -423,7 +507,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getWeeklyProgress,
     getPregnancyWeek,
     getWeeklyCompletedCount,
-  }), [profile, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, prompts, isLoading, refreshing]);
+  }), [profile, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, scenariosData, roleplaySessionsData, prompts, isLoading, refreshing]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
