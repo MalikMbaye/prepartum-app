@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
+import Anthropic from "@anthropic-ai/sdk";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -214,6 +215,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/scenarios", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.getAllScenarios();
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/scenarios/:id", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.getScenario(req.params.id);
+      if (!result) return res.status(404).json({ message: "Scenario not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/users/:userId/roleplay-sessions", async (req: Request, res: Response) => {
+    try {
+      const result = await storage.getUserSessions(req.params.userId);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/users/:userId/roleplay-sessions", async (req: Request, res: Response) => {
+    try {
+      const { scenarioId } = req.body;
+      const scenario = await storage.getScenario(scenarioId);
+      if (!scenario) return res.status(404).json({ message: "Scenario not found" });
+
+      const initialMessages = [
+        { role: "assistant", content: scenario.openingPrompt }
+      ];
+      const session = await storage.createSession({
+        userId: req.params.userId,
+        scenarioId,
+        messages: initialMessages,
+      });
+      const fullSession = await storage.getSession(session.id);
+      res.json(fullSession);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/roleplay-sessions/:id/message", async (req: Request, res: Response) => {
+    try {
+      const session = await storage.getSession(req.params.id);
+      if (!session) return res.status(404).json({ message: "Session not found" });
+
+      const scenario = session.scenario;
+      if (!scenario) return res.status(400).json({ message: "Scenario not found for session" });
+
+      const { content } = req.body;
+      const messages = (session.messages as any[]) || [];
+      messages.push({ role: "user", content });
+
+      const anthropic = new Anthropic({
+        apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+      });
+
+      const apiMessages = messages.map((m: any) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+      const response = await anthropic.messages.create({
+        model: "claude-haiku-4-5",
+        max_tokens: 300,
+        system: scenario.systemContext || "You are a helpful roleplay partner. Stay in character.",
+        messages: apiMessages,
+      });
+
+      const aiContent = response.content[0];
+      const aiText = aiContent.type === "text" ? aiContent.text : "";
+      messages.push({ role: "assistant", content: aiText });
+
+      const updated = await storage.updateSession(req.params.id, { messages });
+      res.json({ ...updated, scenario });
+    } catch (e: any) {
+      console.error("AI conversation error:", e);
+      res.status(500).json({ message: "Failed to generate response" });
+    }
+  });
+
+  app.post("/api/roleplay-sessions/:id/feedback", async (req: Request, res: Response) => {
+    try {
+      const session = await storage.getSession(req.params.id);
+      if (!session) return res.status(404).json({ message: "Session not found" });
+
+      const scenario = session.scenario;
+      if (!scenario) return res.status(400).json({ message: "Scenario not found" });
+
+      const messages = (session.messages as any[]) || [];
+      const practicePoints = (scenario.practicePoints as string[]) || [];
+
+      const anthropic = new Anthropic({
+        apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+      });
+
+      const conversationSummary = messages.map((m: any) =>
+        `${m.role === "user" ? "User" : scenario.role}: ${m.content}`
+      ).join("\n");
+
+      const feedbackPrompt = `You are an empathetic communication coach analyzing a practice conversation. The user was practicing: "${scenario.title}" — ${scenario.description}
+
+The practice points were:
+${practicePoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
+
+Here is the conversation:
+${conversationSummary}
+
+Provide feedback in this exact JSON format:
+{
+  "overallScore": <number 1-5>,
+  "summary": "<2-3 sentences of warm, encouraging overall assessment>",
+  "strengths": ["<strength 1>", "<strength 2>"],
+  "improvements": ["<area for growth 1>", "<area for growth 2>"],
+  "practicePointScores": [
+    {"point": "<practice point text>", "score": <1-5>, "note": "<brief note>"}
+  ],
+  "encouragement": "<a warm, motivating closing message>"
+}
+
+Be encouraging and constructive. Focus on what they did well first. Use warm, supportive language appropriate for an expectant mother. Return ONLY valid JSON.`;
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-5",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: feedbackPrompt }],
+      });
+
+      const feedbackText = response.content[0].type === "text" ? response.content[0].text : "{}";
+      let feedback;
+      try {
+        const jsonMatch = feedbackText.match(/\{[\s\S]*\}/);
+        feedback = jsonMatch ? JSON.parse(jsonMatch[0]) : { summary: feedbackText, overallScore: 3 };
+      } catch {
+        feedback = { summary: feedbackText, overallScore: 3, strengths: [], improvements: [] };
+      }
+
+      const updated = await storage.updateSession(req.params.id, {
+        feedback,
+        completedAt: new Date(),
+      });
+      res.json({ ...updated, scenario });
+    } catch (e: any) {
+      console.error("Feedback generation error:", e);
+      res.status(500).json({ message: "Failed to generate feedback" });
     }
   });
 
