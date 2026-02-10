@@ -1,4 +1,4 @@
-export type FocusArea = 'mindset' | 'relationships' | 'physical';
+export type FocusArea = 'mindset' | 'relationships' | 'physical' | 'partner' | 'postpartum';
 
 export interface UserProfile {
   name: string;
