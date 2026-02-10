@@ -12,12 +12,23 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
 
+const TOTAL_STEPS = 5;
+
+const FOCUS_ITEMS: { key: FocusArea; label: string; desc: string; color: string }[] = [
+  { key: 'mindset', label: 'Mindset & Emotional Prep', desc: 'Cultivate resilience and emotional well-being.', color: Colors.accentPink },
+  { key: 'relationships', label: 'Relationships', desc: 'Nurture connections and communication.', color: Colors.accentBlue },
+  { key: 'physical', label: 'Physical Wellness', desc: 'Focus on body, movement, and nutrition.', color: Colors.accentPeach },
+  { key: 'partner', label: 'Partner Prep', desc: 'Align expectations and support systems.', color: Colors.accentBlue },
+  { key: 'postpartum', label: 'Postpartum Planning', desc: 'Prepare for the fourth trimester.', color: Colors.accentPink },
+];
+
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { setProfile } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [isFirstPregnancy, setIsFirstPregnancy] = useState<boolean | null>(null);
   const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [preferredTime, setPreferredTime] = useState('9:00 AM');
@@ -28,17 +39,19 @@ export default function OnboardingScreen() {
 
   function toggleFocus(area: FocusArea) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setFocusAreas(prev =>
-      prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
-    );
+    setFocusAreas(prev => {
+      if (prev.includes(area)) return prev.filter(a => a !== area);
+      if (prev.length >= 3) return prev;
+      return [...prev, area];
+    });
   }
 
   const validateDueDate = useCallback((dateStr: string): boolean => {
     if (!dateStr || dateStr.length < 10) return true;
     const parts = dateStr.split('/');
     if (parts.length !== 3) return false;
-    const month = parseInt(parts[0], 10);
-    const day = parseInt(parts[1], 10);
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
     const year = parseInt(parts[2], 10);
     if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2024) return false;
     const inputDate = new Date(year, month - 1, day);
@@ -58,7 +71,7 @@ export default function OnboardingScreen() {
     if (dueDate) {
       const parts = dueDate.split('/');
       if (parts.length === 3) {
-        formattedDueDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+        formattedDueDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
       }
     }
     await setProfile({
@@ -106,30 +119,40 @@ export default function OnboardingScreen() {
     (step === 2 && focusAreas.length > 0);
 
   const ctaLabel =
-    step === 0 ? 'Get Started' :
-    step === 4 ? 'Begin' :
+    step === 0 ? 'Begin Your Journey' :
+    step === 4 ? "Let's Begin" :
     'Continue';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + webTopInset, paddingBottom: insets.bottom + webBottomInset }]}>
-      {step > 0 && step < 4 && (
+      {step > 0 && (
         <Animated.View entering={FadeIn.duration(300)} style={styles.headerRow}>
           <Pressable onPress={back} style={styles.backButton} hitSlop={12}>
-            <Feather name="chevron-left" size={24} color={Colors.textPrimary} />
+            <Feather name="chevron-left" size={22} color={Colors.textPrimary} />
           </Pressable>
-          <View style={styles.progressContainer}>
-            {[1, 2, 3].map(i => (
-              <View key={i} style={[styles.progressBar, i <= step && styles.progressBarActive]} />
-            ))}
-          </View>
+
+          {step < 4 ? (
+            <View style={styles.progressContainer}>
+              {step <= 3 && (
+                <View style={styles.stepIndicator}>
+                  <Text style={styles.stepIndicatorText}>Step {step} of {TOTAL_STEPS - 1}</Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+
           <View style={{ width: 40 }} />
         </Animated.View>
       )}
 
-      {step === 4 && (
-        <Pressable onPress={back} style={[styles.backButton, { marginTop: 8, marginLeft: 0 }]} hitSlop={12}>
-          <Feather name="chevron-left" size={24} color={Colors.textPrimary} />
-        </Pressable>
+      {step > 0 && step < 4 && (
+        <View style={styles.dotsContainer}>
+          {[1, 2, 3].map(i => (
+            <View key={i} style={[styles.dot, i === step ? styles.dotActive : styles.dotInactive]} />
+          ))}
+        </View>
       )}
 
       <KeyboardAvoidingView
@@ -144,136 +167,121 @@ export default function OnboardingScreen() {
         >
           {step === 0 && (
             <Animated.View entering={FadeIn.duration(800)} style={styles.welcomeContainer}>
-              <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.logoMark}>
-                <View style={styles.logoInner}>
-                  <Ionicons name="leaf-outline" size={32} color={Colors.textPrimary} />
-                </View>
-              </Animated.View>
+              <View style={styles.welcomeSpacer} />
 
-              <Animated.Text entering={FadeInDown.delay(400).duration(600)} style={styles.welcomeBrand}>
+              <Animated.Text entering={FadeInDown.delay(200).duration(700)} style={styles.welcomeBrand}>
                 PrePartum
               </Animated.Text>
 
-              <Animated.View entering={FadeInDown.delay(600).duration(600)} style={styles.welcomeTextBlock}>
-                <Text style={styles.welcomeHeadline}>
-                  Every pregnancy app{'\n'}prepares you for the baby.
-                </Text>
-                <View style={styles.dividerLine} />
-                <Text style={styles.welcomeHero}>
-                  PrePartum prepares YOU.
-                </Text>
-              </Animated.View>
-
-              <Animated.Text entering={FadeInUp.delay(900).duration(600)} style={styles.welcomeTagline}>
-                5 minutes a day to prepare for a lifetime.
+              <Animated.Text entering={FadeInDown.delay(500).duration(600)} style={styles.welcomeTagline}>
+                Prepare. Nurture. Bloom.
               </Animated.Text>
+
+              <View style={styles.welcomeSpacer} />
             </Animated.View>
           )}
 
           {step === 1 && (
             <Animated.View entering={FadeIn.duration(400)} style={styles.stepContainer}>
-              <Text style={styles.stepTitle}>Let's personalize{'\n'}your journey</Text>
-              <Text style={styles.stepBody}>We'll use this to make your experience feel like yours.</Text>
+              <Text style={styles.stepTitle}>Tell us about you</Text>
 
-              <Text style={styles.inputLabel}>What should we call you?</Text>
-              <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="Your first name"
-                placeholderTextColor={Colors.textLight}
-                autoFocus
-                autoCapitalize="words"
-                testID="name-input"
-              />
+              <View style={styles.fieldGroup}>
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="What should we call you?"
+                    placeholderTextColor={Colors.textLight}
+                    autoCapitalize="words"
+                    testID="name-input"
+                  />
+                </View>
 
-              <Text style={[styles.inputLabel, { marginTop: 28 }]}>When is your due date?</Text>
-              <TextInput
-                style={[styles.input, dateError ? styles.inputError : null]}
-                value={dueDate}
-                onChangeText={formatDateInput}
-                placeholder="MM/DD/YYYY"
-                placeholderTextColor={Colors.textLight}
-                keyboardType="number-pad"
-                maxLength={10}
-                testID="duedate-input"
-              />
-              {dateError ? (
-                <Text style={styles.errorText}>{dateError}</Text>
-              ) : (
-                <Text style={styles.hintText}>Optional — skip if you prefer</Text>
-              )}
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }, dateError ? styles.inputError : null]}
+                    value={dueDate}
+                    onChangeText={formatDateInput}
+                    placeholder="When are you due?"
+                    placeholderTextColor={Colors.textLight}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    testID="duedate-input"
+                  />
+                  <Text style={styles.inputHintInline}>DD / MM / YYYY</Text>
+                </View>
+                {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
+
+                <View style={styles.pregnancyRow}>
+                  <Text style={styles.pregnancyLabel}>Is this your first pregnancy?</Text>
+                  <View style={styles.yesNoGroup}>
+                    <Pressable
+                      onPress={() => { setIsFirstPregnancy(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                      style={[styles.yesNoBtn, isFirstPregnancy === true && styles.yesNoBtnActive]}
+                    >
+                      <Text style={[styles.yesNoText, isFirstPregnancy === true && styles.yesNoTextActive]}>Yes</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => { setIsFirstPregnancy(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                      style={[styles.yesNoBtn, isFirstPregnancy === false && styles.yesNoBtnActive]}
+                    >
+                      <Text style={[styles.yesNoText, isFirstPregnancy === false && styles.yesNoTextActive]}>No</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
             </Animated.View>
           )}
 
           {step === 2 && (
             <Animated.View entering={FadeIn.duration(400)} style={styles.stepContainer}>
-              <Text style={styles.stepTitle}>What matters most{'\n'}to you right now?</Text>
-              <Text style={styles.stepBody}>Select all that apply</Text>
+              <Text style={styles.stepTitle}>What matters most to you?</Text>
+              <Text style={styles.stepSubtitle}>Select 1-3 areas</Text>
 
-              <Pressable
-                onPress={() => toggleFocus('mindset')}
-                style={[styles.focusCard, focusAreas.includes('mindset') && { borderColor: Colors.accentPink, backgroundColor: '#FFF0EF' }]}
-                testID="focus-mindset"
-              >
-                <View style={[styles.focusIcon, { backgroundColor: Colors.accentPink }]}>
-                  <Ionicons name="sparkles-outline" size={22} color={Colors.textPrimary} />
-                </View>
-                <View style={styles.focusTextWrap}>
-                  <Text style={styles.focusTitle}>Mindset</Text>
-                  <Text style={styles.focusDesc}>Managing anxiety, building confidence, processing emotions</Text>
-                </View>
-                <View style={[styles.checkCircle, focusAreas.includes('mindset') && styles.checkCircleActive]}>
-                  {focusAreas.includes('mindset') && (
-                    <Ionicons name="checkmark" size={16} color="#FFF" />
-                  )}
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => toggleFocus('relationships')}
-                style={[styles.focusCard, focusAreas.includes('relationships') && { borderColor: Colors.accentBlue, backgroundColor: '#EEF5FA' }]}
-                testID="focus-relationships"
-              >
-                <View style={[styles.focusIcon, { backgroundColor: Colors.accentBlue }]}>
-                  <Ionicons name="people-outline" size={22} color={Colors.textPrimary} />
-                </View>
-                <View style={styles.focusTextWrap}>
-                  <Text style={styles.focusTitle}>Relationships</Text>
-                  <Text style={styles.focusDesc}>Partner dynamics, family boundaries, asking for support</Text>
-                </View>
-                <View style={[styles.checkCircle, focusAreas.includes('relationships') && styles.checkCircleActive]}>
-                  {focusAreas.includes('relationships') && (
-                    <Ionicons name="checkmark" size={16} color="#FFF" />
-                  )}
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => toggleFocus('physical')}
-                style={[styles.focusCard, focusAreas.includes('physical') && { borderColor: Colors.accentPeach, backgroundColor: '#FFF5F0' }]}
-                testID="focus-physical"
-              >
-                <View style={[styles.focusIcon, { backgroundColor: Colors.accentPeach }]}>
-                  <Ionicons name="body-outline" size={22} color={Colors.textPrimary} />
-                </View>
-                <View style={styles.focusTextWrap}>
-                  <Text style={styles.focusTitle}>Physical</Text>
-                  <Text style={styles.focusDesc}>Body changes, energy management, preparing for birth</Text>
-                </View>
-                <View style={[styles.checkCircle, focusAreas.includes('physical') && styles.checkCircleActive]}>
-                  {focusAreas.includes('physical') && (
-                    <Ionicons name="checkmark" size={16} color="#FFF" />
-                  )}
-                </View>
-              </Pressable>
+              <View style={styles.focusList}>
+                {FOCUS_ITEMS.map(item => {
+                  const selected = focusAreas.includes(item.key);
+                  return (
+                    <Pressable
+                      key={item.key}
+                      onPress={() => toggleFocus(item.key)}
+                      style={[styles.focusCard, selected && { borderColor: item.color, backgroundColor: item.color + '18' }]}
+                      testID={`focus-${item.key}`}
+                    >
+                      <View style={[styles.focusIconCircle, { backgroundColor: item.color }]}>
+                        <Ionicons
+                          name={
+                            item.key === 'mindset' ? 'sparkles-outline' :
+                            item.key === 'relationships' ? 'people-outline' :
+                            item.key === 'physical' ? 'body-outline' :
+                            item.key === 'partner' ? 'heart-outline' :
+                            'calendar-outline'
+                          }
+                          size={20}
+                          color={Colors.textPrimary}
+                        />
+                      </View>
+                      <View style={styles.focusTextWrap}>
+                        <Text style={styles.focusTitle}>{item.label}</Text>
+                        <Text style={styles.focusDesc}>{item.desc}</Text>
+                      </View>
+                      {selected && (
+                        <View style={styles.focusCheck}>
+                          <Ionicons name="checkmark" size={14} color={Colors.white} />
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
             </Animated.View>
           )}
 
           {step === 3 && (
             <Animated.View entering={FadeIn.duration(400)} style={styles.stepContainer}>
               <Text style={styles.stepTitle}>Stay on track</Text>
-              <Text style={styles.stepBody}>A daily reminder helps build your practice</Text>
+              <Text style={styles.stepSubtitle}>A gentle daily nudge to keep you connected</Text>
 
               <View style={styles.notifCard}>
                 <View style={styles.notifIconWrap}>
@@ -296,7 +304,7 @@ export default function OnboardingScreen() {
 
               {notificationsEnabled && (
                 <Animated.View entering={FadeIn.duration(300)}>
-                  <Text style={[styles.inputLabel, { marginTop: 24 }]}>Preferred time</Text>
+                  <Text style={styles.timeLabel}>Preferred time</Text>
                   <View style={styles.timeGrid}>
                     {timeOptions.map(t => (
                       <Pressable
@@ -313,10 +321,6 @@ export default function OnboardingScreen() {
                   </View>
                 </Animated.View>
               )}
-
-              <Pressable onPress={next} style={styles.skipLink}>
-                <Text style={styles.skipText}>Skip for now</Text>
-              </Pressable>
             </Animated.View>
           )}
 
@@ -325,7 +329,7 @@ export default function OnboardingScreen() {
               <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.readyCheckWrap}>
                 <View style={styles.readyCheckOuter}>
                   <View style={styles.readyCheckInner}>
-                    <Ionicons name="checkmark" size={36} color={Colors.textPrimary} />
+                    <Ionicons name="checkmark" size={32} color={Colors.textPrimary} />
                   </View>
                 </View>
               </Animated.View>
@@ -334,22 +338,28 @@ export default function OnboardingScreen() {
                 You're ready, {name || 'Mama'}
               </Animated.Text>
 
-              <Animated.Text entering={FadeInDown.delay(600).duration(500)} style={styles.readySubtitle}>
-                Your first prompt is waiting.
+              <Animated.Text entering={FadeInDown.delay(600).duration(500)} style={styles.readyBody}>
+                Your personalized journey is set. Each day we'll bring you a moment of calm reflection, preparation, and connection.
               </Animated.Text>
 
-              <Animated.View entering={FadeInUp.delay(800).duration(500)} style={styles.readyDetailRow}>
-                <View style={styles.readyDetailCard}>
-                  <Ionicons name="leaf-outline" size={18} color={Colors.textSecondary} />
-                  <Text style={styles.readyDetailText}>Daily reflections</Text>
+              <Animated.View entering={FadeInUp.delay(800).duration(500)} style={styles.readyFeatures}>
+                <View style={styles.readyFeatureItem}>
+                  <View style={[styles.readyFeatureIcon, { backgroundColor: Colors.accentPink }]}>
+                    <Ionicons name="leaf-outline" size={16} color={Colors.textPrimary} />
+                  </View>
+                  <Text style={styles.readyFeatureText}>Daily reflections</Text>
                 </View>
-                <View style={styles.readyDetailCard}>
-                  <Ionicons name="heart-outline" size={18} color={Colors.textSecondary} />
-                  <Text style={styles.readyDetailText}>Memory bank</Text>
+                <View style={styles.readyFeatureItem}>
+                  <View style={[styles.readyFeatureIcon, { backgroundColor: Colors.accentPeach }]}>
+                    <Ionicons name="heart-outline" size={16} color={Colors.textPrimary} />
+                  </View>
+                  <Text style={styles.readyFeatureText}>Memory bank</Text>
                 </View>
-                <View style={styles.readyDetailCard}>
-                  <Ionicons name="checkbox-outline" size={18} color={Colors.textSecondary} />
-                  <Text style={styles.readyDetailText}>Preparation tasks</Text>
+                <View style={styles.readyFeatureItem}>
+                  <View style={[styles.readyFeatureIcon, { backgroundColor: Colors.accentBlue }]}>
+                    <Ionicons name="checkbox-outline" size={16} color={Colors.textPrimary} />
+                  </View>
+                  <Text style={styles.readyFeatureText}>Preparation tasks</Text>
                 </View>
               </Animated.View>
             </Animated.View>
@@ -364,19 +374,30 @@ export default function OnboardingScreen() {
           style={({ pressed }) => [
             styles.ctaButton,
             !canProceed && styles.ctaButtonDisabled,
-            pressed && canProceed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+            pressed && canProceed && { opacity: 0.92, transform: [{ scale: 0.985 }] },
           ]}
           testID="onboarding-cta"
         >
-          <Text style={[styles.ctaText, !canProceed && { opacity: 0.5 }]}>
+          <Text style={[styles.ctaText, !canProceed && { opacity: 0.4 }]}>
             {ctaLabel}
           </Text>
         </Pressable>
 
         {step === 0 && (
-          <Animated.Text entering={FadeInUp.delay(1100).duration(500)} style={styles.bottomTagline}>
-            5 minutes a day to prepare for a lifetime.
-          </Animated.Text>
+          <Animated.View entering={FadeInUp.delay(800).duration(500)}>
+            <Pressable
+              onPress={() => router.replace('/sign-in')}
+              style={styles.loginLink}
+            >
+              <Text style={styles.loginLinkText}>Log In</Text>
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {step === 3 && (
+          <Pressable onPress={next} style={styles.skipLink}>
+            <Text style={styles.skipText}>Skip for now</Text>
+          </Pressable>
         )}
       </View>
     </View>
@@ -392,8 +413,8 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   backButton: {
     width: 40,
@@ -403,18 +424,34 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     flex: 1,
+    alignItems: 'center',
+  },
+  stepIndicator: {
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+  },
+  stepIndicatorText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textLight,
+    letterSpacing: 0.3,
+  },
+  dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
+    paddingBottom: 8,
   },
-  progressBar: {
-    height: 3,
-    width: 48,
-    borderRadius: 1.5,
-    backgroundColor: Colors.border,
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  progressBarActive: {
+  dotActive: {
     backgroundColor: Colors.textPrimary,
+  },
+  dotInactive: {
+    backgroundColor: Colors.border,
   },
   contentWrapper: {
     flex: 1,
@@ -422,144 +459,160 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: 16,
   },
 
   welcomeContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  logoMark: {
-    marginBottom: 20,
-  },
-  logoInner: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#FFF0EF',
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.accentPink,
+    paddingHorizontal: 16,
+  },
+  welcomeSpacer: {
+    flex: 1,
   },
   welcomeBrand: {
     fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 14,
-    letterSpacing: 4,
-    textTransform: 'uppercase' as const,
-    color: Colors.textSecondary,
-    marginBottom: 40,
-  },
-  welcomeTextBlock: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  welcomeHeadline: {
-    fontFamily: 'PlayfairDisplay_400Regular',
-    fontSize: 22,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 32,
-    marginBottom: 20,
-  },
-  dividerLine: {
-    width: 40,
-    height: 1,
-    backgroundColor: Colors.accentPink,
-    marginBottom: 20,
-  },
-  welcomeHero: {
-    fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 28,
+    fontSize: 44,
     color: Colors.textPrimary,
     textAlign: 'center',
-    lineHeight: 38,
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   welcomeTagline: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 14,
-    color: Colors.textLight,
+    fontSize: 16,
+    color: Colors.textSecondary,
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
   },
 
   stepContainer: {
-    paddingTop: 8,
+    paddingTop: 4,
   },
   stepTitle: {
     fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 28,
+    fontSize: 30,
     color: Colors.textPrimary,
-    marginBottom: 12,
-    lineHeight: 38,
+    marginBottom: 8,
+    lineHeight: 40,
+    textAlign: 'center',
   },
-  stepBody: {
+  stepSubtitle: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
-    lineHeight: 24,
+    textAlign: 'center',
     marginBottom: 28,
   },
-  inputLabel: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 10,
-    letterSpacing: 0.3,
+
+  fieldGroup: {
+    marginTop: 24,
+    gap: 14,
   },
-  input: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 17,
-    color: Colors.textPrimary,
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.border,
+    paddingHorizontal: 18,
+  },
+  input: {
+    flex: 1,
+    fontFamily: 'Lato_400Regular',
+    fontSize: 16,
+    color: Colors.textPrimary,
+    paddingVertical: 16,
   },
   inputError: {
     borderColor: Colors.error,
   },
-  hintText: {
+  inputHintInline: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textLight,
-    marginTop: 10,
+    marginLeft: 8,
   },
   errorText: {
     fontFamily: 'Lato_400Regular',
     fontSize: 13,
     color: Colors.error,
-    marginTop: 10,
+    marginLeft: 4,
+    marginTop: -4,
   },
 
+  pregnancyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  pregnancyLabel: {
+    flex: 1,
+    fontFamily: 'Lato_400Regular',
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  yesNoGroup: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  yesNoBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: Colors.canvas,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  yesNoBtnActive: {
+    backgroundColor: Colors.accentPink,
+    borderColor: Colors.accentPink,
+  },
+  yesNoText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  yesNoTextActive: {
+    fontFamily: 'Lato_700Bold',
+    color: Colors.textPrimary,
+  },
+
+  focusList: {
+    gap: 10,
+  },
   focusCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
     borderWidth: 1.5,
     borderColor: Colors.border,
+    gap: 12,
   },
-  focusIcon: {
+  focusIconCircle: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
   focusTextWrap: {
     flex: 1,
   },
   focusTitle: {
     fontFamily: 'Lato_700Bold',
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textPrimary,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   focusDesc: {
     fontFamily: 'Lato_400Regular',
@@ -567,19 +620,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 18,
   },
-  checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
+  focusCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
-  },
-  checkCircleActive: {
-    backgroundColor: Colors.textPrimary,
-    borderColor: Colors.textPrimary,
   },
 
   notifCard: {
@@ -594,7 +641,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FFF0EF',
+    backgroundColor: Colors.accentPink + '40',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -610,11 +657,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
   },
+  timeLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 24,
+    marginBottom: 12,
+    letterSpacing: 0.3,
+  },
   timeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginTop: 12,
   },
   timeChip: {
     paddingHorizontal: 16,
@@ -625,7 +679,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   timeChipActive: {
-    backgroundColor: '#FFF0EF',
+    backgroundColor: Colors.accentPink + '40',
     borderColor: Colors.accentPink,
   },
   timeChipText: {
@@ -639,7 +693,7 @@ const styles = StyleSheet.create({
   },
   skipLink: {
     alignSelf: 'center',
-    marginTop: 28,
+    marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
@@ -647,7 +701,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     fontSize: 14,
     color: Colors.textLight,
-    textDecorationLine: 'underline' as const,
   },
 
   readyContainer: {
@@ -655,13 +708,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   readyCheckWrap: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   readyCheckOuter: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#FFF0EF',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: Colors.accentPink + '30',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -675,63 +728,76 @@ const styles = StyleSheet.create({
   },
   readyTitle: {
     fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 30,
+    fontSize: 28,
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,
   },
-  readySubtitle: {
+  readyBody: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 17,
+    fontSize: 15,
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
+    lineHeight: 22,
+    marginBottom: 36,
+    paddingHorizontal: 8,
   },
-  readyDetailRow: {
+  readyFeatures: {
+    gap: 14,
+    width: '100%',
+  },
+  readyFeatureItem: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  readyDetailCard: {
-    flex: 1,
     alignItems: 'center',
+    gap: 14,
     backgroundColor: Colors.white,
     borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: 8,
   },
-  readyDetailText: {
+  readyFeatureIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readyFeatureText: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: 'center',
+    fontSize: 15,
+    color: Colors.textPrimary,
   },
 
   bottomSection: {
+    paddingTop: 12,
     paddingBottom: 16,
   },
   ctaButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: Colors.accentPink,
-    borderRadius: 20,
     paddingVertical: 18,
+    borderRadius: 18,
+    alignItems: 'center',
   },
   ctaButtonDisabled: {
-    backgroundColor: Colors.border,
+    opacity: 0.5,
   },
   ctaText: {
     fontFamily: 'Lato_700Bold',
-    fontSize: 17,
+    fontSize: 16,
     color: Colors.textPrimary,
+    letterSpacing: 0.3,
   },
-  bottomTagline: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 13,
-    color: Colors.textLight,
-    textAlign: 'center',
+  loginLink: {
+    alignSelf: 'center',
     marginTop: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+  },
+  loginLinkText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 15,
+    color: Colors.textSecondary,
   },
 });
