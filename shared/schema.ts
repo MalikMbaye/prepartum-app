@@ -23,6 +23,7 @@ export const users = pgTable("users", {
   preferences: jsonb("preferences"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  seasonLastUpdated: timestamp("season_last_updated", { withTimezone: true }),
 });
 
 export const prompts = pgTable("prompts", {
