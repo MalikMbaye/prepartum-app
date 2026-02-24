@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { prompts, tasks, quizzes, quizQuestions, roleplayScenarios } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { seedIntakeQuestions } from "./seed-intake";
 
 const promptData = [
   { title: "Morning Mindset", body: "What does being a 'good enough' mother mean to you? Release perfectionism and explore what feels authentic.", category: "mindset", weekNumber: 1, dayOfWeek: 1 },
@@ -468,4 +469,6 @@ export async function seedDatabase() {
     await db.insert(roleplayScenarios).values(scenarioData);
     console.log(`Seeded ${scenarioData.length} roleplay scenarios`);
   }
+
+  await seedIntakeQuestions();
 }
