@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 import { calculateUserProfile } from "./profile-calculator";
+import { getDailyPrompts } from "./daily-prompts";
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -130,6 +131,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(result);
     } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/users/:userId/daily-prompts", async (req: Request, res: Response) => {
+    try {
+      const dailyPrompts = await getDailyPrompts(req.params.userId);
+      res.json(dailyPrompts);
+    } catch (e: any) {
+      console.error("Daily prompts error:", e);
       res.status(500).json({ message: e.message });
     }
   });

@@ -37,6 +37,15 @@ export const prompts = pgTable("prompts", {
   emotionalTone: text("emotional_tone"),
   depth: text("depth"),
   tags: text("tags").array(),
+  seasons: text("seasons").array(),
+  relevanceTags: text("relevance_tags").array(),
+  addressesFear: text("addresses_fear"),
+  format: text("format"),
+  estimatedEnergy: text("estimated_energy"),
+  intensity: integer("intensity"),
+  requiredFlags: text("required_flags").array(),
+  excludedFlags: text("excluded_flags").array(),
+  trimester: integer("trimester"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 

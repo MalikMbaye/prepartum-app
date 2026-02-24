@@ -7,51 +7,20 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { getTodayPrompt, getCategoryColor, getCategoryLabel, getTodayPromptFromDb } from '@/lib/prompts-data';
+import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
+
+function tryHaptic() {
+  try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+}
 
 function ProgressRing({ progress, size, strokeWidth, color }: { progress: number; size: number; strokeWidth: number; color: string }) {
   const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const center = size / 2;
   const segmentCount = 7;
   const gapAngle = 6;
-  const totalGap = segmentCount * gapAngle;
-  const totalArc = 360 - totalGap;
+  const totalArc = 360 - segmentCount * gapAngle;
   const segmentArc = totalArc / segmentCount;
   const filledSegments = Math.round(progress * segmentCount);
-
-  const segments = [];
-  for (let i = 0; i < segmentCount; i++) {
-    const startAngle = i * (segmentArc + gapAngle) - 90;
-    const isFilled = i < filledSegments;
-    const startRad = (startAngle * Math.PI) / 180;
-    const endRad = ((startAngle + segmentArc) * Math.PI) / 180;
-    const x1 = center + radius * Math.cos(startRad);
-    const y1 = center + radius * Math.sin(startRad);
-    const x2 = center + radius * Math.cos(endRad);
-    const y2 = center + radius * Math.sin(endRad);
-
-    segments.push(
-      <View
-        key={i}
-        style={{
-          position: 'absolute',
-          width: size,
-          height: size,
-        }}
-      >
-        <View
-          style={{
-            position: 'absolute',
-            left: Math.min(x1, x2) - strokeWidth / 2,
-            top: Math.min(y1, y2) - strokeWidth / 2,
-            width: Math.abs(x2 - x1) + strokeWidth,
-            height: Math.abs(y2 - y1) + strokeWidth,
-          }}
-        />
-      </View>
-    );
-  }
+  const center = size / 2;
 
   const trackSegments = Array.from({ length: segmentCount }, (_, i) => {
     const startAngle = i * (segmentArc + gapAngle) - 90;
@@ -105,7 +74,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const {
     profile, promptResponses, getWeeklyProgress, getPregnancyWeek, getWeeklyCompletedCount,
-    tasks, journalEntries, memories, prompts, refreshing, refreshData
+    tasks, journalEntries, memories, personalizedPrompts, refreshing, refreshData
   } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
@@ -113,12 +82,6 @@ export default function HomeScreen() {
   const weeklyCount = getWeeklyCompletedCount();
   const pregnancyWeek = getPregnancyWeek();
   const completedPromptIds = promptResponses.map(r => r.promptId);
-  const todayPrompt = useMemo(() => {
-    if (prompts.length > 0) {
-      return getTodayPromptFromDb(prompts, completedPromptIds, profile?.focusAreas || ['mindset', 'relationships', 'physical']);
-    }
-    return getTodayPrompt(completedPromptIds, profile?.focusAreas || ['mindset', 'relationships', 'physical']);
-  }, [prompts, completedPromptIds, profile?.focusAreas]);
 
   const completedTasks = tasks.filter(t => t.completed).length;
   const totalTasks = tasks.length;
@@ -131,15 +94,9 @@ export default function HomeScreen() {
     return `Good evening, ${name}`;
   }, [profile?.name]);
 
-  const promptCategoryLabel = todayPrompt
-    ? `Today's ${getCategoryLabel(todayPrompt.category)} Prompt`
-    : "Today's Prompt";
-
-  const promptPreview = todayPrompt
-    ? ((todayPrompt as any).body || (todayPrompt as any).text || '').slice(0, 100) + (((todayPrompt as any).body || (todayPrompt as any).text || '').length > 100 ? '...' : '')
-    : '';
-
-  const categoryColor = todayPrompt ? getCategoryColor(todayPrompt.category) : Colors.accentPink;
+  const availablePrompts = personalizedPrompts.filter(p => !completedPromptIds.includes(p.id));
+  const hasPrompts = availablePrompts.length > 0;
+  const primaryColor = hasPrompts ? getCategoryColor(availablePrompts[0].category) : Colors.accentPink;
 
   return (
     <ScrollView
@@ -186,42 +143,60 @@ export default function HomeScreen() {
         </Animated.View>
       )}
 
-      {todayPrompt && (
+      {hasPrompts && (
         <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({
-                pathname: '/prompt-response',
-                params: {
-                  promptId: todayPrompt.id,
-                  promptText: (todayPrompt as any).body || (todayPrompt as any).text,
-                  category: todayPrompt.category
-                }
-              });
-            }}
-            style={({ pressed }) => [
-              styles.promptCard,
-              pressed && { opacity: 0.96, transform: [{ scale: 0.99 }] }
-            ]}
-            testID="today-prompt-card"
-          >
-            <View style={styles.promptHeader}>
-              <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
-              <Text style={styles.categoryLabel}>{promptCategoryLabel}</Text>
-            </View>
+          <Text style={styles.sectionTitle}>Today's Reflections</Text>
+          {availablePrompts.map((prompt, index) => {
+            const categoryColor = getCategoryColor(prompt.category);
+            const isCompleted = completedPromptIds.includes(prompt.id);
+            return (
+              <Pressable
+                key={prompt.id}
+                onPress={() => {
+                  tryHaptic();
+                  router.push({
+                    pathname: '/prompt-response',
+                    params: {
+                      promptId: prompt.id,
+                      promptText: prompt.body,
+                      category: prompt.category,
+                      ...(prompt.reframe ? {
+                        reframeOriginal: prompt.reframe.originalThought,
+                        reframeText: prompt.reframe.reframedThought,
+                      } : {}),
+                    }
+                  });
+                }}
+                style={({ pressed }) => [
+                  styles.promptCard,
+                  pressed && { opacity: 0.96, transform: [{ scale: 0.99 }] }
+                ]}
+                testID={`prompt-card-${prompt.category}`}
+              >
+                <View style={styles.promptHeader}>
+                  <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
+                  <Text style={styles.categoryLabel}>{getCategoryLabel(prompt.category)}</Text>
+                  {prompt.depth && (
+                    <View style={[styles.depthBadge, { backgroundColor: categoryColor + '40' }]}>
+                      <Text style={styles.depthText}>{prompt.depth}</Text>
+                    </View>
+                  )}
+                </View>
 
-            <Text style={styles.promptPreview} numberOfLines={3}>{promptPreview}</Text>
+                <Text style={styles.promptTitle}>{prompt.title}</Text>
+                <Text style={styles.promptPreview} numberOfLines={2}>{prompt.body}</Text>
 
-            <View style={[styles.startButton, { backgroundColor: categoryColor }]}>
-              <Text style={styles.startButtonText}>Start</Text>
-              <Feather name="arrow-right" size={16} color={Colors.textPrimary} />
-            </View>
-          </Pressable>
+                <View style={[styles.startButton, { backgroundColor: categoryColor }]}>
+                  <Text style={styles.startButtonText}>Reflect</Text>
+                  <Feather name="arrow-right" size={16} color={Colors.textPrimary} />
+                </View>
+              </Pressable>
+            );
+          })}
         </Animated.View>
       )}
 
-      {!todayPrompt && (
+      {!hasPrompts && (
         <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.allDoneCard}>
           <Ionicons name="checkmark-circle-outline" size={32} color={Colors.success} />
           <Text style={styles.allDoneTitle}>All caught up!</Text>
@@ -236,7 +211,7 @@ export default function HomeScreen() {
             progress={weeklyProgress}
             size={80}
             strokeWidth={6}
-            color={categoryColor}
+            color={primaryColor}
           />
           <View style={styles.progressInfo}>
             <Text style={styles.progressCount}>
@@ -257,7 +232,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickRow}>
           <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/memories'); }}
+            onPress={() => { tryHaptic(); router.push('/(tabs)/memories'); }}
             style={({ pressed }) => [styles.quickCard, pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] }]}
             testID="quick-memories"
           >
@@ -269,7 +244,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/tasks'); }}
+            onPress={() => { tryHaptic(); router.push('/(tabs)/tasks'); }}
             style={({ pressed }) => [styles.quickCard, pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] }]}
             testID="quick-tasks"
           >
@@ -281,7 +256,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
+            onPress={() => { tryHaptic(); router.push('/journal'); }}
             style={({ pressed }) => [styles.quickCard, pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] }]}
             testID="quick-journal"
           >
@@ -321,11 +296,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
+  sectionTitle: {
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 20,
+    color: Colors.textPrimary,
+    marginBottom: 14,
+  },
+
   promptCard: {
     backgroundColor: Colors.white,
     borderRadius: 22,
-    padding: 24,
-    marginBottom: 28,
+    padding: 22,
+    marginBottom: 14,
     shadowColor: Colors.textPrimary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -335,7 +317,7 @@ const styles = StyleSheet.create({
   promptHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   categoryDot: {
     width: 10,
@@ -345,31 +327,49 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontFamily: 'Lato_700Bold',
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textSecondary,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
+    flex: 1,
+  },
+  depthBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  depthText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 11,
+    color: Colors.textSecondary,
+    textTransform: 'capitalize' as const,
+  },
+  promptTitle: {
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 17,
+    color: Colors.textPrimary,
+    marginBottom: 6,
   },
   promptPreview: {
-    fontFamily: 'PlayfairDisplay_400Regular',
-    fontSize: 19,
-    color: Colors.textPrimary,
-    lineHeight: 28,
-    marginBottom: 22,
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 21,
+    marginBottom: 16,
   },
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
     borderRadius: 14,
     gap: 8,
   },
   startButtonText: {
     fontFamily: 'Lato_700Bold',
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.textPrimary,
   },
 
@@ -401,12 +401,6 @@ const styles = StyleSheet.create({
 
   progressSection: {
     marginBottom: 28,
-  },
-  sectionTitle: {
-    fontFamily: 'PlayfairDisplay_600SemiBold',
-    fontSize: 20,
-    color: Colors.textPrimary,
-    marginBottom: 14,
   },
   progressCard: {
     backgroundColor: Colors.white,

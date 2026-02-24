@@ -119,6 +119,21 @@ export interface RoleplaySessionData {
   scenario?: ScenarioData;
 }
 
+interface PersonalizedPrompt {
+  id: string;
+  title: string | null;
+  body: string;
+  category: string;
+  depth: string | null;
+  format: string | null;
+  intensity: number | null;
+  reframe: {
+    originalThought: string;
+    reframedThought: string;
+    tone: string | null;
+  } | null;
+}
+
 interface AppContextValue {
   profile: UserProfile | null;
   setProfile: (data: any) => Promise<void>;
@@ -147,6 +162,7 @@ interface AppContextValue {
   sendRoleplayMessage: (sessionId: string, content: string) => Promise<RoleplaySessionData>;
   generateRoleplayFeedback: (sessionId: string) => Promise<RoleplaySessionData>;
   prompts: DailyPrompt[];
+  personalizedPrompts: PersonalizedPrompt[];
   isLoading: boolean;
   refreshing: boolean;
   refreshData: () => Promise<void>;
@@ -174,6 +190,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [scenariosData, setScenariosData] = useState<ScenarioData[]>([]);
   const [roleplaySessionsData, setRoleplaySessionsData] = useState<RoleplaySessionData[]>([]);
   const [prompts, setPrompts] = useState<DailyPrompt[]>([]);
+  const [personalizedPrompts, setPersonalizedPrompts] = useState<PersonalizedPrompt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -190,7 +207,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function loadUserData(userId: string) {
-    const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions] = await Promise.all([
+    const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions, dailyP] = await Promise.all([
       fetchFromApi(`/api/users/${userId}/prompt-responses`),
       fetchFromApi(`/api/users/${userId}/memories`),
       fetchFromApi(`/api/users/${userId}/tasks`),
@@ -200,12 +217,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       fetchFromApi(`/api/users/${userId}/quiz-results`),
       fetchFromApi('/api/scenarios'),
       fetchFromApi(`/api/users/${userId}/roleplay-sessions`),
+      fetchFromApi(`/api/users/${userId}/daily-prompts`).catch(() => []),
     ]);
     setPromptResponses(resps);
     setMemories(mems);
     setTasks(tks);
     setJournalEntries(jrnl);
     setPrompts(prts);
+    setPersonalizedPrompts(dailyP);
     setQuizzesData(qzs);
     setQuizResults(qrs);
     setScenariosData(scns);
@@ -579,7 +598,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!profile?.id) return;
     setRefreshing(true);
     try {
-      const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions] = await Promise.all([
+      const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions, dailyP] = await Promise.all([
         fetchFromApi(`/api/users/${profile.id}/prompt-responses`),
         fetchFromApi(`/api/users/${profile.id}/memories`),
         fetchFromApi(`/api/users/${profile.id}/tasks`),
@@ -589,12 +608,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         fetchFromApi(`/api/users/${profile.id}/quiz-results`),
         fetchFromApi('/api/scenarios'),
         fetchFromApi(`/api/users/${profile.id}/roleplay-sessions`),
+        fetchFromApi(`/api/users/${profile.id}/daily-prompts`).catch(() => []),
       ]);
       setPromptResponses(resps);
       setMemories(mems);
       setTasks(tks);
       setJournalEntries(jrnl);
       setPrompts(prts);
+      setPersonalizedPrompts(dailyP);
       setQuizzesData(qzs);
       setQuizResults(qrs);
       setScenariosData(scns);
@@ -634,6 +655,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sendRoleplayMessage,
     generateRoleplayFeedback,
     prompts,
+    personalizedPrompts,
     isLoading,
     refreshing,
     refreshData,
@@ -643,7 +665,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     signOut,
     deleteAccount,
     getCurrentStreak,
-  }), [profile, authToken, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, scenariosData, roleplaySessionsData, prompts, isLoading, refreshing]);
+  }), [profile, authToken, promptResponses, memories, tasks, journalEntries, quizzesData, quizResults, scenariosData, roleplaySessionsData, prompts, personalizedPrompts, isLoading, refreshing]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
