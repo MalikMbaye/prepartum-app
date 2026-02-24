@@ -37,8 +37,12 @@ export default function OnboardingScreen() {
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const webBottomInset = Platform.OS === 'web' ? 34 : 0;
 
+  function tryHaptic() {
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+  }
+
   function toggleFocus(area: FocusArea) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    tryHaptic();
     setFocusAreas(prev => {
       if (prev.includes(area)) return prev.filter(a => a !== area);
       if (prev.length >= 3) return prev;
@@ -66,7 +70,7 @@ export default function OnboardingScreen() {
   }, []);
 
   async function complete() {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
     let formattedDueDate: string | undefined;
     if (dueDate) {
       const parts = dueDate.split('/');
@@ -74,18 +78,35 @@ export default function OnboardingScreen() {
         formattedDueDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
       }
     }
-    await setProfile({
-      name: name.trim() || 'Mama',
-      dueDate: formattedDueDate || null,
-      focusAreas: focusAreas.length > 0 ? focusAreas : ['mindset', 'relationships', 'physical'],
-      notificationsEnabled,
-      onboardingCompleted: true,
-    });
-    router.replace('/(tabs)');
+    try {
+      await setProfile({
+        name: name.trim() || 'Mama',
+        dueDate: formattedDueDate || null,
+        focusAreas: focusAreas.length > 0 ? focusAreas : ['mindset', 'relationships', 'physical'],
+        notificationsEnabled,
+        onboardingCompleted: true,
+      });
+      router.replace('/(tabs)');
+    } catch (e) {
+      console.error('Error completing onboarding:', e);
+    }
+  }
+
+  async function skipOnboarding() {
+    tryHaptic();
+    try {
+      await setProfile({
+        name: 'Mama',
+        onboardingCompleted: false,
+      });
+      router.replace('/(tabs)');
+    } catch (e) {
+      console.error('Error skipping onboarding:', e);
+    }
   }
 
   function next() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    tryHaptic();
     if (step === 1 && dueDate.length === 10 && !validateDueDate(dueDate)) {
       return;
     }
@@ -217,13 +238,13 @@ export default function OnboardingScreen() {
                   <Text style={styles.pregnancyLabel}>Is this your first pregnancy?</Text>
                   <View style={styles.yesNoGroup}>
                     <Pressable
-                      onPress={() => { setIsFirstPregnancy(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                      onPress={() => { setIsFirstPregnancy(true); tryHaptic(); }}
                       style={[styles.yesNoBtn, isFirstPregnancy === true && styles.yesNoBtnActive]}
                     >
                       <Text style={[styles.yesNoText, isFirstPregnancy === true && styles.yesNoTextActive]}>Yes</Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => { setIsFirstPregnancy(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                      onPress={() => { setIsFirstPregnancy(false); tryHaptic(); }}
                       style={[styles.yesNoBtn, isFirstPregnancy === false && styles.yesNoBtnActive]}
                     >
                       <Text style={[styles.yesNoText, isFirstPregnancy === false && styles.yesNoTextActive]}>No</Text>
@@ -293,7 +314,7 @@ export default function OnboardingScreen() {
                     value={notificationsEnabled}
                     onValueChange={(val) => {
                       setNotificationsEnabled(val);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      tryHaptic();
                     }}
                     trackColor={{ false: Colors.border, true: Colors.accentPink }}
                     thumbColor="#FFF"
@@ -311,7 +332,7 @@ export default function OnboardingScreen() {
                         key={t}
                         onPress={() => {
                           setPreferredTime(t);
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          tryHaptic();
                         }}
                         style={[styles.timeChip, preferredTime === t && styles.timeChipActive]}
                       >
@@ -384,7 +405,14 @@ export default function OnboardingScreen() {
         </Pressable>
 
         {step === 0 && (
-          <Animated.View entering={FadeInUp.delay(800).duration(500)}>
+          <Animated.View entering={FadeInUp.delay(800).duration(500)} style={styles.welcomeBottomLinks}>
+            <Pressable
+              onPress={skipOnboarding}
+              style={styles.skipOnboardingLink}
+              testID="skip-onboarding"
+            >
+              <Text style={styles.skipOnboardingText}>Skip for now</Text>
+            </Pressable>
             <Pressable
               onPress={() => router.replace('/sign-in')}
               style={styles.loginLink}
@@ -794,6 +822,22 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingVertical: 6,
     paddingHorizontal: 20,
+  },
+  welcomeBottomLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 24,
+    marginTop: 14,
+  },
+  skipOnboardingLink: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  skipOnboardingText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 15,
+    color: Colors.textLight,
   },
   loginLinkText: {
     fontFamily: 'Lato_400Regular',

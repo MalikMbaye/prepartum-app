@@ -8,6 +8,10 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
+function tryHaptic() {
+  try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { profile, setProfile, signOut, deleteAccount } = useApp();
@@ -16,6 +20,8 @@ export default function SettingsScreen() {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(profile?.name || '');
   const [saving, setSaving] = useState(false);
+
+  const onboardingIncomplete = !profile?.onboardingCompleted;
 
   async function handleSaveName() {
     if (!nameValue.trim()) return;
@@ -31,7 +37,7 @@ export default function SettingsScreen() {
   }
 
   function handleSignOut() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    tryHaptic();
     const doSignOut = async () => {
       await signOut();
       router.replace('/');
@@ -41,7 +47,7 @@ export default function SettingsScreen() {
     } else {
       Alert.alert(
         'Sign Out',
-        'You will need to set up your profile again when you return.',
+        'You will need to sign in again when you return.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Sign Out', onPress: doSignOut },
@@ -51,7 +57,7 @@ export default function SettingsScreen() {
   }
 
   function handleDeleteAccount() {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    tryHaptic();
     const doDelete = async () => {
       try {
         await deleteAccount();
@@ -75,7 +81,7 @@ export default function SettingsScreen() {
   }
 
   async function handleToggleNotifications(value: boolean) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    tryHaptic();
     try {
       await setProfile({ notificationsEnabled: value });
     } catch (e) {
@@ -98,6 +104,28 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {onboardingIncomplete && (
+          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+            <Pressable
+              onPress={() => {
+                tryHaptic();
+                router.push('/onboarding');
+              }}
+              style={({ pressed }) => [styles.onboardingBanner, pressed && { opacity: 0.9 }]}
+              testID="complete-onboarding"
+            >
+              <View style={styles.onboardingIconWrap}>
+                <Ionicons name="sparkles" size={20} color={Colors.textPrimary} />
+              </View>
+              <View style={styles.onboardingTextWrap}>
+                <Text style={styles.onboardingTitle}>Complete Your Setup</Text>
+                <Text style={styles.onboardingDesc}>Personalize your experience with focus areas and preferences</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={Colors.textPrimary} />
+            </Pressable>
+          </Animated.View>
+        )}
+
         <Animated.View entering={FadeInDown.delay(100).duration(400)}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.card}>
@@ -145,7 +173,7 @@ export default function SettingsScreen() {
               </View>
               <Text style={styles.rowValue}>
                 {profile?.dueDate
-                  ? new Date(profile.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  ? new Date(profile.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
                   : 'Not set'}
               </Text>
             </View>
@@ -246,6 +274,41 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 60,
+  },
+  onboardingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.accentPink + '30',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.accentPink,
+  },
+  onboardingIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.accentPink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onboardingTextWrap: {
+    flex: 1,
+  },
+  onboardingTitle: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 15,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  onboardingDesc: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
   },
   sectionTitle: {
     fontFamily: 'Lato_700Bold',

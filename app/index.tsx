@@ -10,13 +10,9 @@ export default function IndexScreen() {
   useEffect(() => {
     if (!isLoading) {
       if (profile) {
-        if (profile.onboardingCompleted) {
-          router.replace('/(tabs)');
-        } else {
-          router.replace('/onboarding');
-        }
+        router.replace('/(tabs)');
       } else {
-        router.replace('/sign-in');
+        router.replace('/onboarding');
       }
     }
   }, [isLoading, profile]);
