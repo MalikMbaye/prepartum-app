@@ -16,6 +16,11 @@ export const users = pgTable("users", {
   notificationTime: time("notification_time"),
   notificationsEnabled: boolean("notifications_enabled").default(true),
   onboardingCompleted: boolean("onboarding_completed").default(false),
+  currentSeason: text("current_season"),
+  seasonScores: jsonb("season_scores"),
+  intakeCompleted: boolean("intake_completed").default(false),
+  profileFlags: jsonb("profile_flags"),
+  preferences: jsonb("preferences"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
@@ -27,6 +32,11 @@ export const prompts = pgTable("prompts", {
   category: text("category").notNull(),
   weekNumber: integer("week_number"),
   dayOfWeek: integer("day_of_week"),
+  season: text("season"),
+  seasonWeek: integer("season_week"),
+  emotionalTone: text("emotional_tone"),
+  depth: text("depth"),
+  tags: text("tags").array(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -129,6 +139,36 @@ export const journalEntries = pgTable("journal_entries", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const intakeQuestions = pgTable("intake_questions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  questionText: text("question_text").notNull(),
+  questionType: text("question_type").notNull().default("multiple_choice"),
+  options: jsonb("options"),
+  category: text("category"),
+  orderNumber: integer("order_number"),
+  seasonMapping: jsonb("season_mapping"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const intakeResponses = pgTable("intake_responses", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  questionId: uuid("question_id").notNull().references(() => intakeQuestions.id, { onDelete: "cascade" }),
+  answer: text("answer").notNull(),
+  answerData: jsonb("answer_data"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const closingReframes = pgTable("closing_reframes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  season: text("season").notNull(),
+  category: text("category"),
+  originalThought: text("original_thought").notNull(),
+  reframedThought: text("reframed_thought").notNull(),
+  tone: text("tone"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPromptResponseSchema = createInsertSchema(userPromptResponses).omit({ id: true, completedAt: true });
 export const insertMemorySchema = createInsertSchema(memories).omit({ id: true, createdAt: true });
@@ -136,6 +176,9 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, creat
 export const insertUserTaskSchema = createInsertSchema(userTasks).omit({ id: true });
 export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({ id: true, createdAt: true });
 export const insertQuizResultSchema = createInsertSchema(userQuizResults).omit({ id: true, completedAt: true });
+export const insertIntakeQuestionSchema = createInsertSchema(intakeQuestions).omit({ id: true, createdAt: true });
+export const insertIntakeResponseSchema = createInsertSchema(intakeResponses).omit({ id: true, createdAt: true });
+export const insertClosingReframeSchema = createInsertSchema(closingReframes).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -150,3 +193,6 @@ export type QuizResult = typeof userQuizResults.$inferSelect;
 export type RoleplayScenario = typeof roleplayScenarios.$inferSelect;
 export type RoleplaySession = typeof roleplaySessions.$inferSelect;
 export type JournalEntry = typeof journalEntries.$inferSelect;
+export type IntakeQuestion = typeof intakeQuestions.$inferSelect;
+export type IntakeResponse = typeof intakeResponses.$inferSelect;
+export type ClosingReframe = typeof closingReframes.$inferSelect;
