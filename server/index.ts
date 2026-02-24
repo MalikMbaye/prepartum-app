@@ -2,6 +2,7 @@ import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { seedDatabase } from "./seed";
+import { startSeasonCron } from "./season-updater";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -238,6 +239,7 @@ function setupErrorHandler(app: express.Application) {
   try {
     await seedDatabase();
     log("Database seeded successfully");
+    startSeasonCron();
   } catch (e) {
     console.error("Seed error:", e);
   }

@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 import { calculateUserProfile } from "./profile-calculator";
 import { getDailyPrompts } from "./daily-prompts";
+import { updateUserSeasonWeekly, runSeasonUpdateForAllUsers } from "./season-updater";
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -141,6 +142,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(dailyPrompts);
     } catch (e: any) {
       console.error("Daily prompts error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/users/:userId/update-season", async (req: Request, res: Response) => {
+    try {
+      const result = await updateUserSeasonWeekly(req.params.userId);
+      res.json(result);
+    } catch (e: any) {
+      console.error("Season update error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/update-all-seasons", async (_req: Request, res: Response) => {
+    try {
+      const result = await runSeasonUpdateForAllUsers();
+      res.json(result);
+    } catch (e: any) {
+      console.error("Batch season update error:", e);
       res.status(500).json({ message: e.message });
     }
   });
