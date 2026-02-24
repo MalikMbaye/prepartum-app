@@ -72,6 +72,19 @@ Premium, luxury aesthetic inspired by brands like Aesop. Key design tokens defin
 8. **quizzes / quiz_questions / user_quiz_results** - Self-discovery quiz system (schema defined, feature planned)
 9. **roleplay_scenarios / roleplay_sessions** - Practice conversation system (schema defined, feature planned)
 
+### Profile Calculation System
+
+- `server/profile-calculator.ts` contains `calculateUserProfile(userId)` - called when intake is completed
+- Fetches all intake responses and questions, loops through scoring maps to calculate:
+  - **seasonScores**: Running totals for tender, grounding, expanding, restorative, integrating
+  - **currentSeason**: Highest scoring season ("mixed" if top two within 2 points)
+  - **profileFlags**: All flags from scoring maps merged into one object
+  - **relationshipContext**: Derived from Q3.1 + single_mother flag → secure/mixed/strained/unstable/solo
+  - **supportDensity**: Count of Q1.4 selections (excluding "live alone")
+  - **boundaryStyle**: From Q2.7 → direct/self_reliant/indirect/avoidant/adaptive
+  - **preferences**: format_preference (voice/action/text/mixed), prompt_length (short/medium/long), emotional_bandwidth (1-5), category_priority array
+- All calculated values are persisted to the users table (seasonScores, profileFlags, preferences, currentSeason)
+
 ### Storage Pattern
 
 - `server/storage.ts` defines an `IStorage` interface with a `DatabaseStorage` implementation
