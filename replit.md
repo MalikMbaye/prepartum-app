@@ -62,7 +62,7 @@ Premium, luxury aesthetic inspired by brands like Aesop. Key design tokens defin
 
 ### Database Tables
 
-1. **users** - Profile data (name, due date, pregnancy week, focus areas, notification preferences, onboarding status)
+1. **users** - Profile data (name, due date, pregnancy week, focus areas, notification preferences, onboarding status, season_last_updated)
 2. **prompts** - Seeded prompt library (title, body, category, week number, day of week)
 3. **user_prompt_responses** - User responses to prompts
 4. **memories** - Text/photo/voice memories with tags
@@ -84,6 +84,17 @@ Premium, luxury aesthetic inspired by brands like Aesop. Key design tokens defin
   - **boundaryStyle**: From Q2.7 → direct/self_reliant/indirect/avoidant/adaptive
   - **preferences**: format_preference (voice/action/text/mixed), prompt_length (short/medium/long), emotional_bandwidth (1-5), category_priority array
 - All calculated values are persisted to the users table (seasonScores, profileFlags, preferences, currentSeason)
+
+### Season Recalculation System
+
+- `server/season-updater.ts` contains `updateUserSeasonWeekly(userId)` - recalculates a user's season based on recent activity
+- Analyzes prompt responses from last 7 days for emotional keyword indicators across 5 seasons
+- Keyword categories: tender (anxious, overwhelmed, scared...), expanding (excited, dreaming, hopeful...), restorative (tired, exhausted, rest...), grounding (reflect, processing, learning...), integrating (making sense, meaning, changed...)
+- Low completion rate (< 30%) adds +2 to restorative; high skip rate adds +1 to restorative
+- Combines baseline scores (70% weight) with recent activity shifts (30% weight) for stable-but-responsive adaptation
+- `runSeasonUpdateForAllUsers()` processes all users with completed intake
+- Cron job runs every 24 hours automatically via `startSeasonCron()` in server startup
+- API endpoints: `POST /api/users/:userId/update-season` (individual), `POST /api/admin/update-all-seasons` (batch)
 
 ### Storage Pattern
 
