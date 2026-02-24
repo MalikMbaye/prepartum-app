@@ -1,0 +1,62 @@
+Build the complete intake onboarding flow with these screens:
+
+DESIGN SYSTEM:
+- Background: #FAF8F5 (cream)
+- Primary button: #4A2F4B (plum)
+- Text: #4A2F4B
+- Progress bar fill: #4A2F4B
+- Cards: White with subtle shadow
+- Font: System serif for questions, system sans for body
+
+SCREEN 1: Welcome Screen
+- "Welcome, mama" (large, serif)
+- Body text: "Before we begin, let's create your personalized experience. These questions help us understand where you are right now — emotionally, relationally, and physically. There are no wrong answers. This is just for you."
+- Primary button: "Let's Begin"
+- Small text: "Takes about 8-12 minutes"
+- Top right: "Skip for now" link
+
+SCREEN 2: Phase Transition (appears before each phase)
+- Icon centered
+- Phase title
+- "Continue" button
+- Auto-advances on tap
+
+SCREEN 3: Question Screen Template
+- Top left: Back button
+- Top right: "Question X of 24"
+- Progress bar (fills left to right)
+- Question text (large, centered)
+- Answer options as cards (for single/multi select)
+- OR text input field
+- OR date picker
+- OR slider (1-5)
+- Next/Continue button (disabled until answer selected)
+
+INTERACTION RULES:
+- Single select: Tap card → highlight → 500ms delay → auto-advance
+- Multi select: Tap cards → checkmarks appear → "Next" button enabled
+- Text input: Type → "Next" button enabled
+- Slider: Drag → "Next" button enabled
+
+SCREEN 4: Processing Screen
+- "Creating your personalized experience..."
+- Gentle loading animation
+- 2-3 second duration
+- Auto-advances to Profile Complete
+
+SCREEN 5: Profile Complete Screen
+- "Your Profile is Ready!" (with subtle celebration animation)
+- Show user's primary season with warm language:
+  - Tender: "You're in a tender season. We'll be gentle..."
+  - Grounding: "You're in a grounding season. We'll help you stay steady..."
+  - Expanding: "You're in an expanding season. You're ready to dream..."
+  - Restorative: "You're in a restorative season. We'll remind you to rest..."
+- Show top 3 focus areas
+- "Begin Your Journey" button → navigates to Home
+
+NAVIGATION:
+- Save answers after each question (to intake_responses table)
+- Calculate profile on "complete" (call calculateProfile function)
+- If user exits mid-intake, show "Resume" option next time
+
+Build all screens and wire up the navigation.
