@@ -18,6 +18,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: "Back", contentStyle: { backgroundColor: Colors.canvas } }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="intake" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="prompt-response" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="journal" options={{ headerShown: false, presentation: 'modal' }} />

@@ -167,6 +167,25 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
+      {!profile?.intakeCompleted && (
+        <Animated.View entering={FadeInDown.delay(150).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/intake')}
+            style={styles.intakeBanner}
+            testID="resume-intake"
+          >
+            <View style={styles.intakeBannerIcon}>
+              <Ionicons name="sparkles" size={18} color="#4A2F4B" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.intakeBannerTitle}>Personalise your experience</Text>
+              <Text style={styles.intakeBannerSubtitle}>Complete a quick questionnaire to get tailored content</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textSecondary} />
+          </Pressable>
+        </Animated.View>
+      )}
+
       {todayPrompt && (
         <Animated.View entering={FadeInDown.delay(200).duration(500)}>
           <Pressable
@@ -458,6 +477,34 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   quickMeta: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  intakeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5EDF5',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  intakeBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5D6D6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  intakeBannerTitle: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 14,
+    color: '#4A2F4B',
+    marginBottom: 2,
+  },
+  intakeBannerSubtitle: {
     fontFamily: 'Lato_400Regular',
     fontSize: 12,
     color: Colors.textSecondary,

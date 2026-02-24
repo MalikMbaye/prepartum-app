@@ -86,7 +86,7 @@ export default function OnboardingScreen() {
         notificationsEnabled,
         onboardingCompleted: true,
       });
-      router.replace('/(tabs)');
+      router.replace('/intake');
     } catch (e) {
       console.error('Error completing onboarding:', e);
     }

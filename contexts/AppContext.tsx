@@ -12,6 +12,10 @@ interface UserProfile {
   focusAreas: string[] | null;
   notificationsEnabled: boolean | null;
   onboardingCompleted: boolean | null;
+  intakeCompleted: boolean | null;
+  currentSeason: string | null;
+  seasonScores: any | null;
+  profileFlags: any | null;
   pregnancyWeek: number | null;
   createdAt: string | null;
 }
