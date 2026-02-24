@@ -285,50 +285,32 @@ export default function IntakeScreen() {
   }
 
   async function calculateProfile() {
-    const seasonPoints: Record<string, number> = { tender: 0, grounding: 0, expanding: 0, restorative: 0 };
-    const flags: Record<string, boolean> = {};
-
-    for (const q of questions) {
-      const resp = answers[q.id];
-      if (!resp || !q.scoringMap) continue;
-
-      const answerKeys = q.questionType === 'multi_select'
-        ? resp.answer.split(',')
-        : [resp.answer];
-
-      for (const key of answerKeys) {
-        const scoring = (q.scoringMap as any)[key];
-        if (!scoring) continue;
-
-        if (scoring.season_points) {
-          for (const [season, points] of Object.entries(scoring.season_points)) {
-            seasonPoints[season] = (seasonPoints[season] || 0) + (points as number);
-          }
-        }
-        if (scoring.flags) {
-          for (const [flag, val] of Object.entries(scoring.flags)) {
-            if (val) flags[flag] = true;
-          }
-        }
-      }
-    }
-
-    const sorted = Object.entries(seasonPoints).sort((a, b) => b[1] - a[1]);
-    const topSeason = sorted[0][0];
-
-    setCalculatedSeason(topSeason);
-    setCalculatedFlags(Object.keys(flags));
-
     if (profile?.id) {
       try {
-        await apiRequest('POST', `/api/users/${profile.id}/intake/complete`, {
-          currentSeason: topSeason,
-          seasonScores: seasonPoints,
-          profileFlags: flags,
+        const res = await apiRequest('POST', `/api/users/${profile.id}/intake/complete`, {});
+        const data = await res.json();
+        const calculatedProfile = data.profile;
+
+        setCalculatedSeason(calculatedProfile.currentSeason);
+
+        const flagKeys = Object.keys(calculatedProfile.profileFlags || {});
+        setCalculatedFlags(flagKeys);
+
+        await setProfile({
+          ...data.user,
+          intakeCompleted: true,
+          currentSeason: calculatedProfile.currentSeason,
+          seasonScores: calculatedProfile.seasonScores,
+          profileFlags: calculatedProfile.profileFlags,
         });
       } catch (e) {
         console.error('Error completing intake:', e);
+        setCalculatedSeason('grounding');
+        setCalculatedFlags([]);
       }
+    } else {
+      setCalculatedSeason('grounding');
+      setCalculatedFlags([]);
     }
 
     await new Promise(resolve => setTimeout(resolve, 2500));

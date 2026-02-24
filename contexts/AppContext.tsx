@@ -16,6 +16,7 @@ interface UserProfile {
   currentSeason: string | null;
   seasonScores: any | null;
   profileFlags: any | null;
+  preferences: any | null;
   pregnancyWeek: number | null;
   createdAt: string | null;
 }

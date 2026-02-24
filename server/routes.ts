@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
+import { calculateUserProfile } from "./profile-calculator";
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -492,17 +493,12 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
 
   app.post("/api/users/:userId/intake/complete", async (req: Request, res: Response) => {
     try {
-      const { seasonScores, profileFlags, currentSeason } = req.body;
-      const user = await storage.updateUser(req.params.userId, {
-        intakeCompleted: true,
-        onboardingCompleted: true,
-        currentSeason,
-        seasonScores,
-        profileFlags,
-      } as any);
+      const profile = await calculateUserProfile(req.params.userId);
+      const user = await storage.getUser(req.params.userId);
       if (!user) return res.status(404).json({ message: "User not found" });
-      res.json(user);
+      res.json({ user, profile });
     } catch (e: any) {
+      console.error("Profile calculation error:", e);
       res.status(400).json({ message: e.message });
     }
   });
