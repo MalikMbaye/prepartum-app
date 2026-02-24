@@ -74,7 +74,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const {
     profile, promptResponses, getWeeklyProgress, getPregnancyWeek, getWeeklyCompletedCount,
-    tasks, journalEntries, memories, personalizedPrompts, refreshing, refreshData
+    tasks, journalEntries, memories, prompts, personalizedPrompts, refreshing, refreshData
   } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
@@ -86,6 +86,17 @@ export default function HomeScreen() {
   const completedTasks = tasks.filter(t => t.completed).length;
   const totalTasks = tasks.length;
 
+  const fallbackPrompts = useMemo(() => {
+    if (personalizedPrompts.length > 0) return [];
+    const categories = ['mindset', 'relationships', 'physical'];
+    const result: any[] = [];
+    for (const cat of categories) {
+      const p = prompts.find(pr => pr.category === cat && !completedPromptIds.includes(pr.id));
+      if (p) result.push({ ...p, depth: null, format: null, intensity: null, reframe: null });
+    }
+    return result.slice(0, 3);
+  }, [personalizedPrompts, prompts, completedPromptIds]);
+
   const greeting = useMemo(() => {
     const name = profile?.name || 'Mama';
     const hour = new Date().getHours();
@@ -94,7 +105,9 @@ export default function HomeScreen() {
     return `Good evening, ${name}`;
   }, [profile?.name]);
 
-  const availablePrompts = personalizedPrompts.filter(p => !completedPromptIds.includes(p.id));
+  const availablePrompts = personalizedPrompts.length > 0
+    ? personalizedPrompts.filter(p => !completedPromptIds.includes(p.id))
+    : fallbackPrompts;
   const hasPrompts = availablePrompts.length > 0;
   const primaryColor = hasPrompts ? getCategoryColor(availablePrompts[0].category) : Colors.accentPink;
 
