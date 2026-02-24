@@ -1,0 +1,82 @@
+Seed the intake_questions table with the complete 24-question intake questionnaire. Here are the first 10 questions (Phase 1 + Phase 2 start):
+
+Phase 1 - Core Profile:
+
+Question 1.1:
+- id: "1.1"
+- phase: 1
+- order_num: 1
+- question_text: "What's your name?"
+- question_type: "text_input"
+- required: true
+- scoring_map: {}
+
+Question 1.2:
+- id: "1.2"
+- phase: 1
+- order_num: 2
+- question_text: "When is your baby due?"
+- question_type: "date_picker"
+- required: true
+- scoring_map: {}
+
+Question 1.3:
+- id: "1.3"
+- phase: 1
+- order_num: 3
+- question_text: "What's your relationship status?"
+- question_type: "single_select"
+- answer_options: [
+    {"value": "A", "label": "Single (parenting alone)"},
+    {"value": "B", "label": "In a relationship"},
+    {"value": "C", "label": "Married/Partnered"},
+    {"value": "D", "label": "It's complicated"}
+  ]
+- scoring_map: {
+    "A": {"flags": {"single_mother": true}},
+    "B": {},
+    "C": {},
+    "D": {"flags": {"relationship_complicated": true}}
+  }
+
+Question 1.4:
+- id: "1.4"
+- phase: 1
+- order_num: 4
+- question_text: "Who do you live with right now?"
+- question_type: "multi_select"
+- answer_options: [
+    {"value": "A", "label": "I live alone"},
+    {"value": "B", "label": "With my partner/spouse"},
+    {"value": "C", "label": "With my parents/family"},
+    {"value": "D", "label": "With roommates/friends"},
+    {"value": "E", "label": "Other"}
+  ]
+- scoring_map: {
+    "A": {"flags": {"lives_alone": true}, "season_points": {"tender": 1}}
+  }
+
+Phase 2 - Mindset Profile:
+
+Question 2.1:
+- id: "2.1"
+- phase: 2
+- order_num: 5
+- question_text: "How are you feeling about pregnancy right now?"
+- question_type: "single_select"
+- answer_options: [
+    {"value": "A", "label": "Overwhelmed and anxious most days"},
+    {"value": "B", "label": "A mix of excited and nervous"},
+    {"value": "C", "label": "Mostly calm and positive"},
+    {"value": "D", "label": "Exhausted but hanging in there"},
+    {"value": "E", "label": "Uncertain — it changes day to day"}
+  ]
+- scoring_map: {
+    "A": {"season_points": {"tender": 2}},
+    "B": {"season_points": {"grounding": 1}},
+    "C": {"season_points": {"expanding": 2}},
+    "D": {"season_points": {"restorative": 2}},
+    "E": {"season_points": {"grounding": 1}}
+  }
+
+Continue seeding remaining questions 2.2 through 3.10 following the same pattern from the PREPARTUM_INTAKE_QUESTIONNAIRE.md document.

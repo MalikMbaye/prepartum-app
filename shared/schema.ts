@@ -141,12 +141,15 @@ export const journalEntries = pgTable("journal_entries", {
 
 export const intakeQuestions = pgTable("intake_questions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  questionId: text("question_id").notNull(),
+  phase: integer("phase").notNull().default(1),
   questionText: text("question_text").notNull(),
-  questionType: text("question_type").notNull().default("multiple_choice"),
-  options: jsonb("options"),
+  questionType: text("question_type").notNull().default("single_select"),
+  answerOptions: jsonb("answer_options"),
   category: text("category"),
   orderNumber: integer("order_number"),
-  seasonMapping: jsonb("season_mapping"),
+  required: boolean("required").default(true),
+  scoringMap: jsonb("scoring_map"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
