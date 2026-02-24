@@ -457,6 +457,56 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
     }
   });
 
+  app.get("/api/intake-questions", async (req: Request, res: Response) => {
+    try {
+      const questions = await storage.getAllIntakeQuestions();
+      res.json(questions);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/users/:userId/intake-responses", async (req: Request, res: Response) => {
+    try {
+      const responses = await storage.getUserIntakeResponses(req.params.userId);
+      res.json(responses);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/users/:userId/intake-responses", async (req: Request, res: Response) => {
+    try {
+      const { questionId, answer, answerData } = req.body;
+      const response = await storage.saveIntakeResponse({
+        userId: req.params.userId,
+        questionId,
+        answer,
+        answerData,
+      });
+      res.json(response);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/users/:userId/intake/complete", async (req: Request, res: Response) => {
+    try {
+      const { seasonScores, profileFlags, currentSeason } = req.body;
+      const user = await storage.updateUser(req.params.userId, {
+        intakeCompleted: true,
+        onboardingCompleted: true,
+        currentSeason,
+        seasonScores,
+        profileFlags,
+      } as any);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.json(user);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

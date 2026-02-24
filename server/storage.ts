@@ -4,10 +4,12 @@ import {
   users, prompts, userPromptResponses, memories, tasks, userTasks,
   journalEntries, quizzes, quizQuestions, userQuizResults,
   roleplayScenarios, roleplaySessions,
+  intakeQuestions, intakeResponses,
   type User, type InsertUser, type Prompt, type PromptResponse,
   type Memory, type Task, type UserTask, type JournalEntry,
   type Quiz, type QuizQuestion, type QuizResult,
   type RoleplayScenario, type RoleplaySession,
+  type IntakeQuestion, type IntakeResponse,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -52,6 +54,11 @@ export interface IStorage {
   getSession(id: string): Promise<(RoleplaySession & { scenario?: RoleplayScenario }) | undefined>;
   createSession(data: { userId: string; scenarioId: string; messages: any[] }): Promise<RoleplaySession>;
   updateSession(id: string, data: { messages?: any[]; feedback?: any; completedAt?: Date | null }): Promise<RoleplaySession | undefined>;
+
+  getAllIntakeQuestions(): Promise<IntakeQuestion[]>;
+  getUserIntakeResponses(userId: string): Promise<IntakeResponse[]>;
+  saveIntakeResponse(data: { userId: string; questionId: string; answer: string; answerData?: any }): Promise<IntakeResponse>;
+  deleteUserIntakeResponses(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -334,6 +341,33 @@ export class DatabaseStorage implements IStorage {
     if (data.completedAt !== undefined) updateData.completedAt = data.completedAt;
     const [updated] = await db.update(roleplaySessions).set(updateData).where(eq(roleplaySessions.id, id)).returning();
     return updated;
+  }
+
+  async getAllIntakeQuestions(): Promise<IntakeQuestion[]> {
+    return db.select().from(intakeQuestions).orderBy(intakeQuestions.orderNumber);
+  }
+
+  async getUserIntakeResponses(userId: string): Promise<IntakeResponse[]> {
+    return db.select().from(intakeResponses)
+      .where(eq(intakeResponses.userId, userId))
+      .orderBy(intakeResponses.createdAt);
+  }
+
+  async saveIntakeResponse(data: { userId: string; questionId: string; answer: string; answerData?: any }): Promise<IntakeResponse> {
+    await db.delete(intakeResponses).where(
+      and(eq(intakeResponses.userId, data.userId), eq(intakeResponses.questionId, data.questionId))
+    );
+    const [response] = await db.insert(intakeResponses).values({
+      userId: data.userId,
+      questionId: data.questionId,
+      answer: data.answer,
+      answerData: data.answerData || null,
+    }).returning();
+    return response;
+  }
+
+  async deleteUserIntakeResponses(userId: string): Promise<void> {
+    await db.delete(intakeResponses).where(eq(intakeResponses.userId, userId));
   }
 }
 
