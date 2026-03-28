@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput, ScrollView,
   Platform, KeyboardAvoidingView, Switch
@@ -27,12 +27,19 @@ export default function OnboardingScreen() {
   const { setProfile } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dayInput, setDayInput] = useState('');
+  const [monthInput, setMonthInput] = useState('');
+  const [yearInput, setYearInput] = useState('');
   const [isFirstPregnancy, setIsFirstPregnancy] = useState<boolean | null>(null);
   const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [preferredTime, setPreferredTime] = useState('9:00 AM');
   const [dateError, setDateError] = useState('');
+  const monthRef = useRef<TextInput>(null);
+  const yearRef = useRef<TextInput>(null);
+
+  const dueDate = dayInput.length === 2 && monthInput.length === 2 && yearInput.length === 4
+    ? `${dayInput}/${monthInput}/${yearInput}` : '';
 
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const webBottomInset = Platform.OS === 'web' ? 34 : 0;
@@ -121,12 +128,23 @@ export default function OnboardingScreen() {
     }
   }
 
-  function formatDateInput(text: string) {
-    const cleaned = text.replace(/[^0-9]/g, '');
-    let formatted = cleaned;
-    if (cleaned.length > 2) formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
-    if (cleaned.length > 4) formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4) + '/' + cleaned.slice(4, 8);
-    setDueDate(formatted);
+  function handleDayChange(text: string) {
+    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 2);
+    setDayInput(cleaned);
+    setDateError('');
+    if (cleaned.length === 2) monthRef.current?.focus();
+  }
+
+  function handleMonthChange(text: string) {
+    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 2);
+    setMonthInput(cleaned);
+    setDateError('');
+    if (cleaned.length === 2) yearRef.current?.focus();
+  }
+
+  function handleYearChange(text: string) {
+    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 4);
+    setYearInput(cleaned);
     setDateError('');
   }
 
@@ -219,20 +237,60 @@ export default function OnboardingScreen() {
                   />
                 </View>
 
-                <View style={styles.inputWrap}>
-                  <TextInput
-                    style={[styles.input, { flex: 1 }, dateError ? styles.inputError : null]}
-                    value={dueDate}
-                    onChangeText={formatDateInput}
-                    placeholder="When are you due?"
-                    placeholderTextColor={Colors.textLight}
-                    keyboardType="number-pad"
-                    maxLength={10}
-                    testID="duedate-input"
-                  />
-                  <Text style={styles.inputHintInline}>DD / MM / YYYY</Text>
+                <View>
+                  <Text style={styles.dateLabel}>When are you due?</Text>
+                  <View style={styles.dateBoxRow}>
+                    <View style={styles.dateBoxWrap}>
+                      <TextInput
+                        style={[styles.dateBox, dateError ? styles.dateBoxError : null]}
+                        value={dayInput}
+                        onChangeText={handleDayChange}
+                        placeholder="DD"
+                        placeholderTextColor={Colors.textLight}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        testID="duedate-day"
+                        returnKeyType="next"
+                        onSubmitEditing={() => monthRef.current?.focus()}
+                      />
+                      <Text style={styles.dateBoxLabel}>Day</Text>
+                    </View>
+                    <Text style={styles.dateSeparator}>/</Text>
+                    <View style={styles.dateBoxWrap}>
+                      <TextInput
+                        ref={monthRef}
+                        style={[styles.dateBox, dateError ? styles.dateBoxError : null]}
+                        value={monthInput}
+                        onChangeText={handleMonthChange}
+                        placeholder="MM"
+                        placeholderTextColor={Colors.textLight}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        testID="duedate-month"
+                        returnKeyType="next"
+                        onSubmitEditing={() => yearRef.current?.focus()}
+                      />
+                      <Text style={styles.dateBoxLabel}>Month</Text>
+                    </View>
+                    <Text style={styles.dateSeparator}>/</Text>
+                    <View style={[styles.dateBoxWrap, { flex: 2 }]}>
+                      <TextInput
+                        ref={yearRef}
+                        style={[styles.dateBox, dateError ? styles.dateBoxError : null]}
+                        value={yearInput}
+                        onChangeText={handleYearChange}
+                        placeholder="YYYY"
+                        placeholderTextColor={Colors.textLight}
+                        keyboardType="number-pad"
+                        maxLength={4}
+                        testID="duedate-year"
+                        returnKeyType="done"
+                      />
+                      <Text style={styles.dateBoxLabel}>Year</Text>
+                    </View>
+                  </View>
+                  {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
                 </View>
-                {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
 
                 <View style={styles.pregnancyRow}>
                   <Text style={styles.pregnancyLabel}>Is this your first pregnancy?</Text>
@@ -554,14 +612,48 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     paddingVertical: 16,
   },
-  inputError: {
+  dateLabel: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 10,
+  },
+  dateBoxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dateBoxWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dateBox: {
+    width: '100%',
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    fontFamily: 'Lato_400Regular',
+    fontSize: 20,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  dateBoxError: {
     borderColor: Colors.error,
   },
-  inputHintInline: {
+  dateBoxLabel: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textLight,
-    marginLeft: 8,
+    marginTop: 5,
+  },
+  dateSeparator: {
+    fontSize: 24,
+    color: Colors.textLight,
+    marginBottom: 18,
+    paddingHorizontal: 2,
   },
   errorText: {
     fontFamily: 'Lato_400Regular',

@@ -1,0 +1,507 @@
+Malik [00:00]: Um no. I kind of just want to want you to like do your thing and let's talk through everything and then if I have any questions, I'll just let you know. Okay. Awesome. so, let me go through the kickoff and what about questions related to the overall project or the process, or Anything like that since our last meeting because I know you were kind of like doing some Modeling scenario planning.
+
+Brittney Mejia [00:23]: yeah, yeah I think I think like, overall I'm curious to see How everything's gonna work. How everything's gonna look? I wanted to like low-key. See if there were days where you like are building out the app if I could like literally just be a flower on the wall just so I can see kind of like okay.
+
+Malik [00:43]: That's funny, but my phone up to record this.
+
+Brittney Mejia [00:46]: Good.
+
+Malik [00:48]: Yeah.
+
+Brittney Mejia [00:48]: to like, learn the skill as well. You know what I'm saying? Like, during this whole process,
+
+Malik [00:57]: Know.
+
+Brittney Mejia [00:59]: too. Because I is gonna be like, people are selling courses and ebooks, and we're building an app and not, that's this. I'm very excited, as you can tell. So, let's go.
+
+Malik [03:01]: Yeah, that's great. And honestly that's a testimonial for you though. Like now,
+
+Brittney Mejia [03:07]: Yeah.
+
+Malik [03:08]: just like you just now, you have a testimony of somebody that you coached who just bought a $10,000 piece of land. However, much she bought that test that does beast land. It's like even though you have don't have your land yet that's a testimonial for you, right? Even if she doesn't get on video and do it, you can now get on camera and say I was having a conversation, did you know that you can buy peace Planet rezone it? And I just told this to somebody and they bought a piece of land.
+
+Malik [03:32]: Click. Now you have a testimonial for 50,000, you know, I mean
+
+Brittney Mejia [03:36]: Yeah, it's we're gonna do so much. I just I pray that you don't retire by the summer because
+
+Malik [03:42]: You know.
+
+Brittney Mejia [03:43]: if you're a tired by the summer it's like there's so much other like things that we could like build out that I'm already like to do but
+
+Malik [03:51]: and then polish, and then we'll do launch prep and launch. So that's the entire process. And then at each step, We're doing like two to three revisions. And so, like the ideas that? Well, I'll present a deliverable to you. I'll get your feedback on it. If there's some of that you don't like, you'll give it back to me, you'll give me your feedback.
+
+Malik [27:48]: I'll iterate on that and then I'll bring it back to you. That will be one vision. And so I, we ide
+
+Brittney Mejia [06:16]: Yeah.
+
+Malik [06:17]: Really, that loop would be like two to three times before we get it right. The goal is for us to be in alignment at every step. And so there's anything at all that that you have, definitely let me know. And then, you know, you can take time to digest the deliverables, as well.
+
+Malik [06:36]: I think what we want to avoid in the process is like scope creep, which is like the biggest risk of any app or any technical project because once you get into this realm of developing apps, You start to realize that the canvas is infinite.
+
+Brittney Mejia [06:52]: Right.
+
+Malik [06:52]: There's many different things that you can do, right? Like we even had like a bunch of ideas out of our last meeting. you know, and so We want to make sure that we manage the the goals, and then we don't want to bloat it because the more things you add into that app at once, the more complicated it gets, right.
+
+Malik [07:15]: And then that's like, the more things you want to give people to react to. And like, if you just like overload it with features, it can sometimes slow it down. It's sometimes can make the user experience confusing. Like so hard for people to just remember what they are coming to your
+
+Brittney Mejia [07:28]: Right.
+
+Malik [07:34]: Product Development and Testing. I have an idea that this will add value to this customer. So I'm going to build this like feature to prove that based off of how people respond to it. I'll either have to tweak it and then if I continue to tweak it and then the things still appears not to be validated, then that means that maybe it's not the right time, maybe it's not the right vehicle etc.
+
+Malik [31:45]: And we have to pivot to whatever can, you know, make the most money. So that was a big
+
+Brittney Mejia [08:16]: Okay.
+
+Malik [08:17]: because things are actively changing. And what I've worked with certain people in the past who are building their first app or who are designing their first thing. It's like that's one of the biggest challenges that some people might have like, Oh I thought we were gonna do it like this, but then you start doing, you start building out the codes not working, then I'll week three, you're like, Actually, we need to rethink what this is and how we're going to deliver it.
+
+Malik [22:47]: And then one person I say, Oh no, that's not the same exact feature, it's like No, it's the same goal. It's the same jobs done. It's the same value to the customer and we are on a journey of trying to uncover the best way to deliver that value, right? And so I'm going to be doing everything in my power to make that happen, but I just want to like emphasize that and just try my best to communicate and then just manage expectations for what this process is.
+
+Malik [38:07]: Does that make sense?
+
+Brittney Mejia [09:49]: Okay.
+
+Malik [09:50]: Cool. Any any questions on that? So cool. So Moving on to the week by week breakdown. So kick off call. Next step is going to be like the brand assets so I did some explorations of like what an icon could look like. But you know, I don't know if you have any logos any colors or things like that that you want to use.
+
+Malik [10:23]: I'll show you what I have and you can let me know how we want to tweak on that. And I'll go over the mood board. You'll pick a design direction and then I'm going to start mapping out the flow. So the flow is kind of like It's just like the flowchart.
+
+Malik [10:49]: It's like maps out. Okay, you see this screen that screen and then the next screen and so I'm about how people are gonna move
+
+Brittney Mejia [10:44]: Okay, I just texted you just something random from Chad Gpt.
+
+Malik [10:45]: the visuals that people see and then we'll lock down the design. So that is what we're working on this week. Okay.
+
+Brittney Mejia [11:06]: It's a logo and then I got app design. I don't like the app design. I just like the colors, but that's like a mock logo. And then I sent you. This is kind of the color scheme. I'm sending it right now. I can send you the canva. You know, like the whole canva thing.
+
+Brittney Mejia [11:31]: I have the links for them but these are kind of the
+
+Malik [11:23]: Comes up and then How do you what are you doing for file management? Do you work
+
+Brittney Mejia [11:24]: The colors that I sent you. um, It's in your text message.
+
+Malik [12:06]: out of I notes or you a doc's person? Okay, I say this.
+
+Brittney Mejia [12:11]: Yeah. Um,
+
+Malik [12:13]: Excuse me.
+
+Brittney Mejia [12:15]: Like right, the stuff I sent you was from notes. I use like Google Docs.
+
+Malik [12:20]: You usually do you use notes more than Google docs like What would be the best for you? I use. I use it like No s***. I use notes a lot too. So like in
+
+Brittney Mejia [12:27]: Google docs.
+
+Malik [12:28]: Okay.
+
+Brittney Mejia [12:29]: Yeah, I'm like release. I'm not that Techy. So Google docs for me works.
+
+Malik [12:34]: Okay.
+
+Brittney Mejia [12:35]: yeah, and also Sorry, last thing I also sent you how to spell my name properly.
+
+Malik [12:41]: Am I am? Am I misspelling your name?
+
+Brittney Mejia [12:44]: Yeah, it's cool.
+
+Malik [12:45]: I'm sorry.
+
+Brittney Mejia [12:48]: It's okay, I'm gonna change my name soon.
+
+Malik [12:50]: You know what's funny? You actually misspelled my name too. It's not. It doesn't happen, okay? It doesn't have a CK on Instagram. It does. It's like in Senegal
+
+Brittney Mejia [12:55]: That is what. Hey, oh my God.
+
+Malik [13:00]: traditionally people spell it with a CK but my mom, she spelled it like the French way without the sea. So most Africans named Malik from Senegal. They always have a CK but like, I don't, but The only one available on Instagram. So now, sometimes people are confused on how to spell my name.
+
+Malik [13:14]: But I yeah, I've been doing Brittany, right.
+
+Brittney Mejia [13:14]: Sorry. Mmm.
+
+Malik [13:18]: Yeah, Brittney, I got you brittney's.
+
+Brittney Mejia [13:20]: Sorry. Not that it matters.
+
+Malik [13:23]: oh, No, no it does. It does. I feel you. Um, So okay, so I'm looking at these, super cool, I'll show you what I have slightly different direction, but I'll definitely take this into consideration and then I can use that to iterate based off of what we discuss today.
+
+Brittney Mejia [13:43]: Yeah. And for the record I do not like the app mockup. Like I do not like how it's like all of that text like
+
+Malik [13:50]: Yep.
+
+Brittney Mejia [13:51]: I feel like I would log into that, I'd be like what this is too much. So I I like how like, how you had it in the pitch, where was more like Icons, right? Like that, like way better user experience. So I just, I just want to like, Underscore that I hate.
+
+Malik [14:08]: Yeah.
+
+Brittney Mejia [14:09]: What that looks like. I just like the colors.
+
+Malik [14:11]: Okay, so you okay, you like like the pink theme.
+
+Brittney Mejia [14:12]: Okay. The pink and blue? Yeah.
+
+Malik [14:17]: That makes sense babies. Um, do you have a boy and a girl? You have two girls.
+
+Brittney Mejia [14:23]: Girls.
+
+Malik [14:24]: Nice. What are their names?
+
+Brittney Mejia [14:26]: Sapphire and Sephora. Yeah.
+
+Malik [14:31]: How do you pronounce your last name?
+
+Brittney Mejia [14:33]: Mejia.
+
+Malik [14:35]: Mejia, Brittney Mejia. And how do you say Sapphire and Sephora in Spanish?
+
+Brittney Mejia [14:37]: Mm-hmm.
+
+Malik [14:40]: Sorry, I'm having 82, right?
+
+Brittney Mejia [14:41]: I figure. Stuffira esafora.
+
+Malik [14:46]: That's how you like your like your like your cousins and grandparents would say and like Dominican Republic when they see.
+
+Brittney Mejia [14:53]: Yeah. Safira
+
+Malik [14:54]: Safira.
+
+Brittney Mejia [14:54]: Sapphire. Mm-hmm.
+
+Malik [14:57]: Theater. Do you spell? It's a feeder? Is there an E at the end?
+
+Brittney Mejia [15:02]: No, it's Sapphire. It's sapphire like how you would write the word sapphire.
+
+Malik [15:06]: But that's how we pronounced, and
+
+Brittney Mejia [15:07]: But so far, so forest, spelled sapph or a, so it's not so far from the store. So for what, a
+
+Malik [15:15]: Fascinating. Now that my friends are having kids, I'm like, I have to make a concerted effort to remember their names, so I like to do that sometimes.
+
+Brittney Mejia [15:24]: Yeah, yeah. They're important.
+
+Malik [15:27]: Absolutely cool. And then, the other thing that I wanted, I'll show you again like the design direction. I'll review the files that you sent me, but the other thing is that if I'm using any terminology or whatever that is new, like, definitely let me know because that also helped as I'm gonna be building out.
+
+Brittney Mejia [15:42]: Okay.
+
+Malik [15:44]: Like, you know, Turning this process into something like repeatable that you can now use self-service etc.
+
+Brittney Mejia [15:51]: Gotcha. Yes, sculpt creep. I use context clues for scope creep. I didn't know what that
+
+Malik [15:57]: Yeah.
+
+Brittney Mejia [15:57]: was but I feel like, I understand what it what it is.
+
+Malik [16:01]: Yeah. It's like project scope and then it just balloons, balloons, balloons, balloons, balloons and then nothing gets done. You just end up standing still and that is actually the problem that most corporations face and that's why they hire these big, a lot of corporate consultants, they end up on contracts where something supposed to take six months, but you're on it for 10 years like That's how crazy sometimes building apps and building technology can be.
+
+Malik [16:26]: Which is also why AI is so transformational. so, Fascinating stuff. But yeah, moving on to week. Two app development will revise some of the mock-ups if needed will, then pick a platform like I said, and then work on like the course screens. Then start building out the daily process system, the memory bank and then we'll do like the brain dump content session.
+
+Malik [16:47]: And so, general, like outline here is just like the core structure, right? Like just getting ourselves stand up from a technical process, building an app. It involves going through multiple layers of filtration, right? There's like the initial spark of the idea which is what you had like, Oh my God, I have this brand, I can build an app.
+
+Malik [17:06]: And then you translate that into like an outline of your vision that you set me, and then I kind of turn that into like a strategy and like a pitch. Right. And then now you have to go through multiple things where you're gonna be defining, you know, the features, the functionality, the content strategy, the flow, the logic on the back end when this happens then what happens, how and then like you know the the back end then you're gonna also have to visuals and the UI as well.
+
+Malik [17:36]: Most people when they think about an app, all they think about is the screen on their phone and they click it, right? But this is one of the interesting paradoxes of development design. It's like the things that seem the most simple are often sometimes the most complex to achieve, it's like there's so much work that goes on and to making something look effortless.
+
+Malik [17:57]: Like, when Michael Jordan jump from the free throw line, it look like he wasn't even trying.
+
+Brittney Mejia [18:04]: Mmm.
+
+Malik [18:05]: So, you know, I I'm kind of like restating a lot of things, but I do think that just like keeping in mind that, you know, we're gonna we're just gonna be going through multiple steps to just get us through that like final, you know.
+
+Brittney Mejia [18:18]: Okay. Okay? And, and education. We just call it chunking, you just chunk it into
+
+Malik [18:26]: Yeah.
+
+Brittney Mejia [18:26]: piece. So it's like, digestible. But I mean, like, I understand we're building a
+
+Malik [18:29]: Yeah.
+
+Brittney Mejia [18:31]: software so it's like, Yeah.
+
+Malik [18:34]: And yeah, that's that's a term that we use in product design as well, chunking. Like, when we refer with, like referring it into a chunking, the design And different components of the screen and stuff like that.
+
+Brittney Mejia [18:46]: Uh-huh.
+
+Malik [18:48]: Awesome. And then, Yeah, Week three is gonna be focused on like, just like the next set of features once we get the core thing, stood up and working. Well, now start building out some of the more advanced stuff like the task board, the quiz role play micro celebration and then we'll now start training like the content generator.
+
+Malik [19:10]: Um and then the prompts and the quizzes as well. So kind of more of like the the main delivery engine of the app and then week, four content. Completion, like I said app polish, so brain dump and then we'll start setting up some of the AI avatar stuffs and like the graphics and everything like that.
+
+Malik [19:31]: And then we'll start doing like bug fixes and polish. And then week five is gonna be Now, preparing for Launch. So Marketing Assets Landing page. So, yeah, at this stage, we'll do like the final app revisions Ideally. We want to, like, be locked on that. Then it's like, Okay, let's get a landing page.
+
+Malik [19:52]: So you can promote this on the Internet. We'll add that to be integrated with your mother a menu website and then we'll also work on the demo videos, right? So just like a couple quick Videos to promote the app. So like you kind of have like a kit. So when you post that on your social media, you actually have professional Polish graphics.
+
+Malik [20:15]: And then we'll start deploying those as well, so that's kind of like the the main overview. And, you know, week five and six is just gonna be spent going through producing your Your pitch kit for the app itself. So I kind of like breathe through the second part of the timeline because I kind of gave you a general overview in the beginning but definitely, you know, if there's anything that needs to be
+
+Brittney Mejia [20:34]: All right.
+
+Malik [20:37]: clarified, anything that is that you have questions on or any unfamiliar terminology?
+
+Brittney Mejia [20:44]: I wanted to ask you. So what's the prompts I know? Like, you know, like in the contract it says that, I'd get like 30 plus prompts, right, but because I wanted them to like, have like a prompt for every day. Can I just work on that? Like, Can I just work on like Just creating a bunch of prompts and then just handing them to you.
+
+Malik [21:08]: Yeah, no, we can. For the prompts, we'll have a solution for that. So in terms of like being able to create more prompts, when we train like the clawed skill and all that like you'll be set up so that you can just like keep adding more prompts or we can like Set it up so that it can automatically generate from.
+
+Malik [21:28]: So you'll have a way that you can go to Claude, you'll set up your project and you prompt it and then you can just create them and then you'll be able to upload that into the app. So when we pick the platform, that's something that I'm gonna be taking into consideration is like having a platform that will be easy for you to go into the back end and manage a lot of times, like for apps that are more complex It's hard to set up like the Back End interface because you're doing everything just custom and code.
+
+Malik [21:59]: But I'm gonna find a platform where it can be a good
+
+Brittney Mejia [21:57]: Yeah. Okay. Because my thing with the with the prompts is like I've seen a lot
+
+Malik [22:00]: balance so that you can continuously add content to that.
+
+Brittney Mejia [22:08]: of like, you know, journals and stuff like that. Like, you can buy stuff on Amazon and I don't want no surface like I want I was about a curse I want women crying like I want them to be like type of s*** make a video, I want to be crying like I want like somatic releases.
+
+Brittney Mejia [22:27]: So I say that to say that with the prompts like it's just really important for
+
+Malik [22:25]: Yeah.
+
+Brittney Mejia [22:30]: me that they be able to like go deep. and then, another question was, On a scale of 1 to 10. How complex is this project? Like when it comes to like creating an app vibe coding, an app like How complex would you rate this project Schedule 1 to 10?
+
+Malik [22:47]: Well, actually do have a feasibility analysis. Caleb was it said, I'd probably say it's like a five six. It's not, it's not ridiculously complex and I think that there's a clear path to build it and that's why I think we can get it done in six weeks or more complex app.
+
+Malik [23:04]: Like I have apps that I end up working on the project for 15 months, right? So I would say that this is like relatively straightforward.
+
+Brittney Mejia [23:13]: Gotcha.
+
+Malik [23:15]: And we should definitely be able to get a really solid like product up. That'll, you know, check all the boxes, but I think when it comes to like the logic now, right of like how we execute the features, I think that's where we might want to. Like, that's what we want to get nuance because if you think about the mental model of the app, in my head because of, like my background or familiarity with like horses and stuff like that, I think about like a course as like a correct, a pathway with like information and then you have quizzes and stuff like that.
+
+Malik [24:28]: So in many ways I'm kind of like my mental model to help me understand. It's not a course the design factor is
+
+Brittney Mejia [24:00]: Right.
+
+Malik [24:01]: different, right? It's like you have an app that has prompts, but you're kind of like, teaching them or like guiding them. And so if we apply really good design on top of an app builder or tech stack that allows us to create courses will be able to cover like all of them and then it'll be really easy for you to manage while still getting that customization and all that kind of stuff.
+
+Malik [24:25]: And so content course, type apps are good. So that's why I think we can get like, the, the MVP stood up like that. And then once it starts making money, then we can invest into more advanced development. That's my mental model. I don't know if you disagree strongly with that or if you get what I'm saying,
+
+Brittney Mejia [24:44]: No, I feel like you're the expert. So,
+
+Malik [24:47]: Cool. Yeah, I just want to respect your baby but yeah I guess puns intended in
+
+Brittney Mejia [24:48]: Yeah.
+
+Malik [24:55]: that way as well.
+
+Brittney Mejia [24:56]: Yeah, it's it's kind of our baby Malik.
+
+Malik [25:01]: We love the babies. You know, let's keep popping them out. So yeah, for first marble app, with course content. I'm thinking there's a couple different platforms that we can use. None of this is really important. Right now. I'm just letting you know that I'm looking at into different platforms and these are the top ones but I don't want to kind of like get you like bogged down into that.
+
+Malik [25:39]: So I think that like, the high risk features would kind of gets into like, your, your questions, the role play scenarios. Now I've when I say, roleplay scenarios, if we pre-script the responses or we use AI to build, like If answers
+
+Brittney Mejia [25:43]: Okay.
+
+Malik [25:44]: this then this like we can kind of like make it like finite right versus like if we actually like integrate an AI brain that is like doing the heavy analysis of a tragedy BT. Like we don't need the power of Chad Gbt for something like this but that's one thing that we're gonna have to like Okay let's like pressure test that a bit right? Um, other thing is a like voice notes.
+
+Malik [26:08]: So I do believe that there's some like tech, like stacks that we can just add in voice note functionality. But if that becomes challenging, or if it like slows the app down, we might want to do text or like have like a different way. Like maybe they can upload a voice recording.
+
+Malik [26:26]: Like we're gonna have to think about the form factor there, but I do believe that we should be able to, you know, collect voice input. It's just a risk that
+
+Brittney Mejia [26:35]: Okay.
+
+Malik [26:36]: I'm considering I think the quiz recommendation to prompt engine This should be pretty simple, which is why I'm saying that. Like, yeah, a lot of these app builders have course, quizzes and things like that built in so that should be able to, to get done. But we'll just have to like, you know, Simplify it and this is also where marketing comes into play.
+
+Malik [27:05]: So that's why building an app is like it's like technology is marketing, It's strategy because you're selling them on the experience while also delivering real value. But like how you position it matters right because what the in the day it matters that
+
+Brittney Mejia [27:14]: Right.
+
+Malik [27:16]: they get the result, you know? And so um you can basically make it seem more personalized than it is but it is still personalized.
+
+Brittney Mejia [27:26]: Mmm.
+
+Malik [27:28]: Um, so yeah. So yeah, I think if the roleplay is prescripted, The voice note, You know, we have a text fallback and then the recommendation is engine and simple, we should be good to go. So those are like the main things that I think are gonna be hard. But like I said, I feel Pretty pretty confident so far.
+
+Brittney Mejia [27:47]: Okay.
+
+Malik [27:50]: And then the other thing is like the content plan. So we can kind of like, go through this At a later date. I added you to the notion but this is just gonna be what we're gonna use for our content prep guide. I don't want to like, like, kind of derail the meeting with this now, but I just wanted to get ahead of the content, um, and then in terms of like the deliverables and things like that, I think the main things that I'm gonna need from you because you're just like Hey, what's the homework to love you guys? I'm
+
+Brittney Mejia [28:22]: Yeah.
+
+Malik [28:25]: I think logo colors will talk about that. Excuse me, Apple developer account. Don't worry about that now but when we get closer to it we might have to set that up and then
+
+Brittney Mejia [28:35]: Okay.
+
+Malik [28:41]: Uh, yeah, picking the design direction is gonna be important, so we'll do that next in the content prep. We'll have a few brain dumping sessions, you'll review the mock-up. And then you'll review the app and content review the marketing assets and then boom. You're good to go. So, a lot of role is gonna be just
+
+Brittney Mejia [28:56]: Okay.
+
+Malik [28:57]: like, given the information, giving your input, getting your feedback and let's just make sure that the vision that you had is being properly. Expressed. Okay.
+
+Brittney Mejia [29:10]: Quick question, that was my ADHD. Um, when we launched, will we be able to set up the AI? Ads. So, you get this thing. Going. Yeah.
+
+Malik [29:22]: Add. Yeah, we should be able to do that. I already have it to do like three to five videos in that launch kit. The only thing that's gonna determine how quickly we get that set up is like the infrastructure work that we're doing for MLM. So, once we have like, the MLM AI ad set up, like that's something that you can be able to use to create AI ads for the business as well.
+
+Malik [29:51]: So we're gonna have an AI ads engine for this business operation that we're doing together, which includes MLM, then, you know, if we do use that for the app as well, we can do that too. So I'm gonna like a AI
+
+Brittney Mejia [30:03]: Okay, because I was mmm.
+
+Malik [30:06]: automation system to create content at Know that the business will be able to use in general building. AI. UGC Automations was not a part of this scope, but by putting that you'll be able to
+
+Brittney Mejia [30:17]: Okay.
+
+Malik [30:19]: like get ads. And then once we start running ads, we can start running ads for the app too, right? So
+
+Brittney Mejia [30:24]: Okay.
+
+Malik [30:25]: Well, we get there.
+
+Brittney Mejia [30:28]: I had a question but I lost it. I'll get it back. Okay.
+
+Malik [30:31]: Okay, any and anything else?
+
+Brittney Mejia [30:35]: It'll come back.
+
+Malik [30:36]: okay, so now I want to review The designs.
+
+Brittney Mejia [30:43]: Okay.
+
+Malik [30:46]: Yeah, this is always the fun part, you know, the dopamine of pixels on a screen.
+
+Brittney Mejia [30:54]: I like bull my camera on my phone. Hopefully the Okay.
+
+Malik [30:58]: I'll zoom in for you. Let me have this here. And move into new window. Oh. Can you still see it?
+
+Brittney Mejia [31:11]: Yeah.
+
+Malik [31:12]: Oh wait, no. We put it back up. Pre-partum app. Okay. And then let me actually even do this. Let me present it for you. so, This is the design of the app so I presented a couple different like directions. One is more like warm and grounded. The other one is like modern and clean and then this one is a just a bit more airy.
+
+Malik [31:43]: None of these have that like, pink and blue aesthetic. I think I was basing. It more off of like the mother of many, like brand direction and how that fits into the portfolio. So that's what I use. So, you can kind of see here, an idea of like the colors.
+
+Malik [32:07]: So a lot of browns, let me even pull up my design notes. I can like make sure we do this justice as well. Let me see here.
+
+Brittney Mejia [32:27]: I,
+
+Malik [32:35]: Okay. There's one notes. Okay. So yeah, use brown earthy tones, etc. I think like the goal was to have it feel like You know, down to earth spa, wellness type of vibes and then in terms of like logos and icons, I tested out these different concepts like using like wreaths and things like that to kind of like connect to that earth.
+
+Malik [33:01]: You vibe and make it also feel like homie. So like the app feels like you're you're coming home if you will. And then like if you're thinking about mental health as well, like that's something that Kind of calms you down, right? Like you don't want it to be like too jarring when you come to the app, right? And so we want to be earthing, nurturing organic and safe and just make it feel like a warm hug, very rooted trustworthy.
+
+Malik [33:34]: And that we don't want to make it feel like sterile, right? Because a lot of like if you have a doctor's out there, very like sterile and stuff like that. So that was like one direction that You know, I wanted to go in and then you can see here like what this like onboarding screen looks like.
+
+Malik [33:57]: So this could be like the first screen when they download the app for the first time. Like What's that welcoming experience? Right? And then like today's prompt. So what feels heavy today, you can share your thoughts. Etc. And then this is another example of like a welcome screen, right? And so yeah you can see like the visual elements here like linen paper, soft, warm photography, golden hour, using a lot of leaves and branches from that or that earthy feeling it's subtle and not like overwhelming at all.
+
+Malik [34:34]: um, So yeah, like this is like the the first direction of the app. so, I'll give you all the different directions, and then you can kind of like react to them together. Okay, so the next one is like the the elevated like wellness vibe. So this one you can see we're using slightly different colors.
+
+Malik [34:57]: It's a more premium upscale aesthetic, very modern, very clean, highly legible. And so for this we wanted it to be like rich and warm like with the browns like you can see like the pottery like the terracotta um, I was thinking of like, you know, I don't know what that like, free people like that type of brand, you know, And so, yeah, in terms of like visual elements, again, we're using a lot of like warm colors, but like there's slightly different more, white space, more like minimal editorial photography.
+
+Malik [35:34]: And then this was like a concept for like an app logo app icon here as well. And then the welcome screen concept pre-partum. My mother of many preparing your mind and heart for the beautiful transformation ahead. And so this is like a design. It's a bit more. Clean a bit less busy than the previous version and then in terms of the home page like you can see here, you know what week you are on today's focus, guided meditation journal, prompt, etc.
+
+Malik [36:08]: And then today's reflection as well. So yeah, I think this looks really, really nice. Big fan of it, I guess, in terms of visual elements, white space minimal, editorial photography and you know, very soft. And this one is like. More clean. I would say it's more minimal. So this is like a concept for what the app could look like.
+
+Malik [36:33]: Like This is a concept for a tagline, right? So you can see off-white soft black, terracotta accent and the font the very confident, And then this is like another idea for like visual elements and colors that we want to bring into the app as well. So just something to react to And so, this one we're using different logos, so I would create a brown one and a sage green one as well.
+
+Malik [37:03]: And this is what it would look like. Like visual mood board, some of the photography like when you're thinking about the landing page, what do we want to do? And so, yeah, this one is just like more calm, more chill, more minimal. Begin your day, how are you feeling today? And then when you get to the prompt, you can see, like, Morning Wellness, Hydration Nutrition log.
+
+Malik [37:30]: You can have your check-in guided reflection and you can kind of like share your your daily thoughts. And so this is just like a concept of what it could look like. And you know, these are three options. We can go other options that we can do the pink and blue.
+
+Malik [37:51]: I think a lot of my bias was again like when I was mood boarding, this and coming up with the concept, I was thinking about the mother of many skin skincare. Ran and how this all fits together, but would love to get your thoughts. And then we can use that to iterate.
+
+Brittney Mejia [38:14]: Hmm. Okay. I like, The second one. And I like the low-key, like the font of the third one. So I'm trying to go in my head, like, how can that go together? I would I, I understand wanting to make The outfit into like what mother many already is. So, like, I really get that.
+
+Brittney Mejia [38:41]: Um, so, I'm just kind of like, Like for example like I like the second one, right? I like the second one for like like I guess like the home screen like I like with the Home screen looks Home screen looks like
+
+Malik [39:02]: Yeah.
+
+Brittney Mejia [39:03]: I think when we start developing it, um, I just like you see the little squiggles like when I see the squiggles I think Campbell and I just don't want it to look like handle.
+
+Malik [39:22]: That's fine. That's fine. Like when you see the squiggles? You mean like this stuff right here?
+
+Brittney Mejia [39:25]: Basically.
+
+Malik [39:27]: Okay. and then,
+
+Brittney Mejia [39:28]: but, Yeah. Um, I would love to see because it's a app specifically. for the prep, like the pregnancy process or even like You know, for an expecting Mom.
+
+Malik [39:45]: Yeah.
+
+Brittney Mejia [39:46]: I would love to see if we could try for the pink and the pink and blue. I
+
+Malik [39:51]: No, the pink and blue makes sense. I think that's that's clever, you're you're
+
+Brittney Mejia [39:51]: respect. Your brain.
+
+Malik [39:58]: it's like I'm here to be the expert on the process and like, you know, how to go about it but I I want to respect your vision because you talk to Mom's you talk to women women. Follow you. You're there so you know what? You like and so trust.
+
+Malik [40:26]: Trust trust
+
+Brittney Mejia [40:13]: Yeah.
+
+Malik [40:19]: your judgment. If something feels off of you feel like something should be a certain way. Definitely let me know. And then I can think about the best way to make that happen. I didn't think about because I'm also not a woman, a gender is
+
+Brittney Mejia [40:27]: Yeah. I think I think for example, if we kind of go for the pink and blue right? And
+
+Malik [40:31]: just
+
+Brittney Mejia [40:36]: and we can keep it clean. Like you see how the second one is clean. So there's still like
+
+Malik [40:39]: Yeah.
+
+Brittney Mejia [40:43]: What are they call it? Like the breathing color like how you have like the white so we can still like have like breath. Like Keep it as simple as possible. We don't want to like overcomplicate it with the design.
+
+Malik [40:54]: Right.
+
+Brittney Mejia [40:55]: But I think the pink and blue will really hit because That's just, like, that's just pregnancy period. Like it's just, it's, it's I just feel like it's gonna hit and I think that when it comes to like mother of many, like, Yeah, we're natural and organic and we can do all of that.
+
+Brittney Mejia [41:11]: But then if like summer's coming up we might do, we might run an ad does red and yellow. You know what I'm saying? Christmas, we might run to add those red and green. So like, we can still
+
+Malik [41:25]: Yeah.
+
+Brittney Mejia [41:25]: Like, with the skincare, we can still play with that but I just feel like the pink and green. Okay? Like I just feel like it's gonna hit, um, but I do like how this is like really, really simple.
+
+Malik [41:34]: Okay.
+
+Brittney Mejia [41:36]: um, Yeah, I'd be interested to just see like playing with the fonts when when you designing it, to design it with this one. And then what it might look like with the bold font.
+
+Malik [41:53]: So in terms of action items from this meeting, first of all, super helpful feedback, I didn't think about the pink and blue. I love it. I think it makes sense. I'm gonna revisit the design. Do another revision and we can look at some options based off the fact that you like this direction, the most out of the three will play once we'll play with
+
+Brittney Mejia [42:12]: oh,
+
+Malik [42:13]: the colors and then I'll share that with you and then you can review that. And then, if we're happy with it, we can lock it.
+
+Brittney Mejia [42:22]: Okay.
+
+Malik [42:23]: Move on to the next phase of the process in terms of now, actually building out the flow and the screens and selecting the platform. And so that's going to be my homework, I think, as of now just, you know, you can just send me everything that you have, I'll share a Google, Google drive for us to use.
+
+Brittney Mejia [42:39]: Okay.
+
+Malik [42:40]: And then I already shared a notion with you as well. If any forms are
+
+Brittney Mejia [42:44]: Okay.
+
+Malik [42:46]: overwhelming or whatever, you need to know where to find anything, just text me and I'll send it to you directly. I'm here to make this process as unintimidating as possible and as easy as possible for you, and it's your first time getting into the app development, a lot of stuff for me like this kind of,
+
+Brittney Mejia [43:00]: Yeah.
+
+Malik [43:02]: like, what goes on in my brain 24/7. And so I might make assumptions, or like I might say something, like, It's supposed to be easier. You're supposed to already know it already. So definitely feel free to use me as a resource. Know, you can text me anytime. And we can communicate and so I want to be a partner for you as much as possible and make this easy for you and make sure you know, at no point.
+
+Malik [43:26]: Do you have questions or Are you feeling like, I don't know what's going on? Or I'm confused or you're struggling to find something or whatever the case says and so
+
+Brittney Mejia [43:35]: Okay, I appreciate that.
+
+Malik [43:36]: Definitely. Okay.
+
+Brittney Mejia [43:39]: Yeah, that I like the pee. I wish her titties was bigger. with the
+
+Malik [43:43]: Yeah.
+
+Brittney Mejia [43:45]: Yeah, cuz I want it like I love the idea of it but I would Yeah but if her
+
+Malik [43:48]: Yeah.
+
+Brittney Mejia [43:49]: titties are bigger than I feel like it would more read pregnant woman. but,
+
+Malik [43:53]: Yeah, that's a conservation as well. So we'll use some more, you know, fertile
+
+Brittney Mejia [43:55]: Yeah.
+
+Malik [44:02]: imagery.
+
+Brittney Mejia [44:04]: Right. No, yeah not. I appreciate it. I I'm excited. I'm excited. Still and I appreciate even the opportunity to be able to like learn. This whole process with you.
+
+Malik [44:17]: Yeah.
+
+Brittney Mejia [44:18]: Um, and also just excited for you because I know that you're building your own systems. So like yeah, congratulations.
+
+Malik [44:23]: Yeah. Absolutely excited to work together. And yeah, I think that It's going to be a good year.
+
+Brittney Mejia [44:34]: I agree.
+
+Malik [44:36]: All right, Brittney, I'll talk to you soon.
+
+Brittney Mejia [44:38]: Alright Malik. Thank you so much.
+
+Malik [44:41]: No problem.
+
+Brittney Mejia [44:42]: Peace.
