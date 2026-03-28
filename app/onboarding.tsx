@@ -58,6 +58,7 @@ function WheelPicker({ items, selectedIndex, onSelect, flex = 1 }: WheelPickerPr
         snapToInterval={ITEM_H}
         decelerationRate="fast"
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
         onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => snap(e.nativeEvent.contentOffset.y)}
         onScrollEndDrag={(e: NativeSyntheticEvent<NativeScrollEvent>) => snap(e.nativeEvent.contentOffset.y)}
         contentContainerStyle={{ paddingVertical: ITEM_H * Math.floor(VISIBLE / 2) }}
@@ -288,6 +289,7 @@ export default function OnboardingScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          scrollEnabled={step !== 1}
         >
           {step === 0 && (
             <Animated.View entering={FadeIn.duration(800)} style={styles.welcomeContainer}>
