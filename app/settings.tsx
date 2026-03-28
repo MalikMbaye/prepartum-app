@@ -19,7 +19,83 @@ export default function SettingsScreen() {
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(profile?.name || '');
+  const [editingDueDate, setEditingDueDate] = useState(false);
+  const [dueDateValue, setDueDateValue] = useState('');
+  const [dueDateError, setDueDateError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  function formatDateInput(text: string) {
+    const cleaned = text.replace(/[^0-9]/g, '');
+    let formatted = cleaned;
+    if (cleaned.length > 2) formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+    if (cleaned.length > 4) formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4) + '/' + cleaned.slice(4, 8);
+    setDueDateValue(formatted);
+    setDueDateError('');
+  }
+
+  function startEditingDueDate() {
+    tryHaptic();
+    if (profile?.dueDate) {
+      const [y, m, d] = profile.dueDate.split('-');
+      setDueDateValue(`${d}/${m}/${y}`);
+    } else {
+      setDueDateValue('');
+    }
+    setDueDateError('');
+    setEditingDueDate(true);
+  }
+
+  async function handleSaveDueDate() {
+    if (dueDateValue.length === 10) {
+      const parts = dueDateValue.split('/');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+        if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2024) {
+          setDueDateError('Please enter a valid date');
+          return;
+        }
+        const inputDate = new Date(year, month - 1, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (inputDate <= today) {
+          setDueDateError('Due date must be in the future');
+          return;
+        }
+        const formatted = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        setSaving(true);
+        try {
+          await setProfile({ dueDate: formatted });
+          setEditingDueDate(false);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setSaving(false);
+        }
+        return;
+      }
+    }
+    if (dueDateValue.length === 0) {
+      setSaving(true);
+      try {
+        await setProfile({ dueDate: null });
+        setEditingDueDate(false);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    setDueDateError('Enter a complete date (DD/MM/YYYY)');
+  }
+
+  function formatDisplayDate(dateStr: string) {
+    const [y, m, d] = dateStr.split('-');
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
 
   const onboardingIncomplete = !profile?.onboardingCompleted;
 
@@ -164,18 +240,43 @@ export default function SettingsScreen() {
 
             <View style={styles.divider} />
 
-            <View style={styles.row}>
+            <View style={[styles.row, editingDueDate && { flexDirection: 'column', alignItems: 'flex-start', paddingVertical: 12 }]}>
               <View style={styles.rowLeft}>
                 <View style={[styles.rowIcon, { backgroundColor: Colors.accentPeach }]}>
                   <Feather name="calendar" size={16} color={Colors.textPrimary} />
                 </View>
                 <Text style={styles.rowLabel}>Due Date</Text>
               </View>
-              <Text style={styles.rowValue}>
-                {profile?.dueDate
-                  ? new Date(profile.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-                  : 'Not set'}
-              </Text>
+              {editingDueDate ? (
+                <View style={styles.dueDateEditWrap}>
+                  <View style={styles.editRow}>
+                    <TextInput
+                      style={styles.nameInput}
+                      value={dueDateValue}
+                      onChangeText={formatDateInput}
+                      placeholder="DD/MM/YYYY"
+                      placeholderTextColor={Colors.textLight}
+                      keyboardType="number-pad"
+                      maxLength={10}
+                      autoFocus
+                    />
+                    <Pressable onPress={handleSaveDueDate} disabled={saving} hitSlop={8}>
+                      <Ionicons name="checkmark-circle" size={24} color={Colors.textPrimary} />
+                    </Pressable>
+                    <Pressable onPress={() => { setEditingDueDate(false); setDueDateError(''); }} hitSlop={8}>
+                      <Ionicons name="close-circle-outline" size={24} color={Colors.textLight} />
+                    </Pressable>
+                  </View>
+                  {dueDateError ? <Text style={styles.dueDateError}>{dueDateError}</Text> : null}
+                </View>
+              ) : (
+                <Pressable onPress={startEditingDueDate} style={styles.editRow} hitSlop={8}>
+                  <Text style={styles.rowValue}>
+                    {profile?.dueDate ? formatDisplayDate(profile.dueDate) : 'Not set'}
+                  </Text>
+                  <Feather name="edit-2" size={14} color={Colors.textLight} />
+                </Pressable>
+              )}
             </View>
 
             <View style={styles.divider} />
@@ -375,6 +476,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     minWidth: 120,
+  },
+  dueDateEditWrap: {
+    marginTop: 8,
+    gap: 4,
+    paddingLeft: 42,
+  },
+  dueDateError: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 12,
+    color: Colors.error,
+    marginTop: 4,
   },
   divider: {
     height: 1,
