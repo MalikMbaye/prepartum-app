@@ -28,8 +28,8 @@ export interface IStorage {
   updatePromptResponse(id: string, userId: string, data: { responseText: string; savedToJournal?: boolean }): Promise<PromptResponse | undefined>;
 
   getUserMemories(userId: string): Promise<Memory[]>;
-  createMemory(data: { userId: string; type: string; content: string; mediaUrl?: string; tags?: string[] }): Promise<Memory>;
-  updateMemory(id: string, userId: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }): Promise<Memory | undefined>;
+  createMemory(data: { userId: string; type: string; content?: string; title?: string; memoryDate?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; tags?: string[]; trimester?: number }): Promise<Memory>;
+  updateMemory(id: string, userId: string, data: { content?: string; title?: string; memoryDate?: string; tags?: string[]; type?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }): Promise<Memory | undefined>;
   deleteMemory(id: string, userId: string): Promise<boolean>;
 
   getTemplateTasks(): Promise<Task[]>;
@@ -140,30 +140,57 @@ export class DatabaseStorage implements IStorage {
   async getUserMemories(userId: string): Promise<Memory[]> {
     return db.select().from(memories)
       .where(eq(memories.userId, userId))
-      .orderBy(desc(memories.createdAt));
+      .orderBy(desc(memories.memoryDate), desc(memories.createdAt));
   }
 
-  async createMemory(data: { userId: string; type: string; content: string; mediaUrl?: string; tags?: string[] }): Promise<Memory> {
+  async createMemory(data: {
+    userId: string;
+    type: string;
+    content?: string;
+    title?: string;
+    memoryDate?: string;
+    mediaUrls?: string[];
+    mediaThumbnailUrl?: string;
+    tags?: string[];
+    trimester?: number;
+  }): Promise<Memory> {
     const [memory] = await db.insert(memories).values({
       userId: data.userId,
       type: data.type || "text",
+      title: data.title,
       content: data.content,
-      mediaUrl: data.mediaUrl,
+      memoryDate: data.memoryDate || new Date().toISOString().split('T')[0],
+      mediaUrls: data.mediaUrls || [],
+      mediaThumbnailUrl: data.mediaThumbnailUrl,
       tags: data.tags || [],
+      trimester: data.trimester,
     }).returning();
     return memory;
   }
 
-  async updateMemory(id: string, userId: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }): Promise<Memory | undefined> {
+  async updateMemory(id: string, userId: string, data: {
+    content?: string;
+    title?: string;
+    memoryDate?: string;
+    tags?: string[];
+    type?: string;
+    mediaUrls?: string[];
+    mediaThumbnailUrl?: string;
+    trimester?: number;
+  }): Promise<Memory | undefined> {
     const [existing] = await db.select().from(memories)
       .where(and(eq(memories.id, id), eq(memories.userId, userId)));
     if (!existing) return undefined;
 
-    const updateData: any = {};
+    const updateData: any = { updatedAt: new Date() };
     if (data.content !== undefined) updateData.content = data.content;
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.memoryDate !== undefined) updateData.memoryDate = data.memoryDate;
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.type !== undefined) updateData.type = data.type;
-    if (data.mediaUrl !== undefined) updateData.mediaUrl = data.mediaUrl;
+    if (data.mediaUrls !== undefined) updateData.mediaUrls = data.mediaUrls;
+    if (data.mediaThumbnailUrl !== undefined) updateData.mediaThumbnailUrl = data.mediaThumbnailUrl;
+    if (data.trimester !== undefined) updateData.trimester = data.trimester;
 
     const [updated] = await db.update(memories)
       .set(updateData)

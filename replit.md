@@ -65,7 +65,7 @@ Premium, luxury aesthetic inspired by brands like Aesop. Key design tokens defin
 1. **users** - Profile data (name, due date, pregnancy week, focus areas, notification preferences, onboarding status, season_last_updated)
 2. **prompts** - Seeded prompt library (title, body, category, week number, day of week)
 3. **user_prompt_responses** - User responses to prompts
-4. **memories** - Text/photo/voice memories with tags
+4. **memories** - Text/photo/voice memories with title, memoryDate, mediaUrls[], mediaThumbnailUrl, trimester, tags
 5. **tasks** - Template task definitions (categorized by trimester)
 6. **user_tasks** - User-specific task completion tracking
 7. **journal_entries** - Journal entries (can originate from prompts or be freeform)

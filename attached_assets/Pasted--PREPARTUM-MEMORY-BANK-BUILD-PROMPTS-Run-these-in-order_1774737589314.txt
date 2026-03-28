@@ -1,0 +1,343 @@
+# PREPARTUM — MEMORY BANK BUILD PROMPTS
+## Run these in order: Prompt MB-1 → MB-2 → MB-3 → MB-4 → MB-5
+
+---
+
+# PROMPT MB-1: DATABASE SCHEMA
+## Paste everything between the triple backticks into Replit Agent chat
+
+```
+Update the PrePartum database schema for the full Memory Bank feature.
+
+## 1. Drop and recreate the memories table with the full schema:
+
+CREATE TABLE IF NOT EXISTS memories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  
+  -- Core fields
+  type TEXT NOT NULL CHECK (type IN ('text', 'photo', 'voice', 'video')),
+  title TEXT,
+  content TEXT,
+  memory_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  
+  -- Media
+  media_urls TEXT[],         -- array for multiple photos or single file URL
+  media_thumbnail_url TEXT,  -- first photo or auto-generated thumb
+  
+  -- Organization
+  tags TEXT[],
+  milestone_id UUID REFERENCES milestones(id) ON DELETE SET NULL,
+  trimester INTEGER,         -- 1, 2, or 3 — calculated on insert
+  
+  -- Metadata
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id);
+CREATE INDEX IF NOT EXISTS idx_memories_memory_date ON memories(memory_date);
+CREATE INDEX IF NOT EXISTS idx_memories_user_date ON memories(user_id, memory_date DESC);
+
+## 2. Create a Supabase storage bucket for memory media:
+
+Run this in the Supabase dashboard SQL editor (Storage API):
+- Bucket name: memory-media
+- Public: false (private, user-authenticated access)
+- File size limit: 50MB
+- Allowed MIME types: image/jpeg, image/png, image/webp, audio/mpeg, audio/mp4, audio/wav, audio/m4a, video/mp4, video/quicktime
+
+## 3. Create an RLS policy for the memories table:
+
+ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can only see their own memories"
+  ON memories FOR ALL
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own memories"
+  ON memories FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+Run all SQL, confirm the table and indexes exist, then tell me it's done.
+```
+
+---
+
+# PROMPT MB-2: MEMORY BANK SCREEN — TIMELINE VIEW
+## Paste everything between the triple backticks into Replit Agent chat
+
+```
+Build the main Memory Bank screen for the PrePartum app. This is accessible from the bottom nav "Memories" tab.
+
+## DESIGN SYSTEM (Luminous Editorial):
+- Background: #FFF8F5 (Warm Cream)
+- Text: #5D5066 (Deep Plum-Gray)
+- Primary buttons/accents: #F5D6D6 (Soft Pink)
+- Cards: white, border-radius 16px, shadow 0 2px 8px rgba(0,0,0,0.06), padding 16px
+- Typography: serif font (Playfair Display or Georgia) for headings, system sans for body
+- Generous whitespace, soft and warm, never clinical
+
+## SCREEN: MemoryBankScreen.tsx
+
+### Layout:
+- Header: "Memory Bank" (serif, 24px, plum-gray) + floating "+" FAB button (soft pink circle, bottom right, 56px)
+- Content: FlatList showing memories grouped by trimester
+
+### Trimester grouping:
+Calculate trimester for each memory using the user's due_date from their profile:
+- T1: weeks 1-12 before due date (40 weeks back to 28 weeks before due)
+- T2: weeks 13-27 (27 weeks before due to 13 weeks before due)  
+- T3: weeks 28-40 (12 weeks before due to due date)
+- Formula: currentWeek = 40 - Math.ceil((dueDate - memoryDate) / (7 * 86400000))
+- T1 = week 1-12, T2 = week 13-27, T3 = week 28-40
+
+Show trimester dividers between groups:
+- "First Trimester — Weeks 1–12 · Beginning & Becoming" (small caps label, soft pink line under)
+- "Second Trimester — Weeks 13–27 · Growing & Connecting"
+- "Third Trimester — Weeks 28–40 · Preparing & Trusting"
+
+### Memory Card:
+Each card in the timeline shows:
+- Date (formatted: "March 12" or "March 12, 2025" if not current year) — top left, 13px muted
+- Milestone badge (soft pink pill with text) — top right, ONLY if milestone_id is set
+- Title (if present) — 16px serif, bold, plum-gray
+- Content preview (if text memory) — 14px, 2 lines max, truncated
+- Photo strip (if photo memory) — horizontal scroll of thumbnails, 64x64px each, rounded 8px
+- Audio player (if voice memory) — compact inline player: play/pause button + waveform placeholder + duration
+- Video thumbnail (if video memory) — 16:9 thumbnail with play icon overlay
+- Tags — small gray pills at bottom, 12px
+
+### Memory card tap behavior:
+- Opens MemoryDetailScreen (build in next prompt)
+
+### Empty state:
+Show a warm centered state:
+- Soft pink heart or leaf icon (SVG, simple)
+- Headline: "Your story starts here." (serif, 20px)
+- Subtext: "Capture the moments that matter — a first kick, a morning feeling, a quiet thought. You'll want to look back on these." (14px, muted, centered)
+- Button: "Add your first memory" → opens AddMemoryScreen
+
+### Data fetching:
+- Fetch all memories for the current user from Supabase ordered by memory_date DESC
+- Group memories into trimesters based on the formula above
+- Render as SectionList with trimester headers
+
+### Floating Action Button (+):
+- Fixed position, bottom-right, 24px from edges
+- Soft pink (#F5D6D6) background, plum-gray (#5D5066) + icon
+- Tapping opens a bottom sheet with 4 options:
+  - 📝 Text memory
+  - 📷 Photo memory
+  - 🎙 Voice memo
+  - 🎥 Upload video
+- Each option navigates to AddMemoryScreen with the type pre-selected
+
+Build this full screen with proper TypeScript types, Supabase data fetching, and loading/error states.
+```
+
+---
+
+# PROMPT MB-3: ADD MEMORY SCREEN
+## Paste everything between the triple backticks into Replit Agent chat
+
+```
+Build the AddMemoryScreen for the PrePartum Memory Bank.
+
+## Navigation:
+- Receives params: { type: 'text' | 'photo' | 'voice' | 'video' }
+- Header: back arrow + "New Memory" title + "Save" button (top right, soft pink, disabled until valid)
+
+## DESIGN SYSTEM: Same as Memory Bank (#FFF8F5 background, #5D5066 text, #F5D6D6 accents, 16px border-radius cards)
+
+## SHARED FIELDS (all memory types):
+
+### Date picker:
+- Label: "When did this happen?"
+- Defaults to today
+- Tapping opens native DateTimePicker (iOS/Android)
+- Shows selected date formatted as "March 12, 2026"
+- User can change to any past or future date
+- Store as memory_date in database
+
+### Title field:
+- Label: "Give it a title (optional)"
+- TextInput, placeholder: "e.g. First time I felt her move"
+- 16px, single line
+
+### Tags input:
+- Label: "Add tags (optional)"
+- Small pill-style input — user types a tag and hits space/comma/return to add
+- Show added tags as removable soft pink pills
+- Store as TEXT[] in Supabase
+
+### Milestone link:
+- Label: "Link to a milestone (optional)"
+- Dropdown/picker showing available milestones from the milestones table
+- If no milestones table data exists yet, skip gracefully (don't crash)
+- Shows selected milestone name as a soft pink badge
+
+---
+
+## TYPE-SPECIFIC FIELDS:
+
+### TEXT memory:
+- Large multiline TextInput
+- Placeholder: "Write whatever's on your mind. There's no right way to do this."
+- Min height: 160px, expands as user types
+- Character count shown subtly below (no limit, just info)
+
+### PHOTO memory:
+- "Add Photos" button → opens device image picker (expo-image-picker)
+- Supports multiple selection (up to 10 photos)
+- Shows selected photos in a horizontal scrollable strip, 80x80px thumbnails
+- Each photo has an X button to remove it
+- Upload photos to Supabase Storage bucket: memory-media/{userId}/{uuid}.jpg
+- Store array of public URLs in media_urls column
+- Set first photo URL as media_thumbnail_url
+- Optional text note field below photos (same as text type, smaller)
+
+### VOICE MEMO memory:
+- "Start Recording" button with microphone icon
+- Uses expo-av for recording
+- Shows recording state: idle / recording (with red dot + timer) / recorded
+- After recording stops: shows playback controls (play/pause + duration)
+- Option to re-record (discard current recording)
+- Upload audio file to Supabase Storage: memory-media/{userId}/{uuid}.m4a
+- Store URL in media_urls[0]
+
+### VIDEO memory (upload only — no in-app recording in v1):
+- "Select Video" button → opens device video picker (expo-image-picker with mediaTypes: Videos)
+- Shows selected video thumbnail with play icon
+- Shows file name and duration if available
+- Upload video to Supabase Storage: memory-media/{userId}/{uuid}.mp4
+- Store URL in media_urls[0]
+- Store thumbnail URL in media_thumbnail_url (generate from first frame if possible, or use placeholder)
+- Note: In-app video recording is deferred to v2
+
+---
+
+## SAVE LOGIC:
+1. Validate: memory_date is set (always true with default), at least one piece of content exists (text, photo, audio, or video)
+2. Upload any media files to Supabase Storage first
+3. Insert record into memories table with all fields
+4. Calculate trimester from memory_date + user's due_date and store in trimester column
+5. On success: navigate back to MemoryBankScreen, trigger a refresh of the list
+6. On error: show an inline error message, don't lose the user's content
+
+## DELETE confirmation:
+This screen is also used for editing (receives optional memoryId param). If editing, show a "Delete this memory" link at the bottom in muted red. Tapping shows an Alert: "Are you sure? This memory can't be recovered." with Cancel and Delete buttons.
+
+Build the full screen with TypeScript types and proper error handling.
+```
+
+---
+
+# PROMPT MB-4: MEMORY DETAIL SCREEN
+## Paste everything between the triple backticks into Replit Agent chat
+
+```
+Build the MemoryDetailScreen — the full view that opens when a user taps a memory card on the timeline.
+
+## Navigation:
+- Receives params: { memoryId: string }
+- Header: back arrow (no title) + "Edit" button top right (navigates to AddMemoryScreen with memoryId)
+
+## DESIGN SYSTEM: #FFF8F5 background, #5D5066 text, #F5D6D6 accents, 16px radius, soft shadows
+
+## Layout (ScrollView):
+
+### Top section:
+- Memory date — large, serif, 20px: "March 12, 2026"
+- Trimester label below date — small, muted, 13px: "Second Trimester · Week 19"
+- Milestone badge (if linked) — soft pink pill with milestone name
+- Title (if present) — serif, 22px, plum-gray, below date
+
+### Media section (if applicable):
+
+For PHOTO:
+- Full-width photo viewer (or horizontal scroll if multiple photos)
+- Swipeable gallery using FlatList
+- Show photo count indicator (1/3, 2/3, etc.) if multiple
+- Tapping a photo opens it fullscreen
+
+For VOICE MEMO:
+- Audio player card:
+  - Waveform visualization (static bars as placeholder, or use expo-av progress)
+  - Play/pause button (large, soft pink circle)
+  - Current time / total duration
+  - Playback speed toggle (1x / 1.5x / 2x) — small text button
+
+For VIDEO:
+- Video player using expo-av Video component
+- Full-width, 16:9 ratio
+- Native controls (play, pause, seek, fullscreen)
+
+### Content section:
+- Text content in full (no truncation) — 16px, 1.6 line height, plum-gray
+- Comfortable reading padding
+
+### Tags section (if present):
+- Label: "Tagged" in small caps, 12px, muted
+- Tags as soft gray read-only pills
+
+### Bottom: Delete option
+- "Remove this memory" in small muted text, centered
+- Tap → Alert confirmation before deleting
+- On delete: navigate back to MemoryBankScreen and refresh
+
+## Data fetching:
+- Fetch memory by ID from Supabase
+- Show loading state (soft spinner) while fetching
+- Show graceful error if memory not found
+
+Build the full screen with TypeScript, expo-av for media playback, and all edge cases handled.
+```
+
+---
+
+# PROMPT MB-5: WIRE UP NAVIGATION + FAB FROM ANYWHERE IN APP
+## Paste everything between the triple backticks into Replit Agent chat
+
+```
+Wire up the Memory Bank navigation and the global "+" FAB button so memories can be added from anywhere in the app.
+
+## 1. Bottom Navigation:
+Make sure the bottom nav "Memories" tab navigates to MemoryBankScreen. If it's not already wired:
+- Tab icon: a simple heart outline (use @expo/vector-icons Feather "heart")
+- Active color: #F5D6D6 (soft pink)
+- Inactive color: #5D5066 at 40% opacity
+
+## 2. Global FAB button (optional enhancement):
+On the Home Dashboard and Memory Bank screens, show a floating "+" action button (soft pink circle, 56px, plum-gray plus icon, 24px from bottom-right edge). This should be a reusable component: components/FloatingAddButton.tsx
+
+Props:
+- onPress: () => void
+- visible?: boolean (default true)
+
+Usage on Home Dashboard: tapping opens same bottom sheet as in MemoryBankScreen (choose memory type).
+
+## 3. Supabase real-time refresh:
+After saving a new memory (from AddMemoryScreen), the MemoryBankScreen timeline should refresh automatically. Implement this using:
+- React Navigation's useFocusEffect hook to refetch when the screen comes back into focus
+- OR Supabase realtime subscription on the memories table filtered by user_id
+
+Use useFocusEffect for simplicity in v1.
+
+## 4. Quick test checklist — run through these manually after building:
+- [ ] Memory Bank tab in bottom nav opens the timeline
+- [ ] Empty state shows when no memories exist
+- [ ] "+" FAB opens the type selector bottom sheet
+- [ ] Each memory type (text, photo, voice, video) opens AddMemoryScreen with correct type
+- [ ] Date defaults to today, user can change it
+- [ ] Text memory saves and appears on timeline
+- [ ] Photo memory uploads to Supabase Storage and thumbnail shows on card
+- [ ] Voice memo records, plays back, uploads and plays back on timeline
+- [ ] Video upload works, thumbnail shows on card, plays back in detail view
+- [ ] Timeline groups correctly by trimester based on user's due date
+- [ ] Milestone badge shows on card when linked
+- [ ] Delete requires confirmation and removes from timeline
+- [ ] Editing a memory pre-fills all fields
+
+Fix any issues found during this checklist before marking the Memory Bank as complete.
+```

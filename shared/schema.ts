@@ -63,10 +63,15 @@ export const memories = pgTable("memories", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   type: text("type").notNull().default("text"),
-  content: text("content").notNull(),
-  mediaUrl: text("media_url"),
+  title: text("title"),
+  content: text("content"),
+  memoryDate: date("memory_date").notNull().default(sql`CURRENT_DATE`),
+  mediaUrls: text("media_urls").array(),
+  mediaThumbnailUrl: text("media_thumbnail_url"),
   tags: text("tags").array(),
+  trimester: integer("trimester"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const tasks = pgTable("tasks", {

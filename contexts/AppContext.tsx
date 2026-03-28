@@ -40,14 +40,19 @@ interface PromptResponseData {
   prompt?: DailyPrompt;
 }
 
-interface MemoryData {
+export interface MemoryData {
   id: string;
   userId: string;
   type: string;
-  content: string;
-  mediaUrl: string | null;
+  title: string | null;
+  content: string | null;
+  memoryDate: string | null;
+  mediaUrls: string[] | null;
+  mediaThumbnailUrl: string | null;
   tags: string[] | null;
+  trimester: number | null;
   createdAt: string | null;
+  updatedAt: string | null;
 }
 
 interface UserTaskData {
@@ -144,8 +149,8 @@ interface AppContextValue {
   addPromptResponse: (data: { promptId: string; responseText: string; savedToJournal?: boolean }) => Promise<void>;
   updatePromptResponse: (id: string, data: { responseText: string; savedToJournal?: boolean }) => Promise<void>;
   memories: MemoryData[];
-  addMemory: (data: { content: string; type?: string; tags?: string[]; mediaUrl?: string }) => Promise<void>;
-  updateMemory: (id: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }) => Promise<void>;
+  addMemory: (data: { content?: string; type?: string; title?: string; memoryDate?: string; tags?: string[]; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }) => Promise<MemoryData>;
+  updateMemory: (id: string, data: { content?: string; title?: string; memoryDate?: string; tags?: string[]; type?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }) => Promise<void>;
   deleteMemory: (id: string) => Promise<void>;
   tasks: UserTaskData[];
   toggleTask: (id: string) => Promise<void>;
@@ -373,19 +378,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function addMemory(data: { content: string; type?: string; tags?: string[]; mediaUrl?: string }) {
-    if (!profile?.id) return;
+  async function addMemory(data: { content?: string; type?: string; title?: string; memoryDate?: string; tags?: string[]; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }): Promise<MemoryData> {
+    if (!profile?.id) throw new Error('No profile');
     try {
       const res = await apiRequest('POST', `/api/users/${profile.id}/memories`, data);
       const memory = await res.json();
-      setMemories(prev => [memory, ...prev]);
+      setMemories(prev => [memory, ...prev].sort((a, b) => {
+        const da = a.memoryDate || a.createdAt || '';
+        const db2 = b.memoryDate || b.createdAt || '';
+        return db2.localeCompare(da);
+      }));
+      return memory;
     } catch (e) {
       console.error('Error adding memory:', e);
       throw e;
     }
   }
 
-  async function updateMemory(id: string, data: { content?: string; tags?: string[]; type?: string; mediaUrl?: string }) {
+  async function updateMemory(id: string, data: { content?: string; title?: string; memoryDate?: string; tags?: string[]; type?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }) {
     if (!profile?.id) return;
     try {
       const res = await apiRequest('PUT', `/api/users/${profile.id}/memories/${id}`, data);

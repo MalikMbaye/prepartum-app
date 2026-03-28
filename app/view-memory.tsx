@@ -1,448 +1,282 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Platform, KeyboardAvoidingView, ScrollView, Image, Alert } from 'react-native';
+import {
+  View, Text, StyleSheet, ScrollView, Pressable, Platform,
+  Alert, Image, Dimensions, Modal
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 
-const PREDEFINED_TAGS = ['First Kick', 'Doctor Visit', 'Milestone', 'Feeling Grateful', 'Partner Moment'];
+function tryHaptic() {
+  try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+}
 
-export default function ViewMemoryScreen() {
-  const insets = useSafeAreaInsets();
-  const { memoryId } = useLocalSearchParams<{ memoryId: string }>();
-  const { memories, updateMemory, deleteMemory } = useApp();
-  const webTopInset = Platform.OS === 'web' ? 67 : 0;
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const { width: SCREEN_W } = Dimensions.get('window');
 
-  const memory = memories.find(m => m.id === memoryId);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(memory?.content || '');
-  const [editTags, setEditTags] = useState<string[]>(memory?.tags || []);
-  const [customTag, setCustomTag] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+function formatFullDate(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
 
-  useEffect(() => {
-    if (memory) {
-      setEditContent(memory.content);
-      setEditTags(memory.tags || []);
-    }
-  }, [memory?.content, memory?.tags]);
+function trimesterLabel(t: number | null): string {
+  if (t === 1) return 'First Trimester';
+  if (t === 2) return 'Second Trimester';
+  if (t === 3) return 'Third Trimester';
+  return '';
+}
 
-  if (!memory) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Feather name="arrow-left" size={24} color={Colors.textPrimary} />
-          </Pressable>
-        </View>
-        <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>Memory not found</Text>
-          <Pressable onPress={() => router.back()} style={styles.goBackBtn}>
-            <Text style={styles.goBackText}>Go back</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
+function trimesterColor(t: number | null): string {
+  if (t === 1) return Colors.accentPeach;
+  if (t === 2) return Colors.accentBlue;
+  if (t === 3) return Colors.accentPink;
+  return Colors.border;
+}
 
-  const isPhoto = memory.type === 'photo' && memory.mediaUrl;
-  const dateStr = memory.createdAt
-    ? new Date(memory.createdAt).toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : '';
+function PhotoGallery({ uris }: { uris: string[] }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const imgW = Math.min(SCREEN_W - 40, 420);
 
-  function toggleTag(tag: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setEditTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-  }
-
-  function addCustomTagEntry() {
-    const tag = customTag.trim();
-    if (tag && !editTags.includes(tag)) {
-      setEditTags(prev => [...prev, tag]);
-      setCustomTag('');
-    }
-  }
-
-  async function handleSaveEdit() {
-    if (isSaving) return;
-    setIsSaving(true);
-    try {
-      await updateMemory(memory!.id, {
-        content: editContent.trim(),
-        tags: editTags,
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setIsEditing(false);
-    } catch (e) {
-      console.error('Error updating memory:', e);
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function handleDelete() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (Platform.OS === 'web') {
-      if (confirm('Delete this memory? This cannot be undone.')) {
-        deleteMemory(memory!.id);
-        router.back();
-      }
-    } else {
-      Alert.alert(
-        'Delete Memory',
-        'Are you sure? This cannot be undone.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: () => {
-              deleteMemory(memory!.id);
-              router.back();
-            },
-          },
-        ]
-      );
-    }
-  }
+  if (uris.length === 0) return null;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Feather name="arrow-left" size={24} color={Colors.textPrimary} />
-        </Pressable>
-        <View style={styles.headerActions}>
-          {isEditing ? (
-            <>
-              <Pressable
-                onPress={() => { setIsEditing(false); setEditContent(memory.content); setEditTags(memory.tags || []); }}
-                style={styles.cancelBtn}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSaveEdit}
-                disabled={isSaving}
-                style={[styles.saveEditBtn, isSaving && { opacity: 0.4 }]}
-              >
-                <Text style={styles.saveEditText}>{isSaving ? 'Saving...' : 'Save'}</Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setIsEditing(true); }} hitSlop={8}>
-                <Feather name="edit-2" size={20} color={Colors.textPrimary} />
-              </Pressable>
-              <Pressable onPress={handleDelete} hitSlop={8}>
-                <Feather name="trash-2" size={20} color={Colors.error} />
-              </Pressable>
-            </>
-          )}
-        </View>
-      </View>
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={20}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Animated.View entering={FadeInUp.delay(100).duration(400)}>
-            <Text style={styles.dateText}>{dateStr}</Text>
-          </Animated.View>
-
-          {isPhoto && (
-            <Animated.View entering={FadeInUp.delay(200).duration(400)}>
-              <Image source={{ uri: memory.mediaUrl! }} style={styles.fullPhoto} resizeMode="cover" />
-            </Animated.View>
-          )}
-
-          <Animated.View entering={FadeInUp.delay(300).duration(400)}>
-            {isEditing ? (
-              <TextInput
-                style={styles.editInput}
-                value={editContent}
-                onChangeText={setEditContent}
-                multiline
-                textAlignVertical="top"
-                autoFocus
-              />
-            ) : (
-              <Text style={styles.contentText}>{memory.content}</Text>
-            )}
-          </Animated.View>
-
-          <Animated.View entering={FadeInUp.delay(400).duration(400)}>
-            {isEditing ? (
-              <>
-                <Text style={styles.sectionLabel}>Tags</Text>
-                <View style={styles.predefinedTags}>
-                  {PREDEFINED_TAGS.map(tag => (
-                    <Pressable
-                      key={tag}
-                      onPress={() => toggleTag(tag)}
-                      style={[styles.preTag, editTags.includes(tag) && styles.preTagActive]}
-                    >
-                      <Text style={[styles.preTagText, editTags.includes(tag) && styles.preTagTextActive]}>{tag}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <View style={styles.customTagRow}>
-                  <TextInput
-                    style={styles.customTagInput}
-                    value={customTag}
-                    onChangeText={setCustomTag}
-                    placeholder="Custom tag..."
-                    placeholderTextColor={Colors.textLight}
-                    onSubmitEditing={addCustomTagEntry}
-                    returnKeyType="done"
-                  />
-                  {customTag.trim() ? (
-                    <Pressable onPress={addCustomTagEntry} style={styles.addTagBtn}>
-                      <Ionicons name="add" size={18} color={Colors.textPrimary} />
-                    </Pressable>
-                  ) : null}
-                </View>
-
-                {editTags.filter(t => !PREDEFINED_TAGS.includes(t)).length > 0 && (
-                  <View style={styles.customTagsRow}>
-                    {editTags.filter(t => !PREDEFINED_TAGS.includes(t)).map(tag => (
-                      <Pressable key={tag} onPress={() => toggleTag(tag)} style={styles.customTagBadge}>
-                        <Text style={styles.customTagBadgeText}>{tag}</Text>
-                        <Feather name="x" size={12} color={Colors.textSecondary} />
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-              </>
-            ) : (
-              (memory.tags || []).length > 0 && (
-                <View style={styles.tagsDisplay}>
-                  {(memory.tags || []).map((tag, i) => (
-                    <View key={i} style={styles.displayTag}>
-                      <Text style={styles.displayTagText}>{tag}</Text>
-                    </View>
-                  ))}
-                </View>
-              )
-            )}
-          </Animated.View>
+    <View style={gS.container}>
+      <Image source={{ uri: uris[activeIndex] }} style={[gS.main, { width: imgW, height: imgW * 0.75 }]} resizeMode="cover" />
+      {uris.length > 1 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={gS.thumbRow}>
+          {uris.map((uri, i) => (
+            <Pressable key={i} onPress={() => { tryHaptic(); setActiveIndex(i); }}>
+              <Image source={{ uri }} style={[gS.thumb, i === activeIndex && gS.thumbActive]} />
+            </Pressable>
+          ))}
         </ScrollView>
-      </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.canvas,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  cancelBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  cancelText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 15,
-    color: Colors.textSecondary,
-  },
-  saveEditBtn: {
-    backgroundColor: Colors.accentPink,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  saveEditText: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 15,
-    color: Colors.textPrimary,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 60,
-  },
-  dateText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 20,
-  },
-  fullPhoto: {
-    width: '100%',
-    height: 280,
-    borderRadius: 18,
-    marginBottom: 24,
-    backgroundColor: Colors.border,
-  },
-  contentText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 17,
-    color: Colors.textPrimary,
-    lineHeight: 28,
-    marginBottom: 24,
-  },
-  editInput: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 16,
-    color: Colors.textPrimary,
-    lineHeight: 26,
-    minHeight: 160,
-    backgroundColor: Colors.cardBg,
-    borderRadius: 18,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 24,
-  },
-  sectionLabel: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  predefinedTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 14,
-  },
-  preTag: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  preTagActive: {
-    backgroundColor: Colors.accentPink,
-    borderColor: Colors.accentPink,
-  },
-  preTagText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  preTagTextActive: {
-    color: Colors.textPrimary,
-    fontFamily: 'Lato_700Bold',
-  },
-  customTagRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  customTagInput: {
-    flex: 1,
-    fontFamily: 'Lato_400Regular',
-    fontSize: 14,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  addTagBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: Colors.accentPink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  customTagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  customTagBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.white,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  customTagBadgeText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 13,
-    color: Colors.textPrimary,
-  },
-  tagsDisplay: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  displayTag: {
-    backgroundColor: Colors.white,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-    shadowColor: Colors.textPrimary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  displayTagText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 13,
-    color: Colors.textPrimary,
-  },
-  notFound: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  notFoundText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
-  goBackBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: Colors.accentPink,
-    borderRadius: 20,
-  },
-  goBackText: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 15,
-    color: Colors.textPrimary,
-  },
+const gS = StyleSheet.create({
+  container: { marginBottom: 16 },
+  main: { borderRadius: 16, backgroundColor: Colors.border, alignSelf: 'center' },
+  thumbRow: { marginTop: 10 },
+  thumb: { width: 64, height: 64, borderRadius: 10, marginRight: 8, opacity: 0.6 },
+  thumbActive: { opacity: 1, borderWidth: 2, borderColor: Colors.textPrimary },
+});
+
+function AudioPlayer({ uri }: { uri: string }) {
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let s: Audio.Sound | null = null;
+    (async () => {
+      try {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri },
+          { shouldPlay: false },
+          status => {
+            if (status.isLoaded) {
+              setPosition(status.positionMillis || 0);
+              setDuration(status.durationMillis || 0);
+              setIsPlaying(!!status.isPlaying);
+              if (status.didJustFinish) { setIsPlaying(false); setPosition(0); }
+            }
+          }
+        );
+        s = newSound;
+        setSound(newSound);
+        setLoaded(true);
+      } catch { setError(true); }
+    })();
+    return () => { s?.unloadAsync(); };
+  }, [uri]);
+
+  if (error) return (
+    <View style={aS.errorWrap}>
+      <Feather name="alert-circle" size={18} color={Colors.textLight} />
+      <Text style={aS.errorText}>Voice memo unavailable on this device</Text>
+    </View>
+  );
+
+  async function toggle() {
+    if (!sound || !loaded) return;
+    tryHaptic();
+    if (isPlaying) {
+      await sound.pauseAsync();
+    } else {
+      if (position >= duration && duration > 0) await sound.setPositionAsync(0);
+      await sound.playAsync();
+    }
+  }
+
+  function fmtMs(ms: number) {
+    const total = Math.floor(ms / 1000);
+    return `${String(Math.floor(total / 60)).padStart(2,'0')}:${String(total % 60).padStart(2,'0')}`;
+  }
+
+  const progress = duration > 0 ? position / duration : 0;
+
+  return (
+    <View style={aS.container}>
+      <Pressable onPress={toggle} style={[aS.playBtn, { opacity: loaded ? 1 : 0.5 }]}>
+        <Feather name={isPlaying ? 'pause' : 'play'} size={24} color={Colors.textPrimary} />
+      </Pressable>
+      <View style={aS.right}>
+        <View style={aS.track}>
+          <View style={[aS.fill, { width: `${progress * 100}%` as any }]} />
+        </View>
+        <View style={aS.times}>
+          <Text style={aS.time}>{fmtMs(position)}</Text>
+          <Text style={aS.time}>{fmtMs(duration)}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const aS = StyleSheet.create({
+  container: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: Colors.accentBlue + '40', borderRadius: 16, padding: 16, marginBottom: 16 },
+  playBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.accentBlue, alignItems: 'center', justifyContent: 'center' },
+  right: { flex: 1, gap: 6 },
+  track: { height: 4, backgroundColor: Colors.border, borderRadius: 2, overflow: 'hidden' },
+  fill: { height: 4, backgroundColor: Colors.textPrimary, borderRadius: 2 },
+  times: { flexDirection: 'row', justifyContent: 'space-between' },
+  time: { fontFamily: 'Lato_400Regular', fontSize: 12, color: Colors.textSecondary },
+  errorWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.border, borderRadius: 12, padding: 16, marginBottom: 16 },
+  errorText: { fontFamily: 'Lato_400Regular', fontSize: 14, color: Colors.textSecondary },
+});
+
+export default function ViewMemoryScreen() {
+  const insets = useSafeAreaInsets();
+  const { memoryId } = useLocalSearchParams<{ memoryId: string }>();
+  const { memories, deleteMemory } = useApp();
+  const webTop = Platform.OS === 'web' ? 67 : 0;
+  const webBot = Platform.OS === 'web' ? 34 : 0;
+
+  const memory = memories.find(m => m.id === memoryId);
+
+  async function handleDelete() {
+    tryHaptic();
+    Alert.alert('Delete Memory', 'Are you sure you want to delete this memory? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteMemory(memoryId);
+            router.back();
+          } catch { Alert.alert('Error', 'Could not delete memory.'); }
+        }
+      }
+    ]);
+  }
+
+  if (!memory) {
+    return (
+      <View style={[vs.container, { paddingTop: insets.top + webTop, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={vs.notFoundText}>Memory not found</Text>
+        <Pressable onPress={() => router.back()} style={vs.backBtn}>
+          <Text style={vs.backBtnText}>Go Back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const hasPhotos = memory.type === 'photo' && (memory.mediaUrls || []).length > 0;
+  const hasVoice = memory.type === 'voice' && (memory.mediaUrls || []).length > 0;
+  const tLabel = trimesterLabel(memory.trimester);
+  const tColor = trimesterColor(memory.trimester);
+
+  return (
+    <View style={[vs.container, { paddingTop: insets.top + webTop }]}>
+      <View style={vs.nav}>
+        <Pressable onPress={() => router.back()} style={vs.navBtn} testID="back-button">
+          <Ionicons name="chevron-back" size={24} color={Colors.textPrimary} />
+        </Pressable>
+        <Pressable onPress={handleDelete} style={vs.deleteBtn} testID="delete-memory-button">
+          <Feather name="trash-2" size={18} color={Colors.textSecondary} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[vs.body, { paddingBottom: insets.bottom + webBot + 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View entering={FadeInUp.duration(350)}>
+          <View style={vs.meta}>
+            <Text style={vs.dateText}>{formatFullDate(memory.memoryDate || memory.createdAt)}</Text>
+            {tLabel ? (
+              <View style={[vs.trimesterBadge, { backgroundColor: tColor }]}>
+                <Text style={vs.trimesterBadgeText}>{tLabel}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {memory.title ? (
+            <Text style={vs.title}>{memory.title}</Text>
+          ) : null}
+
+          {hasPhotos && <PhotoGallery uris={memory.mediaUrls || []} />}
+
+          {hasVoice && memory.mediaUrls?.[0] ? (
+            <AudioPlayer uri={memory.mediaUrls[0]} />
+          ) : null}
+
+          {memory.content ? (
+            <Text style={vs.content}>{memory.content}</Text>
+          ) : null}
+
+          {(memory.tags || []).length > 0 ? (
+            <View style={vs.tagRow}>
+              {(memory.tags || []).map((tag, i) => (
+                <View key={i} style={vs.tag}>
+                  <Feather name="tag" size={11} color={Colors.textSecondary} />
+                  <Text style={vs.tagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {memory.createdAt ? (
+            <Text style={vs.savedAt}>
+              Saved {new Date(memory.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </Text>
+          ) : null}
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const vs = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.canvas },
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  navBtn: { padding: 4, width: 44 },
+  deleteBtn: { padding: 8, width: 44, alignItems: 'center' },
+  body: { paddingHorizontal: 20, paddingTop: 24 },
+  meta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 },
+  dateText: { fontFamily: 'Lato_400Regular', fontSize: 13, color: Colors.textSecondary, flex: 1 },
+  trimesterBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14 },
+  trimesterBadgeText: { fontFamily: 'Lato_700Bold', fontSize: 12, color: Colors.textPrimary },
+  title: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, color: Colors.textPrimary, marginBottom: 20, lineHeight: 38 },
+  content: { fontFamily: 'Lato_400Regular', fontSize: 17, color: Colors.textPrimary, lineHeight: 28, marginBottom: 24 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 32 },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.accentPink + '40', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },
+  tagText: { fontFamily: 'Lato_400Regular', fontSize: 13, color: Colors.textSecondary },
+  savedAt: { fontFamily: 'Lato_400Regular', fontSize: 12, color: Colors.textLight, textAlign: 'center' },
+  notFoundText: { fontFamily: 'PlayfairDisplay_600SemiBold', fontSize: 18, color: Colors.textSecondary, marginBottom: 20 },
+  backBtn: { backgroundColor: Colors.accentPink, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 },
+  backBtnText: { fontFamily: 'Lato_700Bold', fontSize: 15, color: Colors.textPrimary },
 });
