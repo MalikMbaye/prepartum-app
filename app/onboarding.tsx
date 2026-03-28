@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput, ScrollView,
-  Platform, KeyboardAvoidingView, Switch
+  Platform, KeyboardAvoidingView, Switch, NativeSyntheticEvent, NativeScrollEvent
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,123 @@ import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
 
 const TOTAL_STEPS = 5;
+
+const ITEM_H = 48;
+const VISIBLE = 5;
+const WHEEL_H = ITEM_H * VISIBLE;
+const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const now = new Date();
+const YEARS = [now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2].map(String);
+
+interface WheelPickerProps {
+  items: string[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+  flex?: number;
+}
+
+function WheelPicker({ items, selectedIndex, onSelect, flex = 1 }: WheelPickerProps) {
+  const ref = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      ref.current?.scrollTo({ y: selectedIndex * ITEM_H, animated: false });
+    }, 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  function snap(y: number) {
+    const idx = Math.max(0, Math.min(Math.round(y / ITEM_H), items.length - 1));
+    ref.current?.scrollTo({ y: idx * ITEM_H, animated: true });
+    if (idx !== selectedIndex) {
+      try { Haptics.selectionAsync(); } catch {}
+      onSelect(idx);
+    }
+  }
+
+  return (
+    <View style={[wheelStyles.container, { flex }]}>
+      <View pointerEvents="none" style={wheelStyles.highlight} />
+      <View pointerEvents="none" style={wheelStyles.lineTop} />
+      <View pointerEvents="none" style={wheelStyles.lineBottom} />
+      <ScrollView
+        ref={ref}
+        snapToInterval={ITEM_H}
+        decelerationRate="fast"
+        showsVerticalScrollIndicator={false}
+        onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => snap(e.nativeEvent.contentOffset.y)}
+        onScrollEndDrag={(e: NativeSyntheticEvent<NativeScrollEvent>) => snap(e.nativeEvent.contentOffset.y)}
+        contentContainerStyle={{ paddingVertical: ITEM_H * Math.floor(VISIBLE / 2) }}
+      >
+        {items.map((item, i) => {
+          const dist = Math.abs(i - selectedIndex);
+          return (
+            <View key={i} style={wheelStyles.item}>
+              <Text style={[
+                wheelStyles.itemText,
+                dist === 0 && wheelStyles.itemTextSelected,
+                { opacity: dist === 0 ? 1 : dist === 1 ? 0.55 : 0.25 },
+              ]}>
+                {item}
+              </Text>
+            </View>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+const wheelStyles = StyleSheet.create({
+  container: {
+    height: WHEEL_H,
+    overflow: 'hidden',
+  },
+  highlight: {
+    position: 'absolute',
+    top: ITEM_H * Math.floor(VISIBLE / 2),
+    left: 0,
+    right: 0,
+    height: ITEM_H,
+    backgroundColor: Colors.accentPink + '35',
+    borderRadius: 12,
+    zIndex: 2,
+  },
+  lineTop: {
+    position: 'absolute',
+    top: ITEM_H * Math.floor(VISIBLE / 2),
+    left: 4,
+    right: 4,
+    height: 1,
+    backgroundColor: Colors.accentPink + '90',
+    zIndex: 3,
+  },
+  lineBottom: {
+    position: 'absolute',
+    top: ITEM_H * Math.floor(VISIBLE / 2) + ITEM_H - 1,
+    left: 4,
+    right: 4,
+    height: 1,
+    backgroundColor: Colors.accentPink + '90',
+    zIndex: 3,
+  },
+  item: {
+    height: ITEM_H,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 16,
+    color: Colors.textSecondary,
+  },
+  itemTextSelected: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 22,
+    color: Colors.textPrimary,
+  },
+});
 
 const FOCUS_ITEMS: { key: FocusArea; label: string; desc: string; color: string }[] = [
   { key: 'mindset', label: 'Mindset & Emotional Prep', desc: 'Cultivate resilience and emotional well-being.', color: Colors.accentPink },
@@ -27,19 +144,18 @@ export default function OnboardingScreen() {
   const { setProfile } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [dayInput, setDayInput] = useState('');
-  const [monthInput, setMonthInput] = useState('');
-  const [yearInput, setYearInput] = useState('');
+  const [dayIdx, setDayIdx] = useState(0);
+  const [monthIdx, setMonthIdx] = useState(0);
+  const [yearIdx, setYearIdx] = useState(1);
   const [isFirstPregnancy, setIsFirstPregnancy] = useState<boolean | null>(null);
   const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [preferredTime, setPreferredTime] = useState('9:00 AM');
   const [dateError, setDateError] = useState('');
-  const monthRef = useRef<TextInput>(null);
-  const yearRef = useRef<TextInput>(null);
 
-  const dueDate = dayInput.length === 2 && monthInput.length === 2 && yearInput.length === 4
-    ? `${dayInput}/${monthInput}/${yearInput}` : '';
+  const selectedDay = dayIdx + 1;
+  const selectedMonth = monthIdx + 1;
+  const selectedYear = parseInt(YEARS[yearIdx]);
 
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const webBottomInset = Platform.OS === 'web' ? 34 : 0;
@@ -57,15 +173,8 @@ export default function OnboardingScreen() {
     });
   }
 
-  const validateDueDate = useCallback((dateStr: string): boolean => {
-    if (!dateStr || dateStr.length < 10) return true;
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return false;
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
-    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2024) return false;
-    const inputDate = new Date(year, month - 1, day);
+  function validateSelectedDate(): boolean {
+    const inputDate = new Date(selectedYear, selectedMonth - 1, selectedDay);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (inputDate <= today) {
@@ -74,21 +183,17 @@ export default function OnboardingScreen() {
     }
     setDateError('');
     return true;
-  }, []);
+  }
 
   async function complete() {
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
-    let formattedDueDate: string | undefined;
-    if (dueDate) {
-      const parts = dueDate.split('/');
-      if (parts.length === 3) {
-        formattedDueDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-      }
-    }
+    const dd = String(selectedDay).padStart(2, '0');
+    const mm = String(selectedMonth).padStart(2, '0');
+    const formattedDueDate = `${selectedYear}-${mm}-${dd}`;
     try {
       await setProfile({
         name: name.trim() || 'Mama',
-        dueDate: formattedDueDate || null,
+        dueDate: formattedDueDate,
         focusAreas: focusAreas.length > 0 ? focusAreas : ['mindset', 'relationships', 'physical'],
         notificationsEnabled,
         onboardingCompleted: true,
@@ -114,7 +219,7 @@ export default function OnboardingScreen() {
 
   function next() {
     tryHaptic();
-    if (step === 1 && dueDate.length === 10 && !validateDueDate(dueDate)) {
+    if (step === 1 && !validateSelectedDate()) {
       return;
     }
     if (step < 4) setStep(step + 1);
@@ -126,26 +231,6 @@ export default function OnboardingScreen() {
       setStep(step - 1);
       setDateError('');
     }
-  }
-
-  function handleDayChange(text: string) {
-    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 2);
-    setDayInput(cleaned);
-    setDateError('');
-    if (cleaned.length === 2) monthRef.current?.focus();
-  }
-
-  function handleMonthChange(text: string) {
-    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 2);
-    setMonthInput(cleaned);
-    setDateError('');
-    if (cleaned.length === 2) yearRef.current?.focus();
-  }
-
-  function handleYearChange(text: string) {
-    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 4);
-    setYearInput(cleaned);
-    setDateError('');
   }
 
   const timeOptions = ['7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '12:00 PM', '8:00 PM'];
@@ -239,54 +324,30 @@ export default function OnboardingScreen() {
 
                 <View>
                   <Text style={styles.dateLabel}>When are you due?</Text>
-                  <View style={styles.dateBoxRow}>
-                    <View style={styles.dateBoxWrap}>
-                      <TextInput
-                        style={[styles.dateBox, dateError ? styles.dateBoxError : null]}
-                        value={dayInput}
-                        onChangeText={handleDayChange}
-                        placeholder="DD"
-                        placeholderTextColor={Colors.textLight}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        testID="duedate-day"
-                        returnKeyType="next"
-                        onSubmitEditing={() => monthRef.current?.focus()}
+                  <View style={styles.wheelRow}>
+                    <View style={styles.wheelCol}>
+                      <Text style={styles.wheelColLabel}>Day</Text>
+                      <WheelPicker
+                        items={DAYS}
+                        selectedIndex={dayIdx}
+                        onSelect={setDayIdx}
                       />
-                      <Text style={styles.dateBoxLabel}>Day</Text>
                     </View>
-                    <Text style={styles.dateSeparator}>/</Text>
-                    <View style={styles.dateBoxWrap}>
-                      <TextInput
-                        ref={monthRef}
-                        style={[styles.dateBox, dateError ? styles.dateBoxError : null]}
-                        value={monthInput}
-                        onChangeText={handleMonthChange}
-                        placeholder="MM"
-                        placeholderTextColor={Colors.textLight}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        testID="duedate-month"
-                        returnKeyType="next"
-                        onSubmitEditing={() => yearRef.current?.focus()}
+                    <View style={[styles.wheelCol, { flex: 1.4 }]}>
+                      <Text style={styles.wheelColLabel}>Month</Text>
+                      <WheelPicker
+                        items={MONTHS}
+                        selectedIndex={monthIdx}
+                        onSelect={setMonthIdx}
                       />
-                      <Text style={styles.dateBoxLabel}>Month</Text>
                     </View>
-                    <Text style={styles.dateSeparator}>/</Text>
-                    <View style={[styles.dateBoxWrap, { flex: 2 }]}>
-                      <TextInput
-                        ref={yearRef}
-                        style={[styles.dateBox, dateError ? styles.dateBoxError : null]}
-                        value={yearInput}
-                        onChangeText={handleYearChange}
-                        placeholder="YYYY"
-                        placeholderTextColor={Colors.textLight}
-                        keyboardType="number-pad"
-                        maxLength={4}
-                        testID="duedate-year"
-                        returnKeyType="done"
+                    <View style={styles.wheelCol}>
+                      <Text style={styles.wheelColLabel}>Year</Text>
+                      <WheelPicker
+                        items={YEARS}
+                        selectedIndex={yearIdx}
+                        onSelect={setYearIdx}
                       />
-                      <Text style={styles.dateBoxLabel}>Year</Text>
                     </View>
                   </View>
                   {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
@@ -618,42 +679,30 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 10,
   },
-  dateBoxRow: {
+  wheelRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: 4,
+    marginTop: 4,
   },
-  dateBoxWrap: {
+  wheelCol: {
     flex: 1,
     alignItems: 'center',
   },
-  dateBox: {
-    width: '100%',
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    fontFamily: 'Lato_400Regular',
-    fontSize: 20,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  dateBoxError: {
-    borderColor: Colors.error,
-  },
-  dateBoxLabel: {
+  wheelColLabel: {
     fontFamily: 'Lato_400Regular',
     fontSize: 11,
     color: Colors.textLight,
-    marginTop: 5,
-  },
-  dateSeparator: {
-    fontSize: 24,
-    color: Colors.textLight,
-    marginBottom: 18,
-    paddingHorizontal: 2,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
   },
   errorText: {
     fontFamily: 'Lato_400Regular',
