@@ -11,7 +11,7 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
-import { WheelPicker } from '@/components/WheelPicker';
+import { WheelPicker, WHEEL_ITEM_H, WHEEL_VISIBLE } from '@/components/WheelPicker';
 
 const TOTAL_STEPS = 5;
 
@@ -214,30 +214,12 @@ export default function OnboardingScreen() {
 
                 <View>
                   <Text style={styles.dateLabel}>When are you due?</Text>
-                  <View style={styles.wheelRow}>
-                    <View style={styles.wheelCol}>
-                      <Text style={styles.wheelColLabel}>Day</Text>
-                      <WheelPicker
-                        items={DAYS}
-                        selectedIndex={dayIdx}
-                        onSelect={setDayIdx}
-                      />
-                    </View>
-                    <View style={[styles.wheelCol, { flex: 1.4 }]}>
-                      <Text style={styles.wheelColLabel}>Month</Text>
-                      <WheelPicker
-                        items={MONTHS}
-                        selectedIndex={monthIdx}
-                        onSelect={setMonthIdx}
-                      />
-                    </View>
-                    <View style={styles.wheelCol}>
-                      <Text style={styles.wheelColLabel}>Year</Text>
-                      <WheelPicker
-                        items={YEARS}
-                        selectedIndex={yearIdx}
-                        onSelect={setYearIdx}
-                      />
+                  <View style={styles.wheelContainer}>
+                    <View style={styles.sharedHighlight} />
+                    <View style={styles.wheelRow}>
+                      <WheelPicker items={DAYS} selectedIndex={dayIdx} onSelect={setDayIdx} showHighlight={false} />
+                      <WheelPicker items={MONTHS} selectedIndex={monthIdx} onSelect={setMonthIdx} flex={1.4} showHighlight={false} />
+                      <WheelPicker items={YEARS} selectedIndex={yearIdx} onSelect={setYearIdx} showHighlight={false} />
                     </View>
                   </View>
                   {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
@@ -569,30 +551,27 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 10,
   },
-  wheelRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
+  wheelContainer: {
     backgroundColor: Colors.white,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 4,
+    overflow: 'hidden',
     marginTop: 4,
   },
-  wheelCol: {
-    flex: 1,
-    alignItems: 'center',
+  sharedHighlight: {
+    position: 'absolute',
+    top: WHEEL_ITEM_H * Math.floor(WHEEL_VISIBLE / 2),
+    left: 0,
+    right: 0,
+    height: WHEEL_ITEM_H,
+    backgroundColor: '#F5D6D64D',
+    zIndex: 10,
+    pointerEvents: 'none',
   },
-  wheelColLabel: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 11,
-    color: Colors.textLight,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 2,
+  wheelRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   errorText: {
     fontFamily: 'Lato_400Regular',

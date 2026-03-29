@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { WheelPicker } from '@/components/WheelPicker';
+import { WheelPicker, WHEEL_ITEM_H, WHEEL_VISIBLE } from '@/components/WheelPicker';
 
 function tryHaptic() {
   try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
@@ -82,10 +82,13 @@ function DatePickerModal({
         <View style={[dpS.sheet, { paddingBottom: insets.bottom + webBottom + 16 }]}>
           <View style={dpS.handle} />
           <Text style={dpS.title}>When was this?</Text>
-          <View style={dpS.wheels}>
-            <WheelPicker items={WHEEL_MONTHS} selectedIndex={monthIdx} onSelect={handleMonthChange} flex={2} />
-            <WheelPicker key={`day-${monthIdx}-${yearIdx}`} items={dayItems} selectedIndex={safeDayIdx} onSelect={setDayIdx} flex={1} />
-            <WheelPicker items={WHEEL_YEARS} selectedIndex={yearIdx} onSelect={handleYearChange} flex={2} />
+          <View style={dpS.wheelsContainer}>
+            <View style={dpS.sharedHighlight} />
+            <View style={dpS.wheels}>
+              <WheelPicker items={WHEEL_MONTHS} selectedIndex={monthIdx} onSelect={handleMonthChange} flex={2} showHighlight={false} />
+              <WheelPicker key={`day-${monthIdx}-${yearIdx}`} items={dayItems} selectedIndex={safeDayIdx} onSelect={setDayIdx} flex={1} showHighlight={false} />
+              <WheelPicker items={WHEEL_YEARS} selectedIndex={yearIdx} onSelect={handleYearChange} flex={2} showHighlight={false} />
+            </View>
           </View>
           <Pressable onPress={() => { onSelect(indicesToDateStr(safeDayIdx, monthIdx, yearIdx)); onClose(); }} style={dpS.confirm}>
             <Text style={dpS.confirmText}>Set Date</Text>
@@ -101,7 +104,17 @@ const dpS = StyleSheet.create({
   sheet: { backgroundColor: Colors.canvas, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 },
   title: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 16, textAlign: 'center' },
-  wheels: { flexDirection: 'row', paddingHorizontal: 8, marginBottom: 24 },
+  wheelsContainer: { borderRadius: 16, overflow: 'hidden', marginBottom: 24, backgroundColor: Colors.canvas },
+  sharedHighlight: {
+    position: 'absolute',
+    top: WHEEL_ITEM_H * Math.floor(WHEEL_VISIBLE / 2),
+    left: 0, right: 0,
+    height: WHEEL_ITEM_H,
+    backgroundColor: '#F5D6D64D',
+    zIndex: 10,
+    pointerEvents: 'none',
+  },
+  wheels: { flexDirection: 'row' },
   confirm: { backgroundColor: Colors.accentPink, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   confirmText: { fontFamily: 'Lato_700Bold', fontSize: 16, color: Colors.textPrimary },
 });
