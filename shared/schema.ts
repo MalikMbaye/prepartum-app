@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
-  pgTable, text, varchar, uuid, integer, boolean, timestamp, date, time, jsonb
+  pgTable, text, varchar, uuid, integer, boolean, timestamp, date, time, jsonb, decimal
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -187,6 +187,21 @@ export const closingReframes = pgTable("closing_reframes", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const pregnancyWeeks = pgTable("pregnancy_weeks", {
+  weekNumber: integer("week_number").primaryKey(),
+  trimester: integer("trimester").notNull(),
+  theme: text("theme"),
+  babySizeComparison: text("baby_size_comparison"),
+  babySizeEmoji: text("baby_size_emoji"),
+  babyWeightGrams: decimal("baby_weight_grams"),
+  babyLengthCm: decimal("baby_length_cm"),
+  babyDevelopment: text("baby_development"),
+  momBodyChanges: text("mom_body_changes"),
+  commonSymptoms: text("common_symptoms"),
+  suggestedFocus: text("suggested_focus"),
+  affirmation: text("affirmation"),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPromptResponseSchema = createInsertSchema(userPromptResponses).omit({ id: true, completedAt: true });
 export const insertMemorySchema = createInsertSchema(memories).omit({ id: true, createdAt: true });
@@ -214,3 +229,4 @@ export type JournalEntry = typeof journalEntries.$inferSelect;
 export type IntakeQuestion = typeof intakeQuestions.$inferSelect;
 export type IntakeResponse = typeof intakeResponses.$inferSelect;
 export type ClosingReframe = typeof closingReframes.$inferSelect;
+export type PregnancyWeek = typeof pregnancyWeeks.$inferSelect;
