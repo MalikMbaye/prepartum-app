@@ -5,9 +5,19 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useQuery } from '@tanstack/react-query';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
+
+type PregnancyWeekData = {
+  weekNumber: number;
+  trimester: number;
+  babySizeComparison: string | null;
+  babySizeEmoji: string | null;
+  affirmation: string | null;
+  theme: string | null;
+};
 
 function tryHaptic() {
   try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
@@ -83,6 +93,11 @@ export default function HomeScreen() {
   const pregnancyWeek = getPregnancyWeek();
   const completedPromptIds = promptResponses.map(r => r.promptId);
 
+  const { data: weekData } = useQuery<PregnancyWeekData>({
+    queryKey: [`/api/pregnancy-weeks/${pregnancyWeek}`],
+    enabled: pregnancyWeek > 0,
+  });
+
   const completedTasks = tasks.filter(t => t.completed).length;
   const totalTasks = tasks.length;
 
@@ -137,8 +152,43 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {!profile?.intakeCompleted && (
+      {weekData && (
         <Animated.View entering={FadeInDown.delay(150).duration(500)}>
+          <Pressable
+            onPress={() => { tryHaptic(); router.push('/pregnancy-weeks'); }}
+            style={({ pressed }) => [
+              styles.weekCard,
+              pressed && { opacity: 0.95, transform: [{ scale: 0.99 }] },
+            ]}
+            testID="this-week-card"
+          >
+            <View style={styles.weekCardTop}>
+              <View style={styles.weekCardLeft}>
+                <Text style={styles.weekCardEmoji}>{weekData.babySizeEmoji ?? '🌱'}</Text>
+                <View>
+                  <Text style={styles.weekCardTitle}>Week {weekData.weekNumber}</Text>
+                  <Text style={styles.weekCardSize}>{weekData.babySizeComparison}</Text>
+                </View>
+              </View>
+              <View style={styles.weekCardBadge}>
+                <Text style={styles.weekCardBadgeText}>
+                  {weekData.trimester === 1 ? '1st' : weekData.trimester === 2 ? '2nd' : '3rd'} Trimester
+                </Text>
+              </View>
+            </View>
+            {weekData.affirmation && (
+              <Text style={styles.weekCardAffirmation}>"{weekData.affirmation}"</Text>
+            )}
+            <View style={styles.weekCardFooter}>
+              <Text style={styles.weekCardFooterText}>View full journey</Text>
+              <Feather name="arrow-right" size={14} color={Colors.textSecondary} />
+            </View>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      {!profile?.intakeCompleted && (
+        <Animated.View entering={FadeInDown.delay(weekData ? 200 : 150).duration(500)}>
           <Pressable
             onPress={() => router.push('/intake')}
             style={styles.intakeBanner}
@@ -514,6 +564,72 @@ const styles = StyleSheet.create({
   intakeBannerSubtitle: {
     fontFamily: 'Lato_400Regular',
     fontSize: 12,
+    color: Colors.textSecondary,
+  },
+
+  weekCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  weekCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  weekCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  weekCardEmoji: {
+    fontSize: 36,
+  },
+  weekCardTitle: {
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 18,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  weekCardSize: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  weekCardBadge: {
+    backgroundColor: Colors.accentPink,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  weekCardBadgeText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 11,
+    color: Colors.textPrimary,
+  },
+  weekCardAffirmation: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 14,
+    color: Colors.textPrimary,
+    fontStyle: 'italic',
+    lineHeight: 22,
+    marginBottom: 14,
+  },
+  weekCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  weekCardFooterText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
     color: Colors.textSecondary,
   },
 });

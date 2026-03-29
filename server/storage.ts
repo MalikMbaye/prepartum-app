@@ -4,12 +4,12 @@ import {
   users, prompts, userPromptResponses, memories, tasks, userTasks,
   journalEntries, quizzes, quizQuestions, userQuizResults,
   roleplayScenarios, roleplaySessions,
-  intakeQuestions, intakeResponses,
+  intakeQuestions, intakeResponses, pregnancyWeeks,
   type User, type InsertUser, type Prompt, type PromptResponse,
   type Memory, type Task, type UserTask, type JournalEntry,
   type Quiz, type QuizQuestion, type QuizResult,
   type RoleplayScenario, type RoleplaySession,
-  type IntakeQuestion, type IntakeResponse,
+  type IntakeQuestion, type IntakeResponse, type PregnancyWeek,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -59,6 +59,9 @@ export interface IStorage {
   getUserIntakeResponses(userId: string): Promise<IntakeResponse[]>;
   saveIntakeResponse(data: { userId: string; questionId: string; answer: string; answerData?: any }): Promise<IntakeResponse>;
   deleteUserIntakeResponses(userId: string): Promise<void>;
+
+  getAllPregnancyWeeks(): Promise<PregnancyWeek[]>;
+  getPregnancyWeek(weekNumber: number): Promise<PregnancyWeek | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -395,6 +398,15 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUserIntakeResponses(userId: string): Promise<void> {
     await db.delete(intakeResponses).where(eq(intakeResponses.userId, userId));
+  }
+
+  async getAllPregnancyWeeks(): Promise<PregnancyWeek[]> {
+    return db.select().from(pregnancyWeeks).orderBy(pregnancyWeeks.weekNumber);
+  }
+
+  async getPregnancyWeek(weekNumber: number): Promise<PregnancyWeek | undefined> {
+    const [week] = await db.select().from(pregnancyWeeks).where(eq(pregnancyWeeks.weekNumber, weekNumber));
+    return week;
   }
 }
 
