@@ -163,8 +163,17 @@ export default function IntakeScreen() {
       }
     } else {
       setSelectedValues([]);
-      setTextValue('');
-      setDateValue('');
+      // Pre-fill from onboarding profile for questions already answered there
+      if (q.questionId === '1.1' && profile?.name) {
+        setTextValue(profile.name);
+      } else {
+        setTextValue('');
+      }
+      if (q.questionId === '1.2' && profile?.dueDate) {
+        setDateValue(profile.dueDate);
+      } else {
+        setDateValue('');
+      }
     }
   }
 
