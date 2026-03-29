@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { sortScenariosByPersona } from '@/lib/persona';
 
 const CATEGORY_COLORS: Record<string, string> = {
   mindset: Colors.accentPink,
@@ -140,9 +141,12 @@ function ScenarioCard({ scenario, index, sessionCount }: {
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
-  const { quizzes, quizResults, scenarios, roleplaySessions, refreshData, refreshing } = useApp();
+  const { quizzes, quizResults, scenarios, roleplaySessions, refreshData, refreshing, profile } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const [activeTab, setActiveTab] = useState<'roleplay' | 'quizzes'>('roleplay');
+
+  const persona = (profile?.profileFlags?.persona as string) || 'supported_nurturer';
+  const sortedScenarios = useMemo(() => sortScenariosByPersona(scenarios, persona), [scenarios, persona]);
 
   function getLatestResult(quizId: string) {
     return quizResults.find(r => r.quizId === quizId);
@@ -189,14 +193,14 @@ export default function DiscoverScreen() {
       >
         {activeTab === 'roleplay' ? (
           <>
-            {scenarios.length === 0 ? (
+            {sortedScenarios.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="chatbubbles-outline" size={48} color={Colors.textLight} />
                 <Text style={styles.emptyTitle}>No practice scenarios yet</Text>
                 <Text style={styles.emptyBody}>Check back soon for conversation practice</Text>
               </View>
             ) : (
-              scenarios.map((scenario, index) => (
+              sortedScenarios.map((scenario, index) => (
                 <ScenarioCard
                   key={scenario.id}
                   scenario={scenario}

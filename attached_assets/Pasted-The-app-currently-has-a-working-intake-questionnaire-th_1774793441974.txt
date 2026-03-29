@@ -1,0 +1,193 @@
+The app currently has a working intake questionnaire that saves to profile.profileFlags.persona. We need to wire that persona value into every layer of the app so each user gets a genuinely different experience.
+
+The 5 personas are:
+- anxious_planner
+- supported_nurturer
+- solo_warrior
+- healing_mother
+- faith_anchored
+
+---
+
+PART 1 — PERSONA UTILITY LAYER
+
+Create a new file: lib/persona.ts
+
+This file is the single source of truth for all persona-driven content. Export the following:
+
+1. A PERSONA_CONFIG object with an entry for each persona containing:
+   - displayName: string
+   - partnerTerm: string  
+     → supported_nurturer: "your partner"
+     → solo_warrior: "your support person"
+     → healing_mother: "your support person"
+     → anxious_planner: "your partner or support person"
+     → faith_anchored: "your partner or support person"
+   - villageTerm: string
+     → solo_warrior: "your village"
+     → all others: "your people"
+   - homeScreenEmphasis: 'tasks' | 'milestones' | 'strength' | 'body' | 'surrender'
+     → anxious_planner: 'tasks'
+     → supported_nurturer: 'milestones'
+     → solo_warrior: 'strength'
+     → healing_mother: 'body'
+     → faith_anchored: 'surrender'
+   - affirmationTone: 'grounding' | 'celebratory' | 'empowering' | 'gentle' | 'spiritual'
+   - promptPace: 'structured' | 'open' | 'direct' | 'slow' | 'reflective'
+   - weeklyFocusLabel: string (a short phrase shown on the home screen)
+     → anxious_planner: "Preparing with intention"
+     → supported_nurturer: "Growing together"
+     → solo_warrior: "Finding your strength"
+     → healing_mother: "Moving gently forward"
+     → faith_anchored: "Trusting the process"
+   - taskBoardLabel: string
+     → anxious_planner: "Your preparation checklist"
+     → supported_nurturer: "Things to do together"
+     → solo_warrior: "What you can do today"
+     → healing_mother: "At your own pace"
+     → faith_anchored: "Preparing with purpose"
+
+2. A getPersonaConfig(persona: string) function that returns the config for that persona, falling back to supported_nurturer as default.
+
+3. A sanitizeForPersona(text: string, persona: string) function that:
+   - Replaces "your partner" with the persona's partnerTerm
+   - Replaces "your village" with the persona's villageTerm
+   - Replaces "partner or support person" with the persona's partnerTerm
+   - Returns the sanitized string
+
+---
+
+PART 2 — DAILY PROMPT DELIVERY
+
+Update the endpoint GET /api/users/:userId/daily-prompts (or wherever daily prompts are fetched) to filter by persona.
+
+The updated query logic:
+1. Get the user's persona from their profile (profile.profileFlags.persona)
+2. Query prompts WHERE:
+   - week_number = currentWeek (calculated from due date)
+   - persona_tags = 'All' OR persona_tags CONTAINS userPersona
+   - ordered by day ASC
+3. Return 3 prompts per day (one Mindset, one Relationships, one Physical) when possible — prioritize persona-tagged prompts over 'All' prompts when both exist for the same category
+
+On the frontend, wherever prompt text is displayed, pass it through sanitizeForPersona(promptText, userPersona) before rendering.
+
+---
+
+PART 3 — HOME SCREEN PERSONALIZATION
+
+In the home screen component, update the following:
+
+1. Import getPersonaConfig from lib/persona
+2. Get the user's persona: const persona = profile?.profileFlags?.persona || 'supported_nurturer'
+3. Get the config: const personaConfig = getPersonaConfig(persona)
+
+Update the home screen layout based on homeScreenEmphasis:
+- 'tasks' (Anxious Planner): Show the Task Board card FIRST, above today's prompts. Show a small badge: "Your preparation checklist — Week X"
+- 'milestones' (Supported Nurturer): Show a milestone celebration card FIRST if there's a milestone this week. Show partner-language throughout.
+- 'strength' (Solo Warrior): Show a "This week's strength" card FIRST with the week's affirmation, framed as inner strength. Remove any partner-language from visible UI text.
+- 'body' (Healing Mother): Show a body check-in card FIRST — a simple "How does your body feel today?" prompt with 3 options (Tender, Okay, Strong). Log the response to the user's profile.
+- 'surrender' (Faith Anchored): Show the week's affirmation FIRST, full-width, in larger italic serif text. Frame it with "This week's intention:"
+
+Replace the section label "Today's reflection questions" with a personalized greeting:
+- anxious_planner: "Here's your plan for today"
+- supported_nurturer: "Ready to grow today?"
+- solo_warrior: "You've got this. Here's today."
+- healing_mother: "Take this gently."
+- faith_anchored: "Today's intention"
+
+---
+
+PART 4 — TASK BOARD PERSONALIZATION
+
+In the task board screen:
+
+1. Replace the header "Preparation Checklist" with personaConfig.taskBoardLabel
+2. For solo_warrior persona: 
+   - Add a "Who can help?" field to each task (text input, optional)
+   - Label it "Someone who could help with this:" instead of partner-assignment language
+3. For anxious_planner persona:
+   - Sort tasks by trimester, showing current trimester tasks FIRST
+   - Add a "Done" count badge: "X of Y tasks complete this trimester"
+4. For healing_mother persona:
+   - Add a "No pressure" subheader below the task board title: "These are suggestions, not requirements. Move at your own pace."
+   - Tasks should default to collapsed — show just the title, expand on tap
+
+---
+
+PART 5 — ROLE-PLAY SCENARIOS PERSONALIZATION
+
+Update the role-play scenario selection screen to filter by persona.
+
+Each scenario in the roleplay_scenarios table should have a persona_tags field (add it if it doesn't exist — default all existing rows to 'All').
+
+When displaying scenarios:
+- anxious_planner: Surface "hospital advocacy," "asking your OB hard questions," "telling your support team your birth preferences" scenarios first
+- supported_nurturer: Surface "having the baby conversation with your partner," "planning postpartum together," "telling your family" scenarios first
+- solo_warrior: Surface "setting limits with family," "asking for help without explaining yourself," "advocating for yourself in a medical setting" scenarios first
+- healing_mother: Surface "processing past loss," "telling your provider about previous trauma," "setting your own pace" scenarios first
+- faith_anchored: Surface "talking to your faith community," "navigating spiritual advice you didn't ask for," "praying through fear" scenarios first
+
+---
+
+PART 6 — AFFIRMATION PERSONALIZATION
+
+Wherever affirmations are displayed (gestation tracker card, prompt completion screen, home screen), pass them through a personaAffirmation function.
+
+Create this function in lib/persona.ts:
+
+personaAffirmation(baseAffirmation: string, persona: string): string
+
+Logic:
+- healing_mother: Prefix the affirmation with "Right where you are — " to soften the forward momentum
+- faith_anchored: Append " Trust that." to affirmations that don't already reference faith or trust
+- solo_warrior: Replace any "you and your partner" phrasing with "you"
+- anxious_planner: Append a grounding line if the affirmation feels open-ended — e.g., append "You've already done the hard work of showing up."
+- supported_nurturer: Leave affirmations as-is (they're already written for this default persona)
+
+---
+
+PART 7 — INTAKE RE-TAKE FLOW
+
+In the Profile / Settings screen, add a button: "Retake my intake questionnaire"
+
+When tapped:
+- Show a confirmation modal: "Your experience will be updated based on your new answers. This won't delete any memories or journal entries."
+- If confirmed: set profile.intakeCompleted = false via PUT /api/users/:id
+- Navigate to the intake screen
+- On completion, recalculate persona and update profile.profileFlags.persona
+- Navigate back to home screen
+
+---
+
+PART 8 — PERSONA BADGE ON PROFILE SCREEN
+
+In the Profile screen, display the user's current persona as a pill badge.
+
+Badge colors:
+- anxious_planner: background #F5D6D6, text #7A2C2C, label "Anxious Planner"
+- supported_nurturer: background #BBD4E3, text #1A4A5E, label "Supported Nurturer"
+- solo_warrior: background #D4E8D4, text #1A4A1A, label "Solo Warrior"
+- healing_mother: background #E8D4E8, text #4A1A5E, label "Healing Mother"
+- faith_anchored: background #F5E1DA, text #7A3A1A, label "Faith-Anchored"
+
+Below the badge, show a one-line description:
+- anxious_planner: "Your experience is structured for preparation and clarity."
+- supported_nurturer: "Your experience celebrates connection and growth."
+- solo_warrior: "Your experience is built around your strength."
+- healing_mother: "Your experience moves at your pace."
+- faith_anchored: "Your experience is grounded in trust."
+
+Tapping the badge opens the retake intake flow from Part 7.
+
+---
+
+IMPLEMENTATION NOTES:
+
+- Do NOT hardcode partner language anywhere. All partner/support references must go through sanitizeForPersona()
+- The persona value comes from profile.profileFlags.persona — read it from AppContext every time, do not cache it locally in components
+- Solo Warrior is the most critical persona to get right. "Your partner" should NEVER appear in her experience. Search the entire codebase for instances of "your partner" and route them through sanitizeForPersona.
+- Healing Mother's experience should feel slower and softer. Avoid exclamation points, celebration language, and forward-momentum framing anywhere she might encounter it.
+- Faith Anchored affirmations should reference surrender, trust, and purpose — not control or preparation.
+- Persona is NOT shown to the user prominently. The badge on the profile screen is the only place. The experience just FEELS different — she shouldn't know she's been categorized.
+
+After completing all 8 parts, confirm what was built and what file changes were made.

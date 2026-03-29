@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, RefreshControl, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { getPersonaConfig } from '@/lib/persona';
 
 const CATEGORIES = [
   { key: 'all', label: 'All' },
@@ -20,6 +21,15 @@ const CATEGORIES = [
 
 type CategoryKey = typeof CATEGORIES[number]['key'];
 
+const TRIMESTER_ORDER: Record<string, number> = {
+  'first-trimester': 1,
+  'second-trimester': 2,
+  'third-trimester': 3,
+  'hospital-bag': 4,
+  'partner-prep': 5,
+  'postpartum': 6,
+};
+
 function getCategoryColor(category: string): string {
   switch (category) {
     case 'first-trimester': return Colors.accentPink;
@@ -30,6 +40,12 @@ function getCategoryColor(category: string): string {
     case 'postpartum': return '#E8D4D6';
     default: return Colors.border;
   }
+}
+
+function getCurrentTrimesterKey(pregnancyWeek: number): string {
+  if (pregnancyWeek <= 13) return 'first-trimester';
+  if (pregnancyWeek <= 27) return 'second-trimester';
+  return 'third-trimester';
 }
 
 interface TaskItemProps {
@@ -46,9 +62,12 @@ interface TaskItemProps {
   };
   index: number;
   onToggle: (id: string) => void;
+  showHelper?: boolean;
+  helperValue?: string;
+  onHelperChange?: (val: string) => void;
 }
 
-function TaskItem({ task, index, onToggle }: TaskItemProps) {
+function TaskItem({ task, index, onToggle, showHelper, helperValue, onHelperChange }: TaskItemProps) {
   const [expanded, setExpanded] = useState(false);
   const hasDescription = !!task.task.description;
   const catColor = getCategoryColor(task.task.category);
@@ -96,6 +115,19 @@ function TaskItem({ task, index, onToggle }: TaskItemProps) {
           </View>
         )}
 
+        {showHelper && (
+          <View style={styles.helperWrap}>
+            <Text style={styles.helperLabel}>Someone who could help with this:</Text>
+            <TextInput
+              style={styles.helperInput}
+              value={helperValue ?? ''}
+              onChangeText={onHelperChange}
+              placeholder="Optional — add a name or note"
+              placeholderTextColor={Colors.textLight}
+            />
+          </View>
+        )}
+
         {!task.task.isTemplate && (
           <View style={styles.customBadge}>
             <Text style={styles.customBadgeText}>Custom</Text>
@@ -108,28 +140,55 @@ function TaskItem({ task, index, onToggle }: TaskItemProps) {
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
-  const { tasks, toggleTask, refreshing, refreshData } = useApp();
+  const { tasks, toggleTask, refreshing, refreshData, profile, getPregnancyWeek } = useApp();
   const [activeTab, setActiveTab] = useState<CategoryKey>('all');
+  const [helperMap, setHelperMap] = useState<Record<string, string>>({});
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
+  const persona = (profile?.profileFlags?.persona as string) || 'supported_nurturer';
+  const personaConfig = getPersonaConfig(persona);
+  const pregnancyWeek = getPregnancyWeek();
+  const currentTrimKey = getCurrentTrimesterKey(pregnancyWeek);
+
   const filteredTasks = useMemo(() => {
-    const filtered = activeTab === 'all' ? tasks : tasks.filter(t => t.task?.category === activeTab);
+    let filtered = activeTab === 'all' ? tasks : tasks.filter(t => t.task?.category === activeTab);
+
+    if (persona === 'anxious_planner' && activeTab === 'all') {
+      filtered = [...filtered].sort((a, b) => {
+        const aCurrent = a.task?.category === currentTrimKey ? -1 : 0;
+        const bCurrent = b.task?.category === currentTrimKey ? -1 : 0;
+        if (aCurrent !== bCurrent) return aCurrent - bCurrent;
+        const aOrd = TRIMESTER_ORDER[a.task?.category ?? ''] ?? 99;
+        const bOrd = TRIMESTER_ORDER[b.task?.category ?? ''] ?? 99;
+        return aOrd - bOrd;
+      });
+    }
+
     const incomplete = filtered.filter(t => !t.completed);
     const complete = filtered.filter(t => t.completed);
     return { incomplete, complete, all: filtered };
-  }, [tasks, activeTab]);
+  }, [tasks, activeTab, persona, currentTrimKey]);
 
   const completedCount = filteredTasks.complete.length;
   const totalCount = filteredTasks.all.length;
   const progress = totalCount > 0 ? completedCount / totalCount : 0;
 
+  const currentTrimsterTasks = tasks.filter(t => t.task?.category === currentTrimKey);
+  const currentTrimDone = currentTrimsterTasks.filter(t => t.completed).length;
+  const currentTrimTotal = currentTrimsterTasks.length;
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.title}>Task Board</Text>
-            <Text style={styles.subtitle}>Prepare at your own pace</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{personaConfig.taskBoardLabel}</Text>
+            {persona === 'healing_mother' && (
+              <Text style={styles.healingSubtitle}>These are suggestions, not requirements. Move at your own pace.</Text>
+            )}
+            {persona !== 'healing_mother' && (
+              <Text style={styles.subtitle}>Prepare at your own pace</Text>
+            )}
           </View>
           <Pressable
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/add-task'); }}
@@ -139,6 +198,12 @@ export default function TasksScreen() {
             <Ionicons name="add" size={24} color={Colors.textPrimary} />
           </Pressable>
         </View>
+        {persona === 'anxious_planner' && currentTrimTotal > 0 && (
+          <View style={styles.trimBadge}>
+            <Ionicons name="checkmark-circle" size={14} color={Colors.textPrimary} />
+            <Text style={styles.trimBadgeText}>{currentTrimDone} of {currentTrimTotal} {currentTrimKey.replace('-', ' ')} tasks complete</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.tabContainer}>
@@ -178,9 +243,7 @@ export default function TasksScreen() {
           <View style={styles.progressBarTrack}>
             <Animated.View style={[styles.progressBarFill, { width: `${Math.round(progress * 100)}%` as any }]} />
           </View>
-          <Text style={styles.progressText}>
-            {completedCount} of {totalCount} complete
-          </Text>
+          <Text style={styles.progressText}>{completedCount} of {totalCount} complete</Text>
         </View>
 
         {totalCount === 0 ? (
@@ -194,7 +257,15 @@ export default function TasksScreen() {
         ) : (
           <>
             {filteredTasks.incomplete.map((task, index) => (
-              <TaskItem key={task.id} task={task} index={index} onToggle={toggleTask} />
+              <TaskItem
+                key={task.id}
+                task={task}
+                index={index}
+                onToggle={toggleTask}
+                showHelper={persona === 'solo_warrior'}
+                helperValue={helperMap[task.id] ?? ''}
+                onHelperChange={(val) => setHelperMap(prev => ({ ...prev, [task.id]: val }))}
+              />
             ))}
 
             {filteredTasks.complete.length > 0 && (
@@ -211,6 +282,9 @@ export default function TasksScreen() {
                     task={task}
                     index={filteredTasks.incomplete.length + index}
                     onToggle={toggleTask}
+                    showHelper={persona === 'solo_warrior'}
+                    helperValue={helperMap[task.id] ?? ''}
+                    onHelperChange={(val) => setHelperMap(prev => ({ ...prev, [task.id]: val }))}
                   />
                 ))}
               </View>
@@ -241,14 +315,23 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 28,
+    fontSize: 26,
     color: Colors.textPrimary,
     marginBottom: 4,
+    flexShrink: 1,
   },
   subtitle: {
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textSecondary,
+  },
+  healingSubtitle: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 20,
+    marginTop: 2,
   },
   addButton: {
     width: 44,
@@ -257,6 +340,24 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accentPeach,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+  },
+  trimBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.accentBlue,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  trimBadgeText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 12,
+    color: Colors.textPrimary,
+    textTransform: 'capitalize' as const,
   },
 
   tabContainer: {
@@ -389,6 +490,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 20,
+  },
+  helperWrap: {
+    marginTop: 12,
+    marginLeft: 44,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  helperLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 11,
+    color: Colors.textLight,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
+  helperInput: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingVertical: 4,
   },
   customBadge: {
     position: 'absolute',

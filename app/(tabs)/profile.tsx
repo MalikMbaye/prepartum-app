@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -8,14 +8,36 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { getCategoryLabel, getCategoryColor } from '@/lib/prompts-data';
+import { getPersonaConfig } from '@/lib/persona';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const {
     profile, promptResponses, memories, tasks, journalEntries,
-    quizResults, roleplaySessions, getPregnancyWeek, getCurrentStreak,
+    quizResults, roleplaySessions, getPregnancyWeek, getCurrentStreak, setProfile,
   } = useApp();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
+
+  const persona = (profile?.profileFlags?.persona as string) || '';
+  const personaConfig = persona ? getPersonaConfig(persona) : null;
+
+  function handlePersonaBadgePress() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      personaConfig?.personaBadge.label ?? 'Your Profile Type',
+      `${personaConfig?.personaBadge.description ?? ''}\n\nWant to retake the questionnaire and update your profile?`,
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Retake questionnaire',
+          onPress: async () => {
+            await setProfile({ intakeCompleted: false } as any);
+            router.push('/intake' as any);
+          },
+        },
+      ]
+    );
+  }
 
   const pregnancyWeek = getPregnancyWeek();
   const completedTasks = tasks.filter(t => t.completed).length;
@@ -78,6 +100,27 @@ export default function ProfileScreen() {
           </View>
         )}
       </Animated.View>
+
+      {personaConfig && (
+        <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.personaBadgeWrap}>
+          <Pressable
+            onPress={handlePersonaBadgePress}
+            style={({ pressed }) => [
+              styles.personaBadge,
+              { backgroundColor: personaConfig.personaBadge.background },
+              pressed && { opacity: 0.85 },
+            ]}
+            testID="persona-badge"
+          >
+            <Ionicons name="sparkles-outline" size={16} color={personaConfig.personaBadge.textColor} />
+            <Text style={[styles.personaBadgeLabel, { color: personaConfig.personaBadge.textColor }]}>
+              {personaConfig.personaBadge.label}
+            </Text>
+            <Feather name="info" size={13} color={personaConfig.personaBadge.textColor} style={{ opacity: 0.6 }} />
+          </Pressable>
+          <Text style={styles.personaBadgeDesc}>{personaConfig.personaBadge.description}</Text>
+        </Animated.View>
+      )}
 
       {profile?.focusAreas && profile.focusAreas.length > 0 && (
         <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.focusSection}>
@@ -215,6 +258,30 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_700Bold',
     fontSize: 13,
     color: Colors.textPrimary,
+  },
+  personaBadgeWrap: {
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 8,
+  },
+  personaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 24,
+  },
+  personaBadgeLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 14,
+  },
+  personaBadgeDesc: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   focusSection: {
     marginBottom: 24,

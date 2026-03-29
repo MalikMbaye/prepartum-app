@@ -315,6 +315,44 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.delay(250).duration(400)}>
+          <Text style={styles.sectionTitle}>Profile</Text>
+          <View style={styles.card}>
+            <Pressable
+              onPress={() => {
+                tryHaptic();
+                Alert.alert(
+                  'Retake questionnaire?',
+                  'This will reset your profile type and let you answer the intake questions again. Your journal, memories, and tasks will not be affected.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Retake',
+                      onPress: async () => {
+                        await setProfile({ intakeCompleted: false } as any);
+                        router.push('/intake' as any);
+                      },
+                    },
+                  ]
+                );
+              }}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+              testID="retake-intake-button"
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.rowIcon, { backgroundColor: Colors.accentPink }]}>
+                  <Ionicons name="refresh-outline" size={16} color={Colors.textPrimary} />
+                </View>
+                <View>
+                  <Text style={styles.rowLabel}>Retake questionnaire</Text>
+                  <Text style={styles.rowHint}>Update your personalised profile</Text>
+                </View>
+              </View>
+              <Feather name="chevron-right" size={16} color={Colors.textLight} />
+            </Pressable>
+          </View>
+        </Animated.View>
+
         <Animated.View entering={FadeInDown.delay(300).duration(400)}>
           <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.card}>
@@ -456,6 +494,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textPrimary,
+  },
+  rowHint: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   rowValue: {
     fontFamily: 'Lato_400Regular',

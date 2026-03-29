@@ -109,6 +109,24 @@ Premium, luxury aesthetic inspired by brands like Aesop. Key design tokens defin
 - **Build script**: Custom `scripts/build.js` handles static export with Metro bundler
 - Uses `patch-package` for any dependency patches (postinstall script)
 
+### Persona Personalization System
+
+`lib/persona.ts` defines 5 user personas calculated from intake responses:
+
+- **anxious_planner** — home emphasizes tasks, task board title "Your preparation checklist", structured prompt scoring boost, trimester-sorted task list, trimester progress badge
+- **supported_nurturer** — home emphasizes milestones/week data, task board "Things to do together"
+- **solo_warrior** — home emphasizes strength affirmation, task board "What you can do today", "Who can help?" field per task, partner-language stripped from prompts
+- **healing_mother** — home has body check-in card (Tender/Okay/Strong, stored in AsyncStorage), task board "At your own pace" with gentle "no pressure" subtitle
+- **faith_anchored** — home emphasizes week's intention as surrender affirmation, task board "Preparing with purpose"
+
+Utility functions:
+- `getPersonaConfig(persona)` — returns PersonaConfig for any persona key
+- `sanitizeForPersona(text, persona)` — replaces partner/village language to match persona
+- `personaAffirmation(text, persona)` — wraps affirmations with persona-specific framing
+- `sortScenariosByPersona(scenarios, persona)` — sorts roleplay scenarios by keyword relevance
+
+Persona is stored in `profile.profileFlags.persona`. Badge shown on Profile tab (tap to retake). Settings has "Retake questionnaire" button that resets `intakeCompleted` and navigates to `/intake`.
+
 ### Key Architectural Decisions
 
 1. **Shared schema between client and server** via `shared/schema.ts` - ensures type safety across the stack

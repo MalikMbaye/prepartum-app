@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -6,9 +6,11 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useQuery } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
+import { getPersonaConfig, sanitizeForPersona, personaAffirmation } from '@/lib/persona';
 
 type PregnancyWeekData = {
   weekNumber: number;
@@ -68,14 +70,61 @@ function ProgressRing({ progress, size, strokeWidth, color }: { progress: number
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <Text style={{
-          fontFamily: 'PlayfairDisplay_700Bold',
-          fontSize: 18,
-          color: Colors.textPrimary,
-        }}>
+        <Text style={{ fontFamily: 'PlayfairDisplay_700Bold', fontSize: 18, color: Colors.textPrimary }}>
           {Math.round(progress * 100)}%
         </Text>
       </View>
+    </View>
+  );
+}
+
+const BODY_CHECKIN_OPTIONS = [
+  { key: 'tender', label: 'Tender', emoji: '🌸' },
+  { key: 'okay', label: 'Okay', emoji: '🌿' },
+  { key: 'strong', label: 'Strong', emoji: '✨' },
+];
+
+function todayKey() {
+  return `body_checkin_${new Date().toISOString().slice(0, 10)}`;
+}
+
+function BodyCheckInCard() {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(todayKey()).then(v => {
+      if (v) { setSelected(v); setSaved(true); }
+    });
+  }, []);
+
+  async function handleSelect(key: string) {
+    tryHaptic();
+    setSelected(key);
+    setSaved(true);
+    await AsyncStorage.setItem(todayKey(), key);
+  }
+
+  return (
+    <View style={styles.emphasisCard}>
+      <Text style={styles.emphasisLabel}>How does your body feel today?</Text>
+      <View style={styles.bodyRow}>
+        {BODY_CHECKIN_OPTIONS.map(opt => (
+          <Pressable
+            key={opt.key}
+            onPress={() => handleSelect(opt.key)}
+            style={[styles.bodyBtn, selected === opt.key && styles.bodyBtnSelected]}
+          >
+            <Text style={styles.bodyEmoji}>{opt.emoji}</Text>
+            <Text style={[styles.bodyBtnText, selected === opt.key && styles.bodyBtnTextSelected]}>
+              {opt.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {saved && selected && (
+        <Text style={styles.emphasisSub}>Noted. Be gentle with yourself today.</Text>
+      )}
     </View>
   );
 }
@@ -92,6 +141,9 @@ export default function HomeScreen() {
   const weeklyCount = getWeeklyCompletedCount();
   const pregnancyWeek = getPregnancyWeek();
   const completedPromptIds = promptResponses.map(r => r.promptId);
+
+  const persona = (profile?.profileFlags?.persona as string) || 'supported_nurturer';
+  const personaConfig = getPersonaConfig(persona);
 
   const { data: weekData } = useQuery<PregnancyWeekData>({
     queryKey: [`/api/pregnancy-weeks/${pregnancyWeek}`],
@@ -125,6 +177,92 @@ export default function HomeScreen() {
     : fallbackPrompts;
   const hasPrompts = availablePrompts.length > 0;
   const primaryColor = hasPrompts ? getCategoryColor(availablePrompts[0].category) : Colors.accentPink;
+
+  const weekAffirmation = weekData?.affirmation
+    ? personaAffirmation(weekData.affirmation, persona)
+    : null;
+
+  function renderEmphasisCard() {
+    const emphasis = personaConfig.homeScreenEmphasis;
+
+    if (emphasis === 'tasks') {
+      const currentTrimTask = totalTasks > 0;
+      return (
+        <Animated.View entering={FadeInDown.delay(175).duration(500)}>
+          <Pressable
+            onPress={() => { tryHaptic(); router.push('/(tabs)/tasks'); }}
+            style={({ pressed }) => [styles.emphasisCard, pressed && { opacity: 0.95 }]}
+            testID="emphasis-tasks-card"
+          >
+            <View style={styles.emphasisRow}>
+              <Text style={styles.emphasisLabel}>{personaConfig.taskBoardLabel}</Text>
+              <View style={styles.emphasisBadge}>
+                <Text style={styles.emphasisBadgeText}>Week {pregnancyWeek || '?'}</Text>
+              </View>
+            </View>
+            <Text style={styles.emphasisBig}>{completedTasks}<Text style={styles.emphasisBigOf}> / {totalTasks}</Text></Text>
+            <Text style={styles.emphasisSub}>tasks complete</Text>
+            <View style={styles.emphasisCta}>
+              <Text style={styles.emphasisCtaText}>Open checklist</Text>
+              <Feather name="arrow-right" size={14} color={Colors.textPrimary} />
+            </View>
+          </Pressable>
+        </Animated.View>
+      );
+    }
+
+    if (emphasis === 'milestones') {
+      if (!weekData) return null;
+      return (
+        <Animated.View entering={FadeInDown.delay(175).duration(500)}>
+          <View style={[styles.emphasisCard, { borderLeftWidth: 4, borderLeftColor: Colors.accentBlue }]}>
+            <Text style={styles.emphasisLabel}>This week's milestone</Text>
+            <Text style={styles.emphasisTitle}>Week {weekData.weekNumber}</Text>
+            {weekData.theme && (
+              <Text style={styles.emphasisBody}>{weekData.theme}</Text>
+            )}
+            {weekAffirmation && (
+              <Text style={styles.emphasisQuote}>"{sanitizeForPersona(weekAffirmation, persona)}"</Text>
+            )}
+          </View>
+        </Animated.View>
+      );
+    }
+
+    if (emphasis === 'strength') {
+      const affText = weekAffirmation || "You have everything you need right now.";
+      return (
+        <Animated.View entering={FadeInDown.delay(175).duration(500)}>
+          <View style={[styles.emphasisCard, { backgroundColor: '#D4E8D4' }]}>
+            <Text style={styles.emphasisLabel}>This week's strength</Text>
+            <Text style={styles.emphasisQuote}>"{sanitizeForPersona(affText, persona)}"</Text>
+          </View>
+        </Animated.View>
+      );
+    }
+
+    if (emphasis === 'body') {
+      return (
+        <Animated.View entering={FadeInDown.delay(175).duration(500)}>
+          <BodyCheckInCard />
+        </Animated.View>
+      );
+    }
+
+    if (emphasis === 'surrender') {
+      const affText = weekAffirmation || "Everything is unfolding as it should.";
+      return (
+        <Animated.View entering={FadeInDown.delay(175).duration(500)}>
+          <View style={[styles.emphasisCard, { backgroundColor: Colors.accentPeach }]}>
+            <Text style={styles.emphasisLabel}>This week's intention</Text>
+            <Text style={[styles.emphasisQuote, { fontSize: 20 }]}>"{sanitizeForPersona(affText, persona)}"</Text>
+          </View>
+        </Animated.View>
+      );
+    }
+
+    return null;
+  }
 
   return (
     <ScrollView
@@ -176,8 +314,10 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
-            {weekData.affirmation && (
-              <Text style={styles.weekCardAffirmation}>"{weekData.affirmation}"</Text>
+            {weekAffirmation && (
+              <Text style={styles.weekCardAffirmation}>
+                "{sanitizeForPersona(weekAffirmation, persona)}"
+              </Text>
             )}
             <View style={styles.weekCardFooter}>
               <Text style={styles.weekCardFooterText}>View full journey</Text>
@@ -186,6 +326,8 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
       )}
+
+      {renderEmphasisCard()}
 
       {!profile?.intakeCompleted && (
         <Animated.View entering={FadeInDown.delay(weekData ? 200 : 150).duration(500)}>
@@ -208,10 +350,10 @@ export default function HomeScreen() {
 
       {hasPrompts && (
         <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-          <Text style={styles.sectionTitle}>Today's Reflections</Text>
+          <Text style={styles.sectionTitle}>{personaConfig.homeGreeting}</Text>
           {availablePrompts.map((prompt, index) => {
             const categoryColor = getCategoryColor(prompt.category);
-            const isCompleted = completedPromptIds.includes(prompt.id);
+            const sanitizedBody = sanitizeForPersona(prompt.body, persona);
             return (
               <Pressable
                 key={prompt.id}
@@ -221,14 +363,14 @@ export default function HomeScreen() {
                     pathname: '/prompt-response',
                     params: {
                       promptId: prompt.id,
-                      promptText: prompt.body,
+                      promptText: sanitizedBody,
                       category: prompt.category,
                       promptTitle: prompt.title ?? '',
-                      format: prompt.format ?? 'text',
+                      format: (prompt as any).format ?? 'text',
                       weekNumber: prompt.weekNumber ? String(prompt.weekNumber) : '',
-                      ...(prompt.reframe ? {
-                        reframeOriginal: prompt.reframe.originalThought,
-                        reframeText: prompt.reframe.reframedThought,
+                      ...((prompt as any).reframe ? {
+                        reframeOriginal: (prompt as any).reframe.originalThought,
+                        reframeText: (prompt as any).reframe.reframedThought,
                       } : {}),
                     }
                   });
@@ -242,15 +384,15 @@ export default function HomeScreen() {
                 <View style={styles.promptHeader}>
                   <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
                   <Text style={styles.categoryLabel}>{getCategoryLabel(prompt.category)}</Text>
-                  {prompt.depth && (
+                  {(prompt as any).depth && (
                     <View style={[styles.depthBadge, { backgroundColor: categoryColor + '40' }]}>
-                      <Text style={styles.depthText}>{prompt.depth}</Text>
+                      <Text style={styles.depthText}>{(prompt as any).depth}</Text>
                     </View>
                   )}
                 </View>
 
                 <Text style={styles.promptTitle}>{prompt.title}</Text>
-                <Text style={styles.promptPreview} numberOfLines={2}>{prompt.body}</Text>
+                <Text style={styles.promptPreview} numberOfLines={2}>{sanitizedBody}</Text>
 
                 <View style={[styles.startButton, { backgroundColor: categoryColor }]}>
                   <Text style={styles.startButtonText}>Reflect</Text>
@@ -265,7 +407,7 @@ export default function HomeScreen() {
       {!hasPrompts && (
         <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.allDoneCard}>
           <Ionicons name="checkmark-circle-outline" size={32} color={Colors.success} />
-          <Text style={styles.allDoneTitle}>All caught up!</Text>
+          <Text style={styles.allDoneTitle}>All caught up</Text>
           <Text style={styles.allDoneBody}>You've reflected on all available prompts. New ones will appear soon.</Text>
         </Animated.View>
       )}
@@ -280,15 +422,13 @@ export default function HomeScreen() {
             color={primaryColor}
           />
           <View style={styles.progressInfo}>
-            <Text style={styles.progressCount}>
-              {weeklyCount} of 7
-            </Text>
+            <Text style={styles.progressCount}>{weeklyCount} of 7</Text>
             <Text style={styles.progressLabel}>prompts completed this week</Text>
             <Text style={styles.progressEncouragement}>
               {weeklyCount === 0 ? 'Start your week with a reflection' :
                weeklyCount < 4 ? 'Keep showing up for yourself' :
                weeklyCount < 7 ? 'You\'re doing wonderfully' :
-               'A perfect week!'}
+               'A perfect week'}
             </Text>
           </View>
         </View>
@@ -367,6 +507,126 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.textPrimary,
     marginBottom: 14,
+  },
+
+  emphasisCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 22,
+    padding: 22,
+    marginBottom: 20,
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  emphasisRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  emphasisLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.7,
+    marginBottom: 8,
+  },
+  emphasisBadge: {
+    backgroundColor: Colors.accentPink,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  emphasisBadgeText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 11,
+    color: Colors.textPrimary,
+  },
+  emphasisBig: {
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 36,
+    color: Colors.textPrimary,
+    lineHeight: 40,
+  },
+  emphasisBigOf: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 22,
+    color: Colors.textSecondary,
+  },
+  emphasisTitle: {
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 22,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  emphasisBody: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 15,
+    color: Colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: 10,
+  },
+  emphasisQuote: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: Colors.textPrimary,
+    fontStyle: 'italic',
+    lineHeight: 26,
+    marginTop: 4,
+  },
+  emphasisSub: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textLight,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  emphasisCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 14,
+  },
+  emphasisCtaText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 13,
+    color: Colors.textPrimary,
+  },
+  bodyRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  bodyBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.canvas,
+  },
+  bodyBtnSelected: {
+    backgroundColor: Colors.accentPeach,
+    borderColor: Colors.textPrimary,
+  },
+  bodyEmoji: {
+    fontSize: 22,
+  },
+  bodyBtnText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  bodyBtnTextSelected: {
+    color: Colors.textPrimary,
   },
 
   promptCard: {

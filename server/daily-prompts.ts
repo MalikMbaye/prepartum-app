@@ -113,6 +113,22 @@ export async function getDailyPrompts(userId: string): Promise<DailyPrompt[]> {
 
       if (p.intensity !== null && p.intensity <= emotionalBandwidth) score += 5;
 
+      const persona = (profileFlags.persona as string) || '';
+      if (persona) {
+        if (p.relevanceTags && p.relevanceTags.includes(persona)) score += 15;
+        if (persona === 'healing_mother') {
+          if (p.depth === 'deep') score -= 8;
+          if (p.estimatedEnergy === 'high') score -= 6;
+          if (p.intensity !== null && p.intensity >= 4) score -= 5;
+        } else if (persona === 'anxious_planner') {
+          if (p.format === 'structured' || p.format === 'action') score += 8;
+        } else if (persona === 'solo_warrior') {
+          if (p.requiredFlags && !p.requiredFlags.some(f => f.includes('partner'))) score += 5;
+        } else if (persona === 'faith_anchored') {
+          if (p.relevanceTags && p.relevanceTags.some(t => ['spiritual', 'values', 'meaning'].includes(t))) score += 8;
+        }
+      }
+
       return { prompt: p, score };
     });
 

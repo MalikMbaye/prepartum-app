@@ -15,6 +15,7 @@ import Animated, {
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
+import { personaAffirmation } from '@/lib/persona';
 
 const CATEGORY_AFFIRMATIONS: Record<string, string> = {
   mindset: 'Awareness is the beginning of everything.',
@@ -64,7 +65,7 @@ export default function PromptResponseScreen() {
     weekNumber?: string;
   }>();
 
-  const { addPromptResponse, addJournalEntry, promptResponses } = useApp();
+  const { addPromptResponse, addJournalEntry, promptResponses, profile } = useApp();
 
   const [screen, setScreen] = useState<1 | 2 | 3>(1);
   const [responseText, setResponseText] = useState('');
@@ -74,7 +75,9 @@ export default function PromptResponseScreen() {
 
   const catColor = getCategoryColor(category || 'mindset');
   const catLabel = getCategoryLabel(category || 'mindset');
-  const affirmation = CATEGORY_AFFIRMATIONS[category || 'mindset'] ?? CATEGORY_AFFIRMATIONS.mindset;
+  const persona = (profile?.profileFlags?.persona as string) || 'supported_nurturer';
+  const baseAffirmation = CATEGORY_AFFIRMATIONS[category || 'mindset'] ?? CATEGORY_AFFIRMATIONS.mindset;
+  const affirmation = personaAffirmation(baseAffirmation, persona);
 
   const existingResponse = promptResponses.find(r => r.promptId === promptId);
   const alreadyCompleted = !!existingResponse;
