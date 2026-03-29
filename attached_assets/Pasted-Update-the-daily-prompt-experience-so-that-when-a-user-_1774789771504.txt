@@ -1,0 +1,37 @@
+Update the daily prompt experience so that when a user taps a prompt category (mindset, relationships, or physical), it uses a 3-screen flow instead of a single question screen.
+
+SCREEN 1 — Context
+- Show the current week number and category name at the top (e.g. "Week 22 · Relationships")
+- Below that, show the prompt title as a topic heading
+- Below that, show the first sentence of the prompt body as a short framing excerpt
+- Category accent color on the header bar or top border:
+  - mindset → #F5D6D6 (soft pink)
+  - relationships → #BBD4E3 (powder blue)
+  - physical → #F5E1DA (warm peach)
+- A "Continue" button at the bottom in #5D5066 (plum)
+
+SCREEN 2 — Reflection
+- Show the full prompt body as the reflection question
+- Below it, show an input based on the prompt's format field:
+  - 'text' or null → multiline text input, cream background, plum border, character count shown
+  - 'voice' → large centered microphone button
+  - 'likert' → horizontal slider 1–5 with "Not at all" and "Completely" labels
+  - 'multiselect' → pill buttons the user taps to select multiple options
+- "Complete" button at the bottom in #5D5066
+
+SCREEN 3 — Micro-celebration
+- A soft warm circle that pulses gently once (CSS/Animated glow — NOT confetti, NOT fireworks)
+- Category affirmation text centered below the glow:
+  - mindset → "Awareness is the beginning of everything."
+  - relationships → "You just practiced asking for what you need."
+  - physical → "You honored your body today."
+- A "Save to Journal" toggle, default ON
+- A "Done" button that:
+  - calls addPromptResponse() from AppContext with the user's response
+  - navigates back to the home screen
+
+Implementation notes:
+- This should be a single component/screen using internal state (screen: 1 | 2 | 3)
+- Use Animated or a simple opacity/translate transition between screens — horizontal slide preferred
+- Update the existing prompt screen file, do not create a new file
+- Design: background #FFF8F5, all text #5D5066, border radius 16, padding 24

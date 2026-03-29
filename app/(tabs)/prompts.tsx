@@ -145,7 +145,13 @@ export default function PromptsScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push({
                     pathname: '/prompt-response',
-                    params: { promptId: prompt.id, promptText: prompt.body, category: prompt.category },
+                    params: {
+                      promptId: prompt.id,
+                      promptText: prompt.body,
+                      category: prompt.category,
+                      promptTitle: prompt.title ?? '',
+                      weekNumber: prompt.weekNumber ? String(prompt.weekNumber) : '',
+                    },
                   });
                 }}
                 style={({ pressed }) => [styles.availableCard, pressed && { opacity: 0.95, transform: [{ scale: 0.99 }] }]}

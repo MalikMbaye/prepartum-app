@@ -223,6 +223,9 @@ export default function HomeScreen() {
                       promptId: prompt.id,
                       promptText: prompt.body,
                       category: prompt.category,
+                      promptTitle: prompt.title ?? '',
+                      format: prompt.format ?? 'text',
+                      weekNumber: prompt.weekNumber ? String(prompt.weekNumber) : '',
                       ...(prompt.reframe ? {
                         reframeOriginal: prompt.reframe.originalThought,
                         reframeText: prompt.reframe.reframedThought,

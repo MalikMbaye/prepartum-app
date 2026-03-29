@@ -1,223 +1,381 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
+import {
+  View, Text, StyleSheet, TextInput, Pressable,
+  Platform, KeyboardAvoidingView, ScrollView,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
+import Animated, {
+  FadeIn, FadeInDown, FadeInUp,
+  useSharedValue, useAnimatedStyle,
+  withRepeat, withSequence, withTiming,
+} from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
 
+const CATEGORY_AFFIRMATIONS: Record<string, string> = {
+  mindset: 'Awareness is the beginning of everything.',
+  relationships: 'You just practiced asking for what you need.',
+  physical: 'You honored your body today.',
+};
+
+function PulsingGlow({ color }: { color: string }) {
+  const opacity = useSharedValue(0.25);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.65, { duration: 1200 }),
+        withTiming(0.25, { duration: 1200 }),
+      ),
+      -1,
+      false,
+    );
+  }, []);
+
+  const glowStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <View style={styles.glowWrapper}>
+      <Animated.View style={[styles.glowOuter, { backgroundColor: color }, glowStyle]} />
+      <View style={[styles.glowInner, { backgroundColor: color }]}>
+        <Ionicons name="checkmark" size={38} color={Colors.textPrimary} />
+      </View>
+    </View>
+  );
+}
+
 export default function PromptResponseScreen() {
   const insets = useSafeAreaInsets();
-  const { promptId, promptText, category } = useLocalSearchParams<{ promptId: string; promptText: string; category: string }>();
-  const { addPromptResponse, addJournalEntry, promptResponses } = useApp();
-  const [response, setResponse] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [saveToJournal, setSaveToJournal] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
+
+  const {
+    promptId, promptText, category,
+    promptTitle, format, weekNumber,
+  } = useLocalSearchParams<{
+    promptId: string;
+    promptText: string;
+    category: string;
+    promptTitle?: string;
+    format?: string;
+    weekNumber?: string;
+  }>();
+
+  const { addPromptResponse, addJournalEntry, promptResponses } = useApp();
+
+  const [screen, setScreen] = useState<1 | 2 | 3>(1);
+  const [responseText, setResponseText] = useState('');
+  const [likertValue, setLikertValue] = useState<number | null>(null);
+  const [saveToJournal, setSaveToJournal] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const catColor = getCategoryColor(category || 'mindset');
+  const catLabel = getCategoryLabel(category || 'mindset');
+  const affirmation = CATEGORY_AFFIRMATIONS[category || 'mindset'] ?? CATEGORY_AFFIRMATIONS.mindset;
 
   const existingResponse = promptResponses.find(r => r.promptId === promptId);
   const alreadyCompleted = !!existingResponse;
 
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const firstSentence = (() => {
+    if (!promptText) return '';
+    const match = promptText.match(/^[^.!?]+[.!?]/);
+    return match ? match[0] : promptText.substring(0, 100) + '…';
+  })();
 
-  const catColor = getCategoryColor(category || 'mindset');
-  const catLabel = getCategoryLabel(category || 'mindset');
+  const effectiveResponse = format === 'likert'
+    ? (likertValue !== null ? String(likertValue) : '')
+    : responseText.trim();
 
-  async function handleSave() {
-    if (!response.trim() || isSaving) return;
+  const canComplete = effectiveResponse.length > 0;
+
+  async function handleDone() {
+    if (isSaving) return;
     setIsSaving(true);
-
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
       await addPromptResponse({
         promptId: promptId || '',
-        responseText: response.trim(),
+        responseText: effectiveResponse,
         savedToJournal: saveToJournal,
       });
-
       if (saveToJournal) {
         await addJournalEntry({
           title: `Reflection: ${catLabel}`,
-          content: `Prompt: ${promptText}\n\nMy Response: ${response.trim()}`,
+          content: `Prompt: ${promptText}\n\nMy Response: ${effectiveResponse}`,
           category: category || 'mindset',
           fromPrompt: true,
         });
       }
-
-      setSaved(true);
+      router.back();
     } catch (e) {
       console.error('Error saving response:', e);
       setIsSaving(false);
     }
   }
 
-  if (alreadyCompleted && !saved) {
+  const bottomPad = insets.bottom + (Platform.OS === 'web' ? 34 : 0) + 20;
+
+  // ── ALREADY COMPLETED ──────────────────────────────────────────────
+  if (alreadyCompleted) {
     return (
       <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
-        <View style={styles.header}>
+        <View style={styles.topBar}>
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Feather name="x" size={24} color={Colors.textPrimary} />
           </Pressable>
-          <View />
         </View>
-        <ScrollView contentContainerStyle={styles.completedContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.categoryPill, { backgroundColor: catColor }]}>
-            <Text style={styles.categoryPillText}>{catLabel}</Text>
+        <ScrollView contentContainerStyle={[styles.screenPad, { paddingBottom: bottomPad }]} showsVerticalScrollIndicator={false}>
+          <View style={[styles.pill, { backgroundColor: catColor }]}>
+            <Text style={styles.pillText}>{catLabel}</Text>
           </View>
-          <Text style={styles.completedDate}>Completed</Text>
-          <Text style={styles.promptTextDisplay}>{promptText}</Text>
-          <View style={styles.completedResponseBox}>
-            <Text style={styles.completedResponseLabel}>Your reflection</Text>
-            <Text style={styles.completedResponseText}>{existingResponse.responseText}</Text>
+          <Text style={styles.completedMeta}>Completed</Text>
+          <Text style={styles.reflectionQuestion}>{promptText}</Text>
+          <View style={styles.completedBox}>
+            <Text style={styles.completedBoxLabel}>Your reflection</Text>
+            <Text style={styles.completedBoxText}>{existingResponse.responseText}</Text>
           </View>
           <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
-            }}
-            style={({ pressed }) => [styles.backHomeButton, pressed && { opacity: 0.9 }]}
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.plumButton, pressed && { opacity: 0.85 }]}
           >
-            <Text style={styles.backHomeButtonText}>Back to Home</Text>
+            <Text style={styles.plumButtonText}>Back to Home</Text>
           </Pressable>
         </ScrollView>
       </View>
     );
   }
 
-  if (saved) {
+  // ── SCREEN 1: CONTEXT ──────────────────────────────────────────────
+  if (screen === 1) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
-        <Animated.View entering={FadeIn.duration(600)} style={styles.celebrationContainer}>
-          <Animated.View entering={ZoomIn.delay(200).duration(500)}>
-            <View style={[styles.celebrationGlow, { backgroundColor: catColor }]}>
-              <View style={[styles.celebrationCircle, { backgroundColor: catColor }]}>
-                <Ionicons name="checkmark" size={36} color={Colors.textPrimary} />
-              </View>
-            </View>
-          </Animated.View>
+      <Animated.View
+        key="s1"
+        entering={FadeIn.duration(280)}
+        style={[styles.container, { paddingTop: insets.top + webTopInset }]}
+      >
+        <View style={[styles.colorBar, { backgroundColor: catColor }]} />
 
-          <Animated.Text entering={FadeInDown.delay(500).duration(400)} style={styles.celebrationTitle}>
-            Reflection saved
-          </Animated.Text>
-          <Animated.Text entering={FadeInDown.delay(650).duration(400)} style={styles.celebrationBody}>
-            You showed up for yourself today.{'\n'}That takes courage and intention.
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Feather name="x" size={22} color={Colors.textPrimary} />
+          </Pressable>
+          <View style={[styles.pill, { backgroundColor: catColor }]}>
+            <Text style={styles.pillText}>{catLabel}</Text>
+          </View>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={[styles.screenPad, { paddingBottom: 120 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.Text entering={FadeInDown.delay(80).duration(380)} style={styles.weekCatLabel}>
+            {weekNumber ? `Week ${weekNumber}` : 'Today'} · {catLabel}
           </Animated.Text>
 
-          {saveToJournal && (
-            <Animated.Text entering={FadeInDown.delay(800).duration(400)} style={styles.journalSavedNote}>
-              Also saved to your journal
+          <Animated.Text entering={FadeInDown.delay(180).duration(380)} style={styles.contextTitle}>
+            {promptTitle || promptText}
+          </Animated.Text>
+
+          {!!promptTitle && (
+            <Animated.Text entering={FadeInDown.delay(280).duration(380)} style={styles.contextExcerpt}>
+              {firstSentence}
             </Animated.Text>
           )}
+        </ScrollView>
 
-          <Animated.View entering={FadeInDown.delay(900).duration(400)}>
-            <Pressable
-              onPress={() => router.back()}
-              style={({ pressed }) => [styles.continueButton, { backgroundColor: catColor }, pressed && { opacity: 0.9 }]}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </Pressable>
-          </Animated.View>
+        <Animated.View
+          entering={FadeInUp.delay(300).duration(380)}
+          style={[styles.buttonRow, { paddingBottom: bottomPad }]}
+        >
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setScreen(2);
+            }}
+            style={({ pressed }) => [styles.plumButton, styles.plumButtonRow, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={styles.plumButtonText}>Continue</Text>
+            <Feather name="arrow-right" size={16} color={Colors.canvas} />
+          </Pressable>
         </Animated.View>
-      </View>
+      </Animated.View>
     );
   }
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Feather name="arrow-left" size={24} color={Colors.textPrimary} />
-        </Pressable>
-        <Pressable
-          onPress={handleSave}
-          disabled={!response.trim() || isSaving}
-          style={({ pressed }) => [
-            styles.completeButton,
-            { backgroundColor: catColor },
-            (!response.trim() || isSaving) && { opacity: 0.4 },
-            pressed && { opacity: 0.8 },
-          ]}
-        >
-          <Text style={styles.completeButtonText}>{isSaving ? 'Saving...' : 'Complete'}</Text>
-        </Pressable>
-      </View>
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={20}
+  // ── SCREEN 2: REFLECTION ───────────────────────────────────────────
+  if (screen === 2) {
+    return (
+      <Animated.View
+        key="s2"
+        entering={FadeIn.duration(280)}
+        style={[styles.container, { paddingTop: insets.top + webTopInset }]}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <View style={styles.topBar}>
+          <Pressable onPress={() => setScreen(1)} hitSlop={12}>
+            <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
+          </Pressable>
+        </View>
+
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={20}
         >
-          <Animated.View entering={FadeInUp.delay(100).duration(400)} style={styles.metaRow}>
-            <View style={[styles.categoryPill, { backgroundColor: catColor }]}>
-              <Text style={styles.categoryPillText}>{catLabel}</Text>
-            </View>
-            <Text style={styles.dateText}>{todayFormatted}</Text>
-          </Animated.View>
+          <ScrollView
+            contentContainerStyle={[styles.screenPad, { paddingBottom: 120 }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Animated.View entering={FadeInDown.delay(80).duration(380)}>
+              <View style={[styles.pill, { backgroundColor: catColor, alignSelf: 'flex-start', marginBottom: 20 }]}>
+                <Text style={styles.pillText}>{catLabel}</Text>
+              </View>
+              <Text style={styles.reflectionQuestion}>{promptText}</Text>
+            </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(200).duration(400)}>
-            <Text style={styles.promptTextDisplay}>{promptText}</Text>
-          </Animated.View>
+            <Animated.View entering={FadeInDown.delay(200).duration(380)}>
+              {/* TEXT (default) */}
+              {(!format || format === 'text' || format === 'multiselect') && (
+                <View>
+                  <TextInput
+                    style={styles.textInput}
+                    value={responseText}
+                    onChangeText={setResponseText}
+                    placeholder="Take your time. There's no wrong answer."
+                    placeholderTextColor={Colors.textLight}
+                    multiline
+                    textAlignVertical="top"
+                    autoFocus
+                    testID="prompt-response-input"
+                  />
+                  <Text style={styles.charCount}>{responseText.length} characters</Text>
+                </View>
+              )}
 
-          <Animated.View entering={FadeInUp.delay(300).duration(400)}>
-            <TextInput
-              style={styles.responseInput}
-              value={response}
-              onChangeText={setResponse}
-              placeholder="Take your time. There's no wrong answer."
-              placeholderTextColor={Colors.textLight}
-              multiline
-              textAlignVertical="top"
-              autoFocus
-              testID="prompt-response-input"
+              {/* LIKERT */}
+              {format === 'likert' && (
+                <View style={styles.likertWrap}>
+                  <View style={styles.likertRow}>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <Pressable
+                        key={n}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setLikertValue(n);
+                        }}
+                        style={[
+                          styles.likertBtn,
+                          likertValue === n && { backgroundColor: Colors.textPrimary, borderColor: Colors.textPrimary },
+                        ]}
+                      >
+                        <Text style={[styles.likertNum, likertValue === n && { color: Colors.canvas }]}>{n}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <View style={styles.likertLabels}>
+                    <Text style={styles.likertLabel}>Not at all</Text>
+                    <Text style={styles.likertLabel}>Completely</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* VOICE */}
+              {format === 'voice' && (
+                <View style={styles.voiceWrap}>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      if (!responseText) setResponseText('Voice note recorded.');
+                    }}
+                    style={({ pressed }) => [
+                      styles.micBtn,
+                      { borderColor: catColor },
+                      pressed && { transform: [{ scale: 0.95 }] },
+                    ]}
+                  >
+                    <Ionicons name="mic" size={48} color={Colors.textPrimary} />
+                  </Pressable>
+                  <Text style={styles.voiceHint}>Tap to record your reflection</Text>
+                  {!!responseText && (
+                    <View style={[styles.textInput, { marginTop: 20 }]}>
+                      <Text style={{ fontFamily: 'Lato_400Regular', fontSize: 15, color: Colors.textPrimary }}>
+                        {responseText}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+
+        <View style={[styles.buttonRow, { paddingBottom: bottomPad }]}>
+          <Pressable
+            onPress={() => {
+              if (!canComplete || isSaving) return;
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setScreen(3);
+            }}
+            disabled={!canComplete || isSaving}
+            style={({ pressed }) => [
+              styles.plumButton,
+              (!canComplete || isSaving) && { opacity: 0.35 },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Text style={styles.plumButtonText}>Complete</Text>
+          </Pressable>
+        </View>
+      </Animated.View>
+    );
+  }
+
+  // ── SCREEN 3: CELEBRATION ──────────────────────────────────────────
+  return (
+    <Animated.View
+      key="s3"
+      entering={FadeIn.duration(400)}
+      style={[styles.container, { paddingTop: insets.top + webTopInset }]}
+    >
+      <View style={styles.celebrationContainer}>
+        <Animated.View entering={FadeIn.delay(100).duration(500)}>
+          <PulsingGlow color={catColor} />
+        </Animated.View>
+
+        <Animated.Text entering={FadeInDown.delay(380).duration(420)} style={styles.affirmationText}>
+          {affirmation}
+        </Animated.Text>
+
+        <Animated.View entering={FadeInDown.delay(560).duration(380)}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSaveToJournal(v => !v);
+            }}
+            style={styles.toggleBtn}
+          >
+            <Ionicons
+              name={saveToJournal ? 'checkbox' : 'square-outline'}
+              size={24}
+              color={saveToJournal ? Colors.textPrimary : Colors.textLight}
             />
-          </Animated.View>
+            <Text style={styles.toggleText}>Save to Journal</Text>
+          </Pressable>
+        </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.actionsRow}>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setSaveToJournal(!saveToJournal);
-              }}
-              style={styles.journalToggle}
-            >
-              <Ionicons
-                name={saveToJournal ? 'checkbox' : 'square-outline'}
-                size={22}
-                color={saveToJournal ? Colors.textPrimary : Colors.textLight}
-              />
-              <Text style={styles.journalToggleText}>Save to Journal</Text>
-            </Pressable>
-          </Animated.View>
-
-          <Animated.View entering={FadeInUp.delay(500).duration(400)}>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.back();
-              }}
-              style={styles.skipLink}
-            >
-              <Text style={styles.skipText}>Skip for now</Text>
-            </Pressable>
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+        <Animated.View entering={FadeInDown.delay(720).duration(380)} style={{ width: '100%' }}>
+          <Pressable
+            onPress={handleDone}
+            disabled={isSaving}
+            style={({ pressed }) => [styles.plumButton, isSaving && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={styles.plumButtonText}>{isSaving ? 'Saving…' : 'Done'}</Text>
+          </Pressable>
+        </Animated.View>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -226,195 +384,240 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.canvas,
   },
-  header: {
+  colorBar: {
+    height: 5,
+    width: '100%',
+  },
+  topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  completeButton: {
     paddingHorizontal: 24,
-    paddingVertical: 11,
-    borderRadius: 20,
+    paddingVertical: 16,
   },
-  completeButtonText: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 15,
-    color: Colors.textPrimary,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 60,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  categoryPill: {
+  pill: {
     alignSelf: 'flex-start',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
   },
-  categoryPillText: {
+  pillText: {
     fontFamily: 'Lato_700Bold',
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textPrimary,
     textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
-  dateText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 13,
+  screenPad: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  buttonRow: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    backgroundColor: Colors.canvas,
+  },
+
+  // Screen 1
+  weekCatLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 12,
     color: Colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    marginBottom: 20,
   },
-  promptTextDisplay: {
-    fontFamily: 'PlayfairDisplay_600SemiBold',
-    fontSize: 22,
+  contextTitle: {
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 26,
     color: Colors.textPrimary,
-    lineHeight: 33,
-    marginBottom: 28,
+    lineHeight: 38,
+    marginBottom: 20,
   },
-  responseInput: {
+  contextExcerpt: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 16,
+    color: Colors.textSecondary,
+    lineHeight: 26,
+  },
+
+  // Screen 2
+  reflectionQuestion: {
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 20,
+    color: Colors.textPrimary,
+    lineHeight: 30,
+    marginBottom: 24,
+  },
+  textInput: {
     fontFamily: 'Lato_400Regular',
     fontSize: 16,
     color: Colors.textPrimary,
     lineHeight: 26,
-    minHeight: 200,
+    minHeight: 180,
     backgroundColor: Colors.cardBg,
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 1.5,
+    borderColor: Colors.textPrimary,
+    textAlignVertical: 'top',
   },
-  actionsRow: {
-    marginTop: 18,
-  },
-  journalToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 4,
-  },
-  journalToggleText: {
+  charCount: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 15,
+    fontSize: 12,
+    color: Colors.textLight,
+    textAlign: 'right',
+    marginTop: 8,
+  },
+  likertWrap: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  likertRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 14,
+  },
+  likertBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.5,
+    borderColor: Colors.textPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.canvas,
+  },
+  likertNum: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 17,
+    color: Colors.textPrimary,
+  },
+  likertLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 4,
+  },
+  likertLabel: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 12,
     color: Colors.textSecondary,
   },
-  skipLink: {
-    alignSelf: 'center',
-    marginTop: 24,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  voiceWrap: {
+    alignItems: 'center',
+    paddingTop: 20,
   },
-  skipText: {
+  micBtn: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.cardBg,
+  },
+  voiceHint: {
     fontFamily: 'Lato_400Regular',
     fontSize: 14,
-    color: Colors.textLight,
-    textDecorationLine: 'underline',
+    color: Colors.textSecondary,
+    marginTop: 16,
   },
 
+  // Buttons
+  plumButton: {
+    backgroundColor: Colors.textPrimary,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  plumButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  plumButtonText: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 16,
+    color: Colors.canvas,
+  },
+
+  // Screen 3 — Celebration
   celebrationContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+    gap: 32,
   },
-  celebrationGlow: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  glowWrapper: {
+    width: 140,
+    height: 140,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 28,
-    opacity: 0.3,
   },
-  celebrationCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  glowOuter: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+  },
+  glowInner: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 1,
   },
-  celebrationTitle: {
-    fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 26,
+  affirmationText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 20,
     color: Colors.textPrimary,
-    marginBottom: 12,
+    fontStyle: 'italic',
     textAlign: 'center',
+    lineHeight: 30,
   },
-  celebrationBody: {
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  toggleText: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 16,
-  },
-  journalSavedNote: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 13,
-    color: Colors.success,
-    marginBottom: 32,
-  },
-  continueButton: {
-    paddingHorizontal: 44,
-    paddingVertical: 16,
-    borderRadius: 22,
-  },
-  continueButtonText: {
-    fontFamily: 'Lato_700Bold',
     fontSize: 16,
     color: Colors.textPrimary,
   },
 
-  completedContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 60,
-    paddingTop: 8,
-  },
-  completedDate: {
+  // Already-completed view
+  completedMeta: {
     fontFamily: 'Lato_400Regular',
     fontSize: 13,
     color: Colors.textLight,
-    marginBottom: 20,
     marginTop: 12,
+    marginBottom: 20,
   },
-  completedResponseBox: {
+  completedBox: {
     backgroundColor: Colors.cardBg,
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 20,
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 28,
   },
-  completedResponseLabel: {
+  completedBoxLabel: {
     fontFamily: 'Lato_700Bold',
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textLight,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
     marginBottom: 10,
   },
-  completedResponseText: {
+  completedBoxText: {
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textPrimary,
     lineHeight: 24,
-  },
-  backHomeButton: {
-    backgroundColor: Colors.accentPink,
-    paddingVertical: 16,
-    borderRadius: 20,
-    alignItems: 'center',
-  },
-  backHomeButtonText: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 16,
-    color: Colors.textPrimary,
   },
 });
