@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput, ScrollView,
-  Platform, KeyboardAvoidingView, Switch, NativeSyntheticEvent, NativeScrollEvent
+  Platform, KeyboardAvoidingView, Switch
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,126 +11,14 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
+import { WheelPicker } from '@/components/WheelPicker';
 
 const TOTAL_STEPS = 5;
 
-const ITEM_H = 48;
-const VISIBLE = 5;
-const WHEEL_H = ITEM_H * VISIBLE;
 const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const now = new Date();
 const YEARS = [now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2].map(String);
-
-interface WheelPickerProps {
-  items: string[];
-  selectedIndex: number;
-  onSelect: (index: number) => void;
-  flex?: number;
-}
-
-function WheelPicker({ items, selectedIndex, onSelect, flex = 1 }: WheelPickerProps) {
-  const ref = useRef<ScrollView>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      ref.current?.scrollTo({ y: selectedIndex * ITEM_H, animated: false });
-    }, 80);
-    return () => clearTimeout(t);
-  }, []);
-
-  function snap(y: number) {
-    const idx = Math.max(0, Math.min(Math.round(y / ITEM_H), items.length - 1));
-    ref.current?.scrollTo({ y: idx * ITEM_H, animated: true });
-    if (idx !== selectedIndex) {
-      try { Haptics.selectionAsync(); } catch {}
-      onSelect(idx);
-    }
-  }
-
-  return (
-    <View style={[wheelStyles.container, { flex }]}>
-      <View pointerEvents="none" style={wheelStyles.highlight} />
-      <View pointerEvents="none" style={wheelStyles.lineTop} />
-      <View pointerEvents="none" style={wheelStyles.lineBottom} />
-      <ScrollView
-        ref={ref}
-        snapToInterval={ITEM_H}
-        decelerationRate="fast"
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={true}
-        onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => snap(e.nativeEvent.contentOffset.y)}
-        onScrollEndDrag={(e: NativeSyntheticEvent<NativeScrollEvent>) => snap(e.nativeEvent.contentOffset.y)}
-        contentContainerStyle={{ paddingVertical: ITEM_H * Math.floor(VISIBLE / 2) }}
-      >
-        {items.map((item, i) => {
-          const dist = Math.abs(i - selectedIndex);
-          return (
-            <View key={i} style={wheelStyles.item}>
-              <Text style={[
-                wheelStyles.itemText,
-                dist === 0 && wheelStyles.itemTextSelected,
-                { opacity: dist === 0 ? 1 : dist === 1 ? 0.55 : 0.25 },
-              ]}>
-                {item}
-              </Text>
-            </View>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
-
-const wheelStyles = StyleSheet.create({
-  container: {
-    height: WHEEL_H,
-    overflow: 'hidden',
-  },
-  highlight: {
-    position: 'absolute',
-    top: ITEM_H * Math.floor(VISIBLE / 2),
-    left: 0,
-    right: 0,
-    height: ITEM_H,
-    backgroundColor: Colors.accentPink + '35',
-    borderRadius: 12,
-    zIndex: 2,
-  },
-  lineTop: {
-    position: 'absolute',
-    top: ITEM_H * Math.floor(VISIBLE / 2),
-    left: 4,
-    right: 4,
-    height: 1,
-    backgroundColor: Colors.accentPink + '90',
-    zIndex: 3,
-  },
-  lineBottom: {
-    position: 'absolute',
-    top: ITEM_H * Math.floor(VISIBLE / 2) + ITEM_H - 1,
-    left: 4,
-    right: 4,
-    height: 1,
-    backgroundColor: Colors.accentPink + '90',
-    zIndex: 3,
-  },
-  item: {
-    height: ITEM_H,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  itemText: {
-    fontFamily: 'Lato_400Regular',
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
-  itemTextSelected: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 22,
-    color: Colors.textPrimary,
-  },
-});
 
 const FOCUS_ITEMS: { key: FocusArea; label: string; desc: string; color: string }[] = [
   { key: 'mindset', label: 'Mindset & Emotional Prep', desc: 'Cultivate resilience and emotional well-being.', color: Colors.accentPink },

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, Pressable,
   Alert, Platform, Image, Modal, ActivityIndicator
@@ -13,29 +13,37 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { WheelPicker } from '@/components/WheelPicker';
 
 function tryHaptic() {
   try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
 }
 
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WHEEL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WHEEL_YEAR_START = 2022;
+const WHEEL_YEARS = Array.from({ length: 8 }, (_, i) => String(WHEEL_YEAR_START + i));
 
-function todayParts() {
+function todayIndices() {
   const d = new Date();
-  return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
+  const yearIdx = Math.max(0, d.getFullYear() - WHEEL_YEAR_START);
+  return { dayIdx: d.getDate() - 1, monthIdx: d.getMonth(), yearIdx };
 }
 
-function partsToDateStr(day: number, month: number, year: number) {
+function daysInMonth(monthIdx: number, yearIdx: number): number {
+  return new Date(WHEEL_YEAR_START + yearIdx, monthIdx + 1, 0).getDate();
+}
+
+function indicesToDateStr(dayIdx: number, monthIdx: number, yearIdx: number): string {
+  const year = WHEEL_YEAR_START + yearIdx;
+  const month = monthIdx + 1;
+  const day = dayIdx + 1;
   return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
 function formatDisplayDate(dateStr: string) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  return `${MONTHS[m - 1]} ${d}, ${y}`;
-}
-
-function daysInMonth(month: number, year: number) {
-  return new Date(year, month, 0).getDate();
+  return `${MONTHS_LONG[m - 1]} ${d}, ${y}`;
 }
 
 function DatePickerModal({
@@ -45,22 +53,27 @@ function DatePickerModal({
   onClose: () => void;
   onSelect: (dateStr: string) => void;
 }) {
-  const today = todayParts();
-  const [day, setDay] = useState(today.day);
-  const [month, setMonth] = useState(today.month);
-  const [year, setYear] = useState(today.year);
+  const inits = todayIndices();
+  const [monthIdx, setMonthIdx] = useState(inits.monthIdx);
+  const [dayIdx, setDayIdx] = useState(inits.dayIdx);
+  const [yearIdx, setYearIdx] = useState(inits.yearIdx);
   const insets = useSafeAreaInsets();
   const webBottom = Platform.OS === 'web' ? 34 : 0;
-  const maxDay = daysInMonth(month, year);
-  const safeDay = Math.min(day, maxDay);
 
-  function adj(setter: React.Dispatch<React.SetStateAction<number>>, delta: number, min: number, max: number, wrap?: boolean) {
-    tryHaptic();
-    setter(v => {
-      let n = v + delta;
-      if (wrap) { if (n < min) return max; if (n > max) return min; }
-      return Math.max(min, Math.min(max, n));
-    });
+  const maxDays = daysInMonth(monthIdx, yearIdx);
+  const safeDayIdx = Math.min(dayIdx, maxDays - 1);
+  const dayItems = useMemo(() => Array.from({ length: maxDays }, (_, i) => String(i + 1)), [maxDays]);
+
+  function handleMonthChange(idx: number) {
+    setMonthIdx(idx);
+    const newMax = daysInMonth(idx, yearIdx);
+    if (dayIdx >= newMax) setDayIdx(newMax - 1);
+  }
+
+  function handleYearChange(idx: number) {
+    setYearIdx(idx);
+    const newMax = daysInMonth(monthIdx, idx);
+    if (dayIdx >= newMax) setDayIdx(newMax - 1);
   }
 
   return (
@@ -70,23 +83,11 @@ function DatePickerModal({
           <View style={dpS.handle} />
           <Text style={dpS.title}>When was this?</Text>
           <View style={dpS.wheels}>
-            <View style={dpS.wheel}>
-              <Pressable onPress={() => adj(setMonth, -1, 1, 12, true)} style={dpS.arrow}><Feather name="chevron-up" size={20} color={Colors.textSecondary}/></Pressable>
-              <Text style={dpS.wheelVal}>{MONTHS[month - 1].slice(0, 3)}</Text>
-              <Pressable onPress={() => adj(setMonth, 1, 1, 12, true)} style={dpS.arrow}><Feather name="chevron-down" size={20} color={Colors.textSecondary}/></Pressable>
-            </View>
-            <View style={dpS.wheel}>
-              <Pressable onPress={() => adj(setDay, -1, 1, maxDay, true)} style={dpS.arrow}><Feather name="chevron-up" size={20} color={Colors.textSecondary}/></Pressable>
-              <Text style={dpS.wheelVal}>{safeDay}</Text>
-              <Pressable onPress={() => adj(setDay, 1, 1, maxDay, true)} style={dpS.arrow}><Feather name="chevron-down" size={20} color={Colors.textSecondary}/></Pressable>
-            </View>
-            <View style={dpS.wheel}>
-              <Pressable onPress={() => adj(setYear, -1, 2020, 2030)} style={dpS.arrow}><Feather name="chevron-up" size={20} color={Colors.textSecondary}/></Pressable>
-              <Text style={dpS.wheelVal}>{year}</Text>
-              <Pressable onPress={() => adj(setYear, 1, 2020, 2030)} style={dpS.arrow}><Feather name="chevron-down" size={20} color={Colors.textSecondary}/></Pressable>
-            </View>
+            <WheelPicker items={WHEEL_MONTHS} selectedIndex={monthIdx} onSelect={handleMonthChange} flex={2} />
+            <WheelPicker key={`day-${monthIdx}-${yearIdx}`} items={dayItems} selectedIndex={safeDayIdx} onSelect={setDayIdx} flex={1} />
+            <WheelPicker items={WHEEL_YEARS} selectedIndex={yearIdx} onSelect={handleYearChange} flex={2} />
           </View>
-          <Pressable onPress={() => { onSelect(partsToDateStr(safeDay, month, year)); onClose(); }} style={dpS.confirm}>
+          <Pressable onPress={() => { onSelect(indicesToDateStr(safeDayIdx, monthIdx, yearIdx)); onClose(); }} style={dpS.confirm}>
             <Text style={dpS.confirmText}>Set Date</Text>
           </Pressable>
         </View>
@@ -99,11 +100,8 @@ const dpS = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: Colors.canvas, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 },
-  title: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 24, textAlign: 'center' },
-  wheels: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 32 },
-  wheel: { alignItems: 'center', minWidth: 60 },
-  arrow: { padding: 8 },
-  wheelVal: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 24, color: Colors.textPrimary, paddingVertical: 8, minWidth: 60, textAlign: 'center' },
+  title: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 16, textAlign: 'center' },
+  wheels: { flexDirection: 'row', paddingHorizontal: 8, marginBottom: 24 },
   confirm: { backgroundColor: Colors.accentPink, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   confirmText: { fontFamily: 'Lato_700Bold', fontSize: 16, color: Colors.textPrimary },
 });
@@ -170,10 +168,12 @@ export default function NewMemoryScreen() {
   const webBot = Platform.OS === 'web' ? 34 : 0;
   const type = typeParam || 'text';
 
-  const today = todayParts();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [dateStr, setDateStr] = useState(partsToDateStr(today.day, today.month, today.year));
+  const [dateStr, setDateStr] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  });
   const [tags, setTags] = useState<string[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
