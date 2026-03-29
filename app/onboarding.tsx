@@ -11,14 +11,13 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
-import { WheelPicker, WHEEL_ITEM_H, WHEEL_VISIBLE } from '@/components/WheelPicker';
+import DateTimePicker from '@/components/NativeDatePicker';
 
 const TOTAL_STEPS = 5;
 
-const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const now = new Date();
-const YEARS = [now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2].map(String);
+function formatDateToYMD(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
 
 const FOCUS_ITEMS: { key: FocusArea; label: string; desc: string; color: string }[] = [
   { key: 'mindset', label: 'Mindset & Emotional Prep', desc: 'Cultivate resilience and emotional well-being.', color: Colors.accentPink },
@@ -33,18 +32,16 @@ export default function OnboardingScreen() {
   const { setProfile } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [dayIdx, setDayIdx] = useState(0);
-  const [monthIdx, setMonthIdx] = useState(0);
-  const [yearIdx, setYearIdx] = useState(1);
+  const [dueDate, setDueDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 9);
+    return d;
+  });
   const [isFirstPregnancy, setIsFirstPregnancy] = useState<boolean | null>(null);
   const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [preferredTime, setPreferredTime] = useState('9:00 AM');
   const [dateError, setDateError] = useState('');
-
-  const selectedDay = dayIdx + 1;
-  const selectedMonth = monthIdx + 1;
-  const selectedYear = parseInt(YEARS[yearIdx]);
 
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const webBottomInset = Platform.OS === 'web' ? 34 : 0;
@@ -63,10 +60,11 @@ export default function OnboardingScreen() {
   }
 
   function validateSelectedDate(): boolean {
-    const inputDate = new Date(selectedYear, selectedMonth - 1, selectedDay);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (inputDate <= today) {
+    const picked = new Date(dueDate);
+    picked.setHours(0, 0, 0, 0);
+    if (picked <= today) {
       setDateError('Due date must be in the future');
       return false;
     }
@@ -76,9 +74,7 @@ export default function OnboardingScreen() {
 
   async function complete() {
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
-    const dd = String(selectedDay).padStart(2, '0');
-    const mm = String(selectedMonth).padStart(2, '0');
-    const formattedDueDate = `${selectedYear}-${mm}-${dd}`;
+    const formattedDueDate = formatDateToYMD(dueDate);
     try {
       await setProfile({
         name: name.trim() || 'Mama',
@@ -177,7 +173,7 @@ export default function OnboardingScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          scrollEnabled={step !== 1}
+          scrollEnabled={true}
         >
           {step === 0 && (
             <Animated.View entering={FadeIn.duration(800)} style={styles.welcomeContainer}>
@@ -214,14 +210,33 @@ export default function OnboardingScreen() {
 
                 <View>
                   <Text style={styles.dateLabel}>When are you due?</Text>
-                  <View style={styles.wheelContainer}>
-                    <View style={styles.sharedHighlight} />
-                    <View style={styles.wheelRow}>
-                      <WheelPicker items={DAYS} selectedIndex={dayIdx} onSelect={setDayIdx} showHighlight={false} />
-                      <WheelPicker items={MONTHS} selectedIndex={monthIdx} onSelect={setMonthIdx} flex={1.4} showHighlight={false} />
-                      <WheelPicker items={YEARS} selectedIndex={yearIdx} onSelect={setYearIdx} showHighlight={false} />
+                  {Platform.OS === 'web' ? (
+                    <View style={styles.webDateWrap}>
+                      <input
+                        type="date"
+                        value={formatDateToYMD(dueDate)}
+                        min={formatDateToYMD(new Date())}
+                        onChange={(e: any) => {
+                          if (e.target.value) {
+                            const [y, m, d] = e.target.value.split('-').map(Number);
+                            setDueDate(new Date(y, m - 1, d));
+                          }
+                        }}
+                        style={{ fontSize: 17, color: '#5D5066', background: 'transparent', border: 'none', outline: 'none', width: '100%', padding: '12px 0', cursor: 'pointer' } as any}
+                      />
                     </View>
-                  </View>
+                  ) : (
+                    <DateTimePicker
+                      value={dueDate}
+                      mode="date"
+                      display="spinner"
+                      minimumDate={new Date()}
+                      onChange={(_: any, selectedDate?: Date) => {
+                        if (selectedDate) setDueDate(selectedDate);
+                      }}
+                      style={{ width: '100%' }}
+                    />
+                  )}
                   {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
                 </View>
 
@@ -551,27 +566,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 10,
   },
-  wheelContainer: {
+  webDateWrap: {
     backgroundColor: Colors.white,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border,
-    overflow: 'hidden',
+    paddingHorizontal: 16,
     marginTop: 4,
-  },
-  sharedHighlight: {
-    position: 'absolute',
-    top: WHEEL_ITEM_H * Math.floor(WHEEL_VISIBLE / 2),
-    left: 0,
-    right: 0,
-    height: WHEEL_ITEM_H,
-    backgroundColor: '#F5D6D64D',
-    zIndex: 10,
-    pointerEvents: 'none',
-  },
-  wheelRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
   },
   errorText: {
     fontFamily: 'Lato_400Regular',

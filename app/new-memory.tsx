@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, Pressable,
   Alert, Platform, Image, Modal, ActivityIndicator
@@ -11,34 +11,18 @@ import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import DateTimePicker from '@/components/NativeDatePicker';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
-import { WheelPicker, WHEEL_ITEM_H, WHEEL_VISIBLE } from '@/components/WheelPicker';
 
 function tryHaptic() {
   try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
 }
 
 const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const WHEEL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const WHEEL_YEAR_START = 2022;
-const WHEEL_YEARS = Array.from({ length: 8 }, (_, i) => String(WHEEL_YEAR_START + i));
 
-function todayIndices() {
-  const d = new Date();
-  const yearIdx = Math.max(0, d.getFullYear() - WHEEL_YEAR_START);
-  return { dayIdx: d.getDate() - 1, monthIdx: d.getMonth(), yearIdx };
-}
-
-function daysInMonth(monthIdx: number, yearIdx: number): number {
-  return new Date(WHEEL_YEAR_START + yearIdx, monthIdx + 1, 0).getDate();
-}
-
-function indicesToDateStr(dayIdx: number, monthIdx: number, yearIdx: number): string {
-  const year = WHEEL_YEAR_START + yearIdx;
-  const month = monthIdx + 1;
-  const day = dayIdx + 1;
-  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+function formatDateToYMD(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
 function formatDisplayDate(dateStr: string) {
@@ -47,34 +31,19 @@ function formatDisplayDate(dateStr: string) {
 }
 
 function DatePickerModal({
-  visible, onClose, onSelect,
+  visible, onClose, onSelect, currentDateStr,
 }: {
   visible: boolean;
   onClose: () => void;
   onSelect: (dateStr: string) => void;
+  currentDateStr: string;
 }) {
-  const inits = todayIndices();
-  const [monthIdx, setMonthIdx] = useState(inits.monthIdx);
-  const [dayIdx, setDayIdx] = useState(inits.dayIdx);
-  const [yearIdx, setYearIdx] = useState(inits.yearIdx);
+  const [pickerDate, setPickerDate] = useState<Date>(() => {
+    const [y, m, d] = currentDateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  });
   const insets = useSafeAreaInsets();
   const webBottom = Platform.OS === 'web' ? 34 : 0;
-
-  const maxDays = daysInMonth(monthIdx, yearIdx);
-  const safeDayIdx = Math.min(dayIdx, maxDays - 1);
-  const dayItems = useMemo(() => Array.from({ length: maxDays }, (_, i) => String(i + 1)), [maxDays]);
-
-  function handleMonthChange(idx: number) {
-    setMonthIdx(idx);
-    const newMax = daysInMonth(idx, yearIdx);
-    if (dayIdx >= newMax) setDayIdx(newMax - 1);
-  }
-
-  function handleYearChange(idx: number) {
-    setYearIdx(idx);
-    const newMax = daysInMonth(monthIdx, idx);
-    if (dayIdx >= newMax) setDayIdx(newMax - 1);
-  }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -82,15 +51,34 @@ function DatePickerModal({
         <View style={[dpS.sheet, { paddingBottom: insets.bottom + webBottom + 16 }]}>
           <View style={dpS.handle} />
           <Text style={dpS.title}>When was this?</Text>
-          <View style={dpS.wheelsContainer}>
-            <View style={dpS.sharedHighlight} />
-            <View style={dpS.wheels}>
-              <WheelPicker items={WHEEL_MONTHS} selectedIndex={monthIdx} onSelect={handleMonthChange} flex={2} showHighlight={false} />
-              <WheelPicker key={`day-${monthIdx}-${yearIdx}`} items={dayItems} selectedIndex={safeDayIdx} onSelect={setDayIdx} flex={1} showHighlight={false} />
-              <WheelPicker items={WHEEL_YEARS} selectedIndex={yearIdx} onSelect={handleYearChange} flex={2} showHighlight={false} />
+          {Platform.OS === 'web' ? (
+            <View style={dpS.webDateWrap}>
+              <input
+                type="date"
+                value={formatDateToYMD(pickerDate)}
+                max={formatDateToYMD(new Date())}
+                onChange={(e: any) => {
+                  if (e.target.value) {
+                    const [y, m, d] = e.target.value.split('-').map(Number);
+                    setPickerDate(new Date(y, m - 1, d));
+                  }
+                }}
+                style={{ fontSize: 17, color: '#5D5066', background: 'transparent', border: 'none', outline: 'none', width: '100%', padding: '16px 0', cursor: 'pointer' } as any}
+              />
             </View>
-          </View>
-          <Pressable onPress={() => { onSelect(indicesToDateStr(safeDayIdx, monthIdx, yearIdx)); onClose(); }} style={dpS.confirm}>
+          ) : (
+            <DateTimePicker
+              value={pickerDate}
+              mode="date"
+              display="spinner"
+              maximumDate={new Date()}
+              onChange={(_: any, selectedDate?: Date) => {
+                if (selectedDate) setPickerDate(selectedDate);
+              }}
+              style={{ width: '100%' }}
+            />
+          )}
+          <Pressable onPress={() => { onSelect(formatDateToYMD(pickerDate)); onClose(); }} style={dpS.confirm}>
             <Text style={dpS.confirmText}>Set Date</Text>
           </Pressable>
         </View>
@@ -104,18 +92,8 @@ const dpS = StyleSheet.create({
   sheet: { backgroundColor: Colors.canvas, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 },
   title: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 16, textAlign: 'center' },
-  wheelsContainer: { borderRadius: 16, overflow: 'hidden', marginBottom: 24, backgroundColor: Colors.canvas },
-  sharedHighlight: {
-    position: 'absolute',
-    top: WHEEL_ITEM_H * Math.floor(WHEEL_VISIBLE / 2),
-    left: 0, right: 0,
-    height: WHEEL_ITEM_H,
-    backgroundColor: '#F5D6D64D',
-    zIndex: 10,
-    pointerEvents: 'none',
-  },
-  wheels: { flexDirection: 'row' },
-  confirm: { backgroundColor: Colors.accentPink, borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
+  webDateWrap: { paddingVertical: 8, marginBottom: 20 },
+  confirm: { backgroundColor: Colors.accentPink, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   confirmText: { fontFamily: 'Lato_700Bold', fontSize: 16, color: Colors.textPrimary },
 });
 
@@ -442,7 +420,7 @@ export default function NewMemoryScreen() {
         </Animated.View>
       </ScrollView>
 
-      <DatePickerModal visible={showDatePicker} onClose={() => setShowDatePicker(false)} onSelect={setDateStr} />
+      <DatePickerModal visible={showDatePicker} onClose={() => setShowDatePicker(false)} onSelect={setDateStr} currentDateStr={dateStr} />
     </View>
   );
 }
