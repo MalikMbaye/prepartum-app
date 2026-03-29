@@ -1,0 +1,101 @@
+In the server/db folder (or wherever the database schema is defined), create a migration to add a pregnancy_weeks table. Then create a seed file that populates all 40 weeks.
+
+Schema:
+CREATE TABLE pregnancy_weeks (
+  week_number INTEGER PRIMARY KEY,
+  trimester INTEGER NOT NULL,
+  theme TEXT,
+  baby_size TEXT,
+  baby_size_emoji TEXT,
+  baby_weight_grams REAL,
+  baby_length_cm REAL,
+  baby_development TEXT,
+  mom_body_changes TEXT,
+  common_symptoms TEXT,
+  suggested_focus TEXT,
+  affirmation TEXT
+);
+
+Seed data — insert all 40 rows:
+
+Week 1: trimester=1, theme='Beginning & Becoming', baby_size='poppy seed', emoji='🌱', weight=0.1, length=0.1, development='Fertilization occurs. A single cell begins dividing rapidly. The blastocyst travels toward the uterus.', mom='Most women do not know they are pregnant yet. Hormones begin shifting quietly.', symptoms='None yet, possibly fatigue', focus='mindset', affirmation='Something sacred just began inside you — even before you knew it.'
+
+Week 2: trimester=1, theme='Beginning & Becoming', baby_size='sesame seed', emoji='🌱', weight=0.1, length=0.1, development='Implantation happens. The embryo burrows into the uterine lining. The placenta begins forming.', mom='Light spotting may occur. Hormone surge begins.', symptoms='Light spotting, mild cramping', focus='mindset', affirmation='Your body is already doing something extraordinary without being asked.'
+
+Week 3: trimester=1, theme='Beginning & Becoming', baby_size='pea', emoji='🟢', weight=0.1, length=0.2, development='The neural tube — which becomes the brain and spine — begins forming. Heart cells start developing.', mom='hCG hormone rises rapidly. Pregnancy test may turn positive.', symptoms='Tender breasts, light fatigue', focus='mindset', affirmation='You do not need to have it all figured out. Just show up.'
+
+Week 4: trimester=1, theme='Beginning & Becoming', baby_size='blueberry', emoji='🫐', weight=0.1, length=0.4, development='Brain, heart, and spinal cord are forming. The heart begins beating.', mom='Missed period. Pregnancy test clearly positive. Nausea may begin.', symptoms='Nausea, fatigue, sore breasts, frequent urination', focus='mindset', affirmation='A missed period just changed your whole life. Take a breath. You have got this.'
+
+Week 5: trimester=1, theme='Beginning & Becoming', baby_size='blueberry', emoji='🫐', weight=0.1, length=0.6, development='Facial features begin forming. Arm and leg buds appear. Heart now beats 100+ times per minute.', mom='Nausea often peaks this week. Sense of smell intensifies.', symptoms='Morning sickness, food aversions, exhaustion', focus='physical', affirmation='Even when your body feels foreign to you, it is working perfectly.'
+
+Week 6: trimester=1, theme='Beginning & Becoming', baby_size='raspberry', emoji='🍇', weight=0.1, length=0.8, development='Eyes and ears are forming. Fingers and toes beginning to develop. Brain growing rapidly.', mom='Uterus begins expanding. Bloating common. Emotional swings are normal.', symptoms='Bloating, mood swings, nausea, breast tenderness', focus='mindset', affirmation='Your emotions are not a problem to be managed. They are information.'
+
+Week 7: trimester=1, theme='Beginning & Becoming', baby_size='kidney bean', emoji='🫘', weight=1, length=1.3, development='Hands and feet have webbed fingers and toes. Brain develops at 100 new neurons per minute.', mom='Frequent urination increases. Saliva increases.', symptoms='Excess saliva, frequent urination, fatigue', focus='relationships', affirmation='Who do you want in your corner for this? Now is the time to ask.'
+
+Week 8: trimester=1, theme='Beginning & Becoming', baby_size='grape', emoji='🍇', weight=2, length=1.6, development='Fingers and toes are distinct. Eyelids forming. Taste buds developing. Baby can now move.', mom='Waistline beginning to thicken. First prenatal appointment usually this week.', symptoms='Heartburn, constipation, fatigue', focus='mindset', affirmation='You are allowed to feel excited and terrified at the same time.'
+
+Week 9: trimester=1, theme='Beginning & Becoming', baby_size='grape', emoji='🍇', weight=3, length=2.3, development='Embryo is now officially a fetus. Muscles forming. Tiny nose, eyelids, earlobes taking shape.', mom='Uterus is now the size of a grapefruit. Round ligament pain may begin.', symptoms='Visible veins on breasts, ligament pain, mood swings', focus='relationships', affirmation='Your relationship to yourself is changing too. Be gentle with her.'
+
+Week 10: trimester=1, theme='Beginning & Becoming', baby_size='kumquat', emoji='🍊', weight=4, length=3.1, development='All vital organs formed and starting to work. Fingernails and hair follicles forming. Baby can swallow.', mom='Nausea may start to ease. Visible bump for some.', symptoms='Continued nausea, fatigue, emotional sensitivity', focus='mindset', affirmation='The hardest part is often the invisible part. You are doing the work no one can see.'
+
+Week 11: trimester=1, theme='Beginning & Becoming', baby_size='fig', emoji='🍈', weight=7, length=4.1, development='Fingers and toes no longer webbed. Baby moving actively — stretching, rolling, hiccupping.', mom='Energy may start returning. Skin changes — some glow, some breakouts.', symptoms='Skin changes, vivid dreams, nasal congestion', focus='physical', affirmation='Your body is doing things it has never done before. That deserves wonder, not judgment.'
+
+Week 12: trimester=1, theme='Beginning & Becoming', baby_size='lime', emoji='🍋', weight=14, length=5.4, development='First trimester complete. Reflexes developing. Kidneys producing urine. Miscarriage risk drops significantly.', mom='First trimester ends. Many women share their news this week.', symptoms='Reducing nausea, lingering fatigue', focus='relationships', affirmation='You made it through the first chapter. That was real courage.'
+
+Week 13: trimester=2, theme='Growing & Connecting', baby_size='lemon', emoji='🍋', weight=23, length=7.4, development='Baby can make facial expressions. Fingerprints forming. Vocal cords developing.', mom='Energy typically returns. Baby bump becomes more visible.', symptoms='Round ligament pain, increased appetite, less nausea', focus='mindset', affirmation='The fog is lifting. Welcome to the second chapter.'
+
+Week 14: trimester=2, theme='Growing & Connecting', baby_size='lemon', emoji='🍋', weight=43, length=8.7, development='Baby can squint, frown, grimace. Lanugo covers body. Kidneys producing urine.', mom='Hair and nails growing faster. Sex drive may increase.', symptoms='Increased energy, glowing skin, round ligament pain', focus='relationships', affirmation='Your partner is watching you become someone new. Let them in.'
+
+Week 15: trimester=2, theme='Growing & Connecting', baby_size='apple', emoji='🍎', weight=70, length=10.1, development='Baby moving vigorously. Bones hardening. Baby can sense light through the uterine wall.', mom='Belly button may start to protrude. Linea nigra may appear.', symptoms='Nose bleeds, bleeding gums, back pain', focus='physical', affirmation='Your body is not the same body it was. That is not a loss — it is an expansion.'
+
+Week 16: trimester=2, theme='Growing & Connecting', baby_size='avocado', emoji='🥑', weight=100, length=11.6, development='Eyes can move. Ears in final position. Baby practices breathing. Circulatory system fully functioning.', mom='First flutters of movement (quickening) may be felt.', symptoms='Back ache, swollen feet, heartburn', focus='mindset', affirmation='Those first flutters are real. Something is telling you it is here.'
+
+Week 17: trimester=2, theme='Growing & Connecting', baby_size='avocado', emoji='🥑', weight=140, length=13, development='Baby developing fat stores. Sweat glands forming. Umbilical cord growing stronger.', mom='Belly growing visibly. Pregnancy brain is real.', symptoms='Forgetfulness, dizziness, back pain', focus='relationships', affirmation='It is okay to ask for help carrying things — physically and emotionally.'
+
+Week 18: trimester=2, theme='Growing & Connecting', baby_size='sweet potato', emoji='🍠', weight=190, length=14.2, development='Baby can yawn, hiccup, roll. Myelin forming. Can hear sounds from outside the womb.', mom='Anatomy scan typically happens around week 18-20. Movements now felt clearly.', symptoms='Leg cramps, swollen ankles, early Braxton Hicks', focus='mindset', affirmation='Your baby can hear you now. What do you want them to know?'
+
+Week 19: trimester=2, theme='Growing & Connecting', baby_size='sweet potato', emoji='🍠', weight=240, length=15.3, development='Vernix covers baby skin. Senses developing rapidly — taste, smell, hearing.', mom='Baby kicks may now be felt from outside by others.', symptoms='Hip pain, heartburn, vivid dreams', focus='relationships', affirmation='Share this kick with someone you love. You do not have to carry this joy alone.'
+
+Week 20: trimester=2, theme='Growing & Connecting', baby_size='banana', emoji='🍌', weight=300, length=16.4, development='Halfway point. Movements coordinated. Tooth buds forming. Nails reaching fingertips.', mom='Anatomy scan typically complete. Belly button may pop out.', symptoms='Shortness of breath, varicose veins, Braxton Hicks', focus='mindset', affirmation='Halfway there. Pause and honor how far you have come.'
+
+Week 21: trimester=2, theme='Growing & Connecting', baby_size='banana', emoji='🍌', weight=360, length=26.7, development='Baby swallowing amniotic fluid and developing taste preferences. Bone marrow producing blood cells.', mom='Stretch marks may appear. Skin may feel itchy.', symptoms='Itchy skin, stretch marks, Braxton Hicks', focus='physical', affirmation='These marks are not flaws. They are the story of what your body did for love.'
+
+Week 22: trimester=2, theme='Growing & Connecting', baby_size='papaya', emoji='🍈', weight=430, length=27.8, development='Baby has fingerprints. Lips distinct. Eyes formed but irises lack pigment. Grip reflex developing.', mom='Feeling baby hiccups is common now. Linea nigra may darken.', symptoms='Swelling, heartburn, back pain', focus='relationships', affirmation='Your relationship patterns are showing up more clearly now. That is the work.'
+
+Week 23: trimester=2, theme='Growing & Connecting', baby_size='papaya', emoji='🍈', weight=500, length=28.9, development='Baby responds to familiar voices. Lungs developing. Rapid brain development.', mom='Braxton Hicks may feel stronger. Feet may swell.', symptoms='Swollen feet, leg cramps, insomnia', focus='mindset', affirmation='Your voice is already something your baby knows. Use it — to yourself and to them.'
+
+Week 24: trimester=2, theme='Growing & Connecting', baby_size='grapefruit', emoji='🍊', weight=600, length=30, development='Baby reaches viability milestone. Face fully formed. Brain developing rapidly.', mom='Glucose tolerance test typically this week. Heartburn intensifies.', symptoms='Heartburn, carpal tunnel, frequent urination', focus='mindset', affirmation='Viability week. Your baby is fighting to be here. So are you.'
+
+Week 25: trimester=2, theme='Growing & Connecting', baby_size='grapefruit', emoji='🍊', weight=660, length=34.6, development='Hair growing. Fat deposits building. Baby startled by loud noises. Hands open and close.', mom='Round ligament pain may intensify. Hemorrhoids may appear.', symptoms='Hemorrhoids, round ligament pain, restlessness', focus='relationships', affirmation='Who needs to know what you need right now? Say it out loud this week.'
+
+Week 26: trimester=2, theme='Growing & Connecting', baby_size='head of lettuce', emoji='🥬', weight=760, length=35.6, development='Eyes can open and close. Baby responds to light. Immune system developing.', mom='Belly may feel tight. Back pain increases. Third trimester approaching.', symptoms='Back pain, insomnia, swelling', focus='physical', affirmation='Rest is not laziness right now. It is the most productive thing you can do.'
+
+Week 27: trimester=2, theme='Growing & Connecting', baby_size='head of lettuce', emoji='🥬', weight=875, length=36.6, development='Second trimester ends. Brain tissue developing rapidly. Baby can recognize your voice.', mom='You may feel clumsy. Center of gravity shifted. Shortness of breath increases.', symptoms='Shortness of breath, Braxton Hicks, fatigue', focus='mindset', affirmation='Two trimesters done. You have grown an entire human being from nothing. Let that land.'
+
+Week 28: trimester=3, theme='Preparing & Trusting', baby_size='eggplant', emoji='🍆', weight=1005, length=37.6, development='Third trimester begins. Baby can blink. REM sleep cycles begin — baby may be dreaming.', mom='Shortness of breath intensifies. Back pain increases.', symptoms='Shortness of breath, insomnia, Braxton Hicks', focus='mindset', affirmation='The third trimester is where you get real with yourself. It is time.'
+
+Week 29: trimester=3, theme='Preparing & Trusting', baby_size='eggplant', emoji='🍆', weight=1153, length=38.6, development='Bones fully developed but still soft. Muscles and lungs maturing. Baby can distinguish light from dark.', mom='Heartburn at peak. Swelling in feet and ankles worsens.', symptoms='Heartburn, swollen ankles, frequent urination', focus='relationships', affirmation='What conversations have you been putting off? This is the week to have them.'
+
+Week 30: trimester=3, theme='Preparing & Trusting', baby_size='butternut squash', emoji='🎃', weight=1319, length=39.9, development='Brain forming billions of neurons. Lanugo beginning to shed. Baby gaining half a pound per week.', mom='May feel baby hiccups daily. Colostrum may begin leaking.', symptoms='Colostrum leakage, pelvic pressure, leg cramps', focus='physical', affirmation='Your body is preparing for something it has never done before. Trust that it knows how.'
+
+Week 31: trimester=3, theme='Preparing & Trusting', baby_size='butternut squash', emoji='🎃', weight=1502, length=41.1, development='Baby moving into head-down position. All five senses functioning. Rapid brain development.', mom='Shortness of breath persists. Braxton Hicks more frequent.', symptoms='Braxton Hicks, shortness of breath, insomnia', focus='mindset', affirmation='Fear is not a stop sign. It is a sign you care deeply about what is coming.'
+
+Week 32: trimester=3, theme='Preparing & Trusting', baby_size='coconut', emoji='🥥', weight=1702, length=42.4, development='Skeleton hardening. Skin less transparent as fat builds. Immune system getting antibodies from mom.', mom='Waddling gait begins. Nesting instinct may kick in strongly.', symptoms='Nesting urge, pelvic pressure, fatigue', focus='relationships', affirmation='Nesting is not just for the baby. You are also preparing a home for the new version of yourself.'
+
+Week 33: trimester=3, theme='Preparing & Trusting', baby_size='coconut', emoji='🥥', weight=1918, length=43.7, development='Immune system strengthening. Skull bones remain soft and flexible for birth. Rapid weight gain.', mom='Sleep becomes difficult. Frequent bathroom trips through the night.', symptoms='Insomnia, frequent urination at night, back pain', focus='mindset', affirmation='Sleeplessness now is preparing you for what is coming. Your body is already adapting.'
+
+Week 34: trimester=3, theme='Preparing & Trusting', baby_size='pineapple', emoji='🍍', weight=2146, length=45, development='Central nervous system and lungs maturing rapidly. Baby practicing breathing movements.', mom='Pelvis begins softening and separating. Walking may feel uncomfortable.', symptoms='Pelvic girdle pain, lightning crotch, Braxton Hicks', focus='physical', affirmation='Your body knows how to open. That has always been true of you.'
+
+Week 35: trimester=3, theme='Preparing & Trusting', baby_size='pineapple', emoji='🍍', weight=2383, length=46.2, development='Lungs nearly mature. Liver and kidneys functioning well. Gaining half a pound per week.', mom='Baby may drop lower into the pelvis. Easier to breathe but more pelvic pressure.', symptoms='Pelvic pressure, easier breathing, increased discharge', focus='relationships', affirmation='Have you told the people who matter most what this journey has meant to you?'
+
+Week 36: trimester=3, theme='Preparing & Trusting', baby_size='honeydew melon', emoji='🍈', weight=2622, length=47.4, development='Baby shedding vernix and lanugo. Sucking and swallowing reflexes strong. Gaining one ounce per day.', mom='Group B strep test typically this week. Cervix may begin to dilate.', symptoms='Cervical pressure, nesting urge peak, Braxton Hicks', focus='mindset', affirmation='You have done everything right. Now it is time to surrender to what comes next.'
+
+Week 37: trimester=3, theme='Preparing & Trusting', baby_size='honeydew melon', emoji='🍈', weight=2859, length=48.6, development='Baby is considered early term. All organs functioning. Head may be engaged in pelvis.', mom='Mucus plug may release. Cervix continues thinning and dilating.', symptoms='Mucus plug loss, pelvic heaviness, back labor sensations', focus='relationships', affirmation='You have prepared as much as any human can. What comes next requires trust, not preparation.'
+
+Week 38: trimester=3, theme='Preparing & Trusting', baby_size='watermelon', emoji='🍉', weight=3083, length=49.8, development='Baby considered full term. Lungs fully mature. Brain and nervous system continue developing.', mom='Cervix softening and effacing. False labor contractions may intensify.', symptoms='Strong Braxton Hicks, nesting peak, pelvic pressure', focus='mindset', affirmation='You are ready. Not because everything is perfect. Because you are.'
+
+Week 39: trimester=3, theme='Preparing & Trusting', baby_size='watermelon', emoji='🍉', weight=3288, length=50.7, development='Full term. Brain still developing rapidly. All systems ready for life outside the womb.', mom='Cervix may be fully effaced. Real labor contractions may begin.', symptoms='Real contractions beginning, water breaking, pelvic pressure', focus='relationships', affirmation='Let the people who love you hold you right now. You have earned every hand offered to you.'
+
+Week 40: trimester=3, theme='Preparing & Trusting', baby_size='watermelon', emoji='🍉', weight=3462, length=51.2, development='Full term. All organs, systems, and reflexes fully developed. Waiting for the perfect moment.', mom='Due date week. Body ready for labor.', symptoms='Active labor, water breaking, contractions', focus='mindset', affirmation='Everything you have carried, every fear you sat with — it was all preparing you for this moment. You are ready.'
+
+Run the migration and seed script after creating them.
