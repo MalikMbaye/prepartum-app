@@ -11,7 +11,7 @@ import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import DateTimePicker from '@/components/NativeDatePicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 

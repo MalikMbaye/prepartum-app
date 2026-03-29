@@ -11,7 +11,7 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { FocusArea } from '@/lib/types';
-import DateTimePicker from '@/components/NativeDatePicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const TOTAL_STEPS = 5;
 
@@ -210,33 +210,16 @@ export default function OnboardingScreen() {
 
                 <View>
                   <Text style={styles.dateLabel}>When are you due?</Text>
-                  {Platform.OS === 'web' ? (
-                    <View style={styles.webDateWrap}>
-                      <input
-                        type="date"
-                        value={formatDateToYMD(dueDate)}
-                        min={formatDateToYMD(new Date())}
-                        onChange={(e: any) => {
-                          if (e.target.value) {
-                            const [y, m, d] = e.target.value.split('-').map(Number);
-                            setDueDate(new Date(y, m - 1, d));
-                          }
-                        }}
-                        style={{ fontSize: 17, color: '#5D5066', background: 'transparent', border: 'none', outline: 'none', width: '100%', padding: '12px 0', cursor: 'pointer' } as any}
-                      />
-                    </View>
-                  ) : (
-                    <DateTimePicker
-                      value={dueDate}
-                      mode="date"
-                      display="spinner"
-                      minimumDate={new Date()}
-                      onChange={(_: any, selectedDate?: Date) => {
-                        if (selectedDate) setDueDate(selectedDate);
-                      }}
-                      style={{ width: '100%' }}
-                    />
-                  )}
+                  <DateTimePicker
+                    value={dueDate}
+                    mode="date"
+                    display="spinner"
+                    minimumDate={new Date()}
+                    onChange={(event, selectedDate) => {
+                      if (selectedDate) setDueDate(selectedDate)
+                    }}
+                    style={{ width: '100%' }}
+                  />
                   {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
                 </View>
 
@@ -565,14 +548,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 10,
-  },
-  webDateWrap: {
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 16,
-    marginTop: 4,
   },
   errorText: {
     fontFamily: 'Lato_400Regular',
