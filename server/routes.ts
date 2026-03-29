@@ -544,14 +544,14 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
     }
   });
 
-  app.get("/api/pregnancy-weeks/:week", async (req: Request, res: Response) => {
+  app.get("/api/pregnancy-weeks/:weekNumber", async (req: Request, res: Response) => {
     try {
-      const weekNumber = parseInt(req.params.week, 10);
-      if (isNaN(weekNumber) || weekNumber < 1 || weekNumber > 40) {
-        return res.status(400).json({ message: "Week must be between 1 and 40" });
-      }
+      let weekNumber = parseInt(req.params.weekNumber, 10);
+      if (isNaN(weekNumber)) return res.status(400).json({ error: "Invalid week number" });
+      if (weekNumber < 1) weekNumber = 1;
+      if (weekNumber > 40) weekNumber = 40;
       const week = await storage.getPregnancyWeek(weekNumber);
-      if (!week) return res.status(404).json({ message: "Week not found" });
+      if (!week) return res.status(404).json({ error: "Week not found" });
       res.json(week);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
