@@ -43,6 +43,7 @@ export default function OnboardingScreen() {
   const [preferredTime, setPreferredTime] = useState('9:00 AM');
   const [dateError, setDateError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const webBottomInset = Platform.OS === 'web' ? 34 : 0;
@@ -127,7 +128,7 @@ export default function OnboardingScreen() {
     step === 0 ||
     step === 3 ||
     (step === 4 && termsAccepted) ||
-    (step === 1 && name.trim().length > 0) ||
+    (step === 1 && name.trim().length > 0 && ageConfirmed) ||
     (step === 2 && focusAreas.length > 0);
 
   const ctaLabel =
@@ -243,6 +244,21 @@ export default function OnboardingScreen() {
                     </Pressable>
                   </View>
                 </View>
+
+                <Pressable
+                  onPress={() => { tryHaptic(); setAgeConfirmed(v => !v); }}
+                  style={styles.ageCheckRow}
+                  testID="age-confirm-checkbox"
+                  hitSlop={8}
+                >
+                  {ageConfirmed
+                    ? <Ionicons name="checkbox" size={22} color={Colors.textPrimary} />
+                    : <Ionicons name="square-outline" size={22} color={Colors.textLight} />
+                  }
+                  <Text style={styles.ageCheckLabel}>
+                    I confirm I am 18 years of age or older
+                  </Text>
+                </Pressable>
               </View>
             </Animated.View>
           )}
@@ -632,6 +648,20 @@ const styles = StyleSheet.create({
   yesNoTextActive: {
     fontFamily: 'Lato_700Bold',
     color: Colors.textPrimary,
+  },
+
+  ageCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  ageCheckLabel: {
+    flex: 1,
+    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    color: Colors.textPrimary,
+    lineHeight: 20,
   },
 
   focusList: {
