@@ -7,7 +7,7 @@ export type FocusArea = 'mindset' | 'relationships' | 'physical';
 
 interface UserProfile {
   id: string;
-  
+  email: string | null;
   name: string;
   dueDate: string | null;
   focusAreas: string[] | null;
