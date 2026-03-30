@@ -118,7 +118,7 @@ export async function getDailyPrompts(userId: string): Promise<DailyPrompt[]> {
       const persona = (profileFlags.persona as string) || '';
       if (persona) {
         if (p.personaTags && p.personaTags.includes(persona)) score += 25;
-        if (p.relevanceTags && p.relevanceTags.includes(persona)) score += 15;
+        if (p.personaTags && p.personaTags.includes(persona)) score += 20;
         if (persona === 'healing_mother') {
           if (p.depth === 'deep') score -= 8;
           if (p.estimatedEnergy === 'high') score -= 6;
@@ -128,7 +128,10 @@ export async function getDailyPrompts(userId: string): Promise<DailyPrompt[]> {
         } else if (persona === 'solo_warrior') {
           if (p.requiredFlags && !p.requiredFlags.some(f => f.includes('partner'))) score += 5;
         } else if (persona === 'faith_anchored') {
+          if (p.personaTags && p.personaTags.includes('faith_anchored')) score += 20;
           if (p.relevanceTags && p.relevanceTags.some(t => ['spiritual', 'values', 'meaning'].includes(t))) score += 8;
+        } else if (persona === 'supported_nurturer') {
+          if (p.personaTags && p.personaTags.includes('supported_nurturer')) score += 20;
         }
       }
 
