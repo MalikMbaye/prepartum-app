@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiRequest, getApiUrl } from '@/lib/query-client';
+import { apiRequest, getApiUrl, setApiAuthToken } from '@/lib/query-client';
 import { fetch } from 'expo/fetch';
 
 export type FocusArea = 'mindset' | 'relationships' | 'physical';
@@ -207,30 +207,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchFromApi = useCallback(async (path: string) => {
+  const fetchFromApi = useCallback(async (path: string, token?: string | null) => {
     const baseUrl = getApiUrl();
     const url = new URL(path, baseUrl);
-    const res = await fetch(url.toString(), { credentials: 'include' });
+    const headers: Record<string, string> = {};
+    const effectiveToken = token !== undefined ? token : authToken;
+    if (effectiveToken) headers['Authorization'] = `Bearer ${effectiveToken}`;
+    const res = await fetch(url.toString(), { credentials: 'include', headers });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.json();
-  }, []);
+  }, [authToken]);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  async function loadUserData(userId: string) {
+  async function loadUserData(userId: string, token?: string | null) {
     const [resps, mems, tks, jrnl, prts, qzs, qrs, scns, rpSessions, dailyP] = await Promise.all([
-      fetchFromApi(`/api/users/${userId}/prompt-responses`),
-      fetchFromApi(`/api/users/${userId}/memories`),
-      fetchFromApi(`/api/users/${userId}/tasks`),
-      fetchFromApi(`/api/users/${userId}/journal`),
+      fetchFromApi(`/api/users/${userId}/prompt-responses`, token),
+      fetchFromApi(`/api/users/${userId}/memories`, token),
+      fetchFromApi(`/api/users/${userId}/tasks`, token),
+      fetchFromApi(`/api/users/${userId}/journal`, token),
       fetchFromApi('/api/prompts'),
       fetchFromApi('/api/quizzes'),
-      fetchFromApi(`/api/users/${userId}/quiz-results`),
+      fetchFromApi(`/api/users/${userId}/quiz-results`, token),
       fetchFromApi('/api/scenarios'),
-      fetchFromApi(`/api/users/${userId}/roleplay-sessions`),
-      fetchFromApi(`/api/users/${userId}/daily-prompts`).catch(() => []),
+      fetchFromApi(`/api/users/${userId}/roleplay-sessions`, token),
+      fetchFromApi(`/api/users/${userId}/daily-prompts`, token).catch(() => []),
     ]);
     setPromptResponses(resps);
     setMemories(mems);
@@ -251,6 +254,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (storedToken) {
         setAuthToken(storedToken);
+        setApiAuthToken(storedToken);
         try {
           const baseUrl = getApiUrl();
           const res = await fetch(new URL('/api/auth/me', baseUrl).toString(), {
@@ -259,7 +263,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (res.ok) {
             const user = await res.json();
             setProfileState(user);
-            await loadUserData(user.id);
+            await loadUserData(user.id, storedToken);
           } else {
             await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
             await AsyncStorage.removeItem(USER_ID_KEY);
@@ -313,8 +317,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
     await AsyncStorage.setItem(USER_ID_KEY, data.user.id);
     setAuthToken(data.token);
+    setApiAuthToken(data.token);
     setProfileState(data.user);
-    await loadUserData(data.user.id);
+    await loadUserData(data.user.id, data.token);
   }
 
   async function register(name: string, email: string, password: string) {
@@ -330,8 +335,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
     await AsyncStorage.setItem(USER_ID_KEY, data.user.id);
     setAuthToken(data.token);
+    setApiAuthToken(data.token);
     setProfileState(data.user);
-    await loadUserData(data.user.id);
+    await loadUserData(data.user.id, data.token);
   }
 
   async function setProfile(data: any) {
@@ -560,6 +566,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.clear();
     setProfileState(null);
     setAuthToken(null);
+    setApiAuthToken(null);
     setPromptResponses([]);
     setMemories([]);
     setTasks([]);

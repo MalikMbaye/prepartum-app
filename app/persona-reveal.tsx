@@ -65,7 +65,7 @@ export default function PersonaRevealScreen() {
     }
     setChoosing(selected);
     try {
-      const res = await apiRequest('PATCH', `/api/users/${profile.id}`, {
+      const res = await apiRequest('PUT', `/api/users/${profile.id}`, {
         profileFlags: { ...(profile.profileFlags || {}), persona: selected },
       });
       const data = await res.json();

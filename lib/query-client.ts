@@ -17,6 +17,14 @@ export function getApiUrl(): string {
   return url.href;
 }
 
+// Module-level auth token so apiRequest can send Bearer auth
+// without needing React context. Set by AppContext on login/restore/logout.
+let _authToken: string | null = null;
+
+export function setApiAuthToken(token: string | null): void {
+  _authToken = token;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -32,9 +40,13 @@ export async function apiRequest(
   const baseUrl = getApiUrl();
   const url = new URL(route, baseUrl);
 
+  const headers: Record<string, string> = {};
+  if (data) headers["Content-Type"] = "application/json";
+  if (_authToken) headers["Authorization"] = `Bearer ${_authToken}`;
+
   const res = await fetch(url.toString(), {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
