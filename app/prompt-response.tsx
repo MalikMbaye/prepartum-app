@@ -23,6 +23,12 @@ const CATEGORY_AFFIRMATIONS: Record<string, string> = {
   physical: 'You honored your body today.',
 };
 
+const ACTION_BY_CATEGORY: Record<string, string> = {
+  mindset: "Take 5 minutes to sit quietly with what you just wrote. Don't analyze it. Just let it be.",
+  relationships: "Share one sentence from your reflection with someone you trust today — even just a text.",
+  physical: "Put one hand on your belly and breathe into your response for 60 seconds.",
+};
+
 function PulsingGlow({ color }: { color: string }) {
   const opacity = useSharedValue(0.25);
 
@@ -68,6 +74,8 @@ export default function PromptResponseScreen() {
   const { addPromptResponse, addJournalEntry, promptResponses, profile, prompts } = useApp();
   const currentPrompt = prompts.find(p => p.id === promptId);
   const childConnection = currentPrompt?.childConnection ?? null;
+  const promptContext = currentPrompt?.context ?? null;
+  const closingReframe = currentPrompt?.closingReframe ?? null;
 
   const [screen, setScreen] = useState<1 | 2 | 3>(1);
   const [responseText, setResponseText] = useState('');
@@ -187,6 +195,13 @@ export default function PromptResponseScreen() {
             <Animated.Text entering={FadeInDown.delay(280).duration(380)} style={styles.contextExcerpt}>
               {firstSentence}
             </Animated.Text>
+          )}
+
+          {!!promptContext && (
+            <Animated.View entering={FadeInDown.delay(360).duration(380)} style={styles.whyMattersBox}>
+              <Text style={styles.whyMattersLabel}>WHY THIS MATTERS</Text>
+              <Text style={styles.whyMattersText}>{promptContext}</Text>
+            </Animated.View>
           )}
         </ScrollView>
 
@@ -338,13 +353,18 @@ export default function PromptResponseScreen() {
   }
 
   // ── SCREEN 3: CELEBRATION ──────────────────────────────────────────
+  const todayAction = ACTION_BY_CATEGORY[category || 'mindset'] ?? ACTION_BY_CATEGORY.mindset;
+
   return (
     <Animated.View
       key="s3"
       entering={FadeIn.duration(400)}
       style={[styles.container, { paddingTop: insets.top + webTopInset }]}
     >
-      <View style={styles.celebrationContainer}>
+      <ScrollView
+        contentContainerStyle={[styles.celebrationContainer, { paddingBottom: bottomPad }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View entering={FadeIn.delay(100).duration(500)}>
           <PulsingGlow color={catColor} />
         </Animated.View>
@@ -353,14 +373,25 @@ export default function PromptResponseScreen() {
           {affirmation}
         </Animated.Text>
 
+        {!!closingReframe && (
+          <Animated.Text entering={FadeInDown.delay(460).duration(400)} style={styles.closingReframeText}>
+            {closingReframe}
+          </Animated.Text>
+        )}
+
         {!!childConnection && (
-          <Animated.View entering={FadeIn.delay(500).duration(600)} style={styles.childConnectionCard}>
+          <Animated.View entering={FadeIn.delay(520).duration(600)} style={styles.childConnectionCard}>
             <Text style={styles.childConnectionIcon}>🌱</Text>
             <Text style={styles.childConnectionText}>{childConnection}</Text>
           </Animated.View>
         )}
 
-        <Animated.View entering={FadeInDown.delay(560).duration(380)}>
+        <Animated.View entering={FadeInDown.delay(600).duration(380)} style={[styles.actionCard, { borderLeftColor: catColor }]}>
+          <Text style={styles.actionCardLabel}>WHAT YOU CAN DO TODAY</Text>
+          <Text style={styles.actionCardText}>{todayAction}</Text>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(680).duration(380)}>
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -377,7 +408,7 @@ export default function PromptResponseScreen() {
           </Pressable>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(720).duration(380)} style={{ width: '100%' }}>
+        <Animated.View entering={FadeInDown.delay(820).duration(380)} style={{ width: '100%' }}>
           <Pressable
             onPress={handleDone}
             disabled={isSaving}
@@ -386,7 +417,7 @@ export default function PromptResponseScreen() {
             <Text style={styles.plumButtonText}>{isSaving ? 'Saving…' : 'Done'}</Text>
           </Pressable>
         </Animated.View>
-      </View>
+      </ScrollView>
     </Animated.View>
   );
 }
@@ -557,11 +588,11 @@ const styles = StyleSheet.create({
 
   // Screen 3 — Celebration
   celebrationContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    gap: 32,
+    paddingHorizontal: 32,
+    paddingTop: 40,
+    gap: 28,
+    flexGrow: 1,
   },
   glowWrapper: {
     width: 140,
@@ -623,6 +654,62 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     fontSize: 16,
     color: Colors.textPrimary,
+  },
+
+  // Screen 1 — Why this matters
+  whyMattersBox: {
+    backgroundColor: Colors.cardBg,
+    borderRadius: 14,
+    padding: 18,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.accentBlue,
+    marginTop: 8,
+  },
+  whyMattersLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 10,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  whyMattersText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 15,
+    color: Colors.textSecondary,
+    lineHeight: 24,
+  },
+
+  // Screen 3 — Closing reframe + action
+  closingReframeText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 15,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 8,
+  },
+  actionCard: {
+    backgroundColor: Colors.cardBg,
+    borderRadius: 14,
+    padding: 18,
+    borderLeftWidth: 3,
+    width: '100%',
+    gap: 8,
+  },
+  actionCardLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 10,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+  },
+  actionCardText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 15,
+    color: Colors.textPrimary,
+    lineHeight: 24,
   },
 
   // Already-completed view

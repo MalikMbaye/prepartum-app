@@ -10,6 +10,8 @@ interface DailyPrompt {
   depth: string | null;
   format: string | null;
   intensity: number | null;
+  context: string | null;
+  closingReframe: string | null;
   reframe: {
     originalThought: string;
     reframedThought: string;
@@ -115,13 +117,14 @@ export async function getDailyPrompts(userId: string): Promise<DailyPrompt[]> {
 
       const persona = (profileFlags.persona as string) || '';
       if (persona) {
+        if (p.personaTags && p.personaTags.includes(persona)) score += 25;
         if (p.relevanceTags && p.relevanceTags.includes(persona)) score += 15;
         if (persona === 'healing_mother') {
           if (p.depth === 'deep') score -= 8;
           if (p.estimatedEnergy === 'high') score -= 6;
           if (p.intensity !== null && p.intensity >= 4) score -= 5;
         } else if (persona === 'anxious_planner') {
-          if (p.format === 'structured' || p.format === 'action') score += 8;
+          if (p.format === 'action') score += 8;
         } else if (persona === 'solo_warrior') {
           if (p.requiredFlags && !p.requiredFlags.some(f => f.includes('partner'))) score += 5;
         } else if (persona === 'faith_anchored') {
@@ -161,6 +164,8 @@ export async function getDailyPrompts(userId: string): Promise<DailyPrompt[]> {
         depth: selected.prompt.depth,
         format: selected.prompt.format,
         intensity: selected.prompt.intensity,
+        context: selected.prompt.context ?? null,
+        closingReframe: selected.prompt.closingReframe ?? null,
         reframe: reframe ? {
           originalThought: reframe.originalThought,
           reframedThought: reframe.reframedThought,

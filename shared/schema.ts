@@ -48,6 +48,9 @@ export const prompts = pgTable("prompts", {
   excludedFlags: text("excluded_flags").array(),
   trimester: integer("trimester"),
   childConnection: text("child_connection"),
+  context: text("context"),
+  closingReframe: text("closing_reframe"),
+  personaTags: text("persona_tags").array(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 

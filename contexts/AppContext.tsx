@@ -30,6 +30,12 @@ interface DailyPrompt {
   weekNumber: number | null;
   dayOfWeek: number | null;
   childConnection?: string | null;
+  context?: string | null;
+  closingReframe?: string | null;
+  personaTags?: string[] | null;
+  depth?: string | null;
+  format?: string | null;
+  intensity?: number | null;
 }
 
 interface PromptResponseData {
