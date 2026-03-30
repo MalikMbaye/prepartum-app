@@ -7,6 +7,9 @@ import { updateUserSeasonWeekly, runSeasonUpdateForAllUsers } from "./season-upd
 import Anthropic from "@anthropic-ai/sdk";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { db } from "./db";
+import { milestones, userMilestones } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "prepartum-secret-key";
 
@@ -532,6 +535,44 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
     } catch (e: any) {
       console.error("Profile calculation error:", e);
       res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/milestones", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string | undefined;
+      const allMilestones = await db.select().from(milestones).orderBy(milestones.weekNumber);
+      if (!userId) {
+        return res.json(allMilestones.map(m => ({ ...m, isCompleted: false })));
+      }
+      const userMs = await db.select().from(userMilestones).where(eq(userMilestones.userId, userId));
+      const completedSet = new Set(userMs.filter(um => um.isCompleted).map(um => um.milestoneId));
+      res.json(allMilestones.map(m => ({ ...m, isCompleted: completedSet.has(m.id) })));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/milestones/:id/complete", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { userId, isCompleted } = req.body;
+      if (!userId) return res.status(400).json({ message: "userId required" });
+      const [existing] = await db.select().from(userMilestones)
+        .where(and(eq(userMilestones.userId, userId), eq(userMilestones.milestoneId, id)));
+      if (existing) {
+        const [updated] = await db.update(userMilestones)
+          .set({ isCompleted, completedAt: isCompleted ? new Date() : null })
+          .where(eq(userMilestones.id, existing.id))
+          .returning();
+        return res.json(updated);
+      }
+      const [created] = await db.insert(userMilestones)
+        .values({ userId, milestoneId: id, isCompleted, completedAt: isCompleted ? new Date() : null })
+        .returning();
+      res.json(created);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
     }
   });
 

@@ -1,0 +1,60 @@
+Build a milestone calendar screen at app/milestones.tsx.
+
+This screen shows all pregnancy milestones as a scrollable list
+grouped by trimester. It is accessed from the home dashboard
+(there should already be a milestones link or card there).
+
+Data: Seed 15 milestones into the existing milestones table
+(shared/schema.ts). Each milestone needs:
+- title (e.g. "First Heartbeat", "Anatomy Scan", "Baby Shower")
+- week_number (which pregnancy week it typically occurs)
+- trimester (1, 2, or 3)
+- description (1-2 sentences about why it matters)
+- icon (an emoji)
+- is_completed (boolean, per user — stored in a userMilestones table)
+
+The 15 milestones to seed:
+1. Week 6 — First Heartbeat 💓
+2. Week 8 — First OB Appointment 🩺
+3. Week 10 — First Trimester Screening 📋
+4. Week 12 — End of First Trimester 🌱
+5. Week 14 — Baby's Sex Detectable 👶
+6. Week 16 — First Movements (Quickening) 🦋
+7. Week 18 — Anatomy Scan 🔬
+8. Week 20 — Halfway There 🎯
+9. Week 24 — Viability Milestone 🌟
+10. Week 27 — End of Second Trimester ✨
+11. Week 28 — Third Trimester Begins 🌙
+12. Week 32 — Hospital Tour 🏥
+13. Week 35 — Group B Strep Test 💊
+14. Week 37 — Full Term 🎊
+15. Week 40 — Due Date 🍼
+
+UI:
+- Scrollable list grouped by trimester with trimester headers
+- Each milestone is a card showing: emoji, title, week number,
+  short description, and a checkbox to mark complete
+- Completed milestones show a soft checkmark and slightly muted style
+- Current week's upcoming milestone is highlighted with a
+  "Coming Up" badge in Soft Pink (#F5D6D6)
+- Past milestones that weren't marked complete show as faded
+
+Design — Luminous Editorial:
+- Background: #FFF8F5
+- Cards: white, border-radius 16px, padding 20px
+- Text: #5D5066
+- Trimester headers: serif font, 20px
+- Completed checkmark color: #F5D6D6
+
+Navigation:
+- Add a milestones tab or button on the home dashboard
+  that navigates to /milestones
+- Back arrow navigates back to home
+
+Files to create/modify:
+- app/milestones.tsx (create new)
+- shared/schema.ts (add userMilestones table if not exists)
+- server/seed-milestones.ts (create seed file)
+- server/routes.ts (add GET /api/milestones and
+  POST /api/milestones/:id/complete endpoints)
+- app/(tabs)/index.tsx (add milestones entry point)

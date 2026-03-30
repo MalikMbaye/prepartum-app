@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { registerRoutes } from "./routes";
 import { seedDatabase } from "./seed";
+import { seedMilestones } from "./seed-milestones";
 import { startSeasonCron } from "./season-updater";
 import * as fs from "fs";
 import * as path from "path";
@@ -263,6 +264,7 @@ function setupErrorHandler(app: express.Application) {
 
   try {
     await seedDatabase();
+    await seedMilestones();
     log("Database seeded successfully");
     startSeasonCron();
   } catch (e) {

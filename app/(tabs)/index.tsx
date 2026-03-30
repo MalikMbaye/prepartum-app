@@ -434,6 +434,26 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
+      <Animated.View entering={FadeInDown.delay(440).duration(500)}>
+        <Pressable
+          onPress={() => { tryHaptic(); router.push('/milestones'); }}
+          style={({ pressed }) => [
+            styles.milestonesCard,
+            pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
+          ]}
+          testID="milestones-card"
+        >
+          <View style={styles.milestonesCardLeft}>
+            <Text style={styles.milestonesIcon}>🎯</Text>
+            <View>
+              <Text style={styles.milestonesLabel}>Pregnancy Milestones</Text>
+              <Text style={styles.milestonesSubLabel}>Track your journey's key moments</Text>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={18} color={Colors.textSecondary} />
+        </Pressable>
+      </Animated.View>
+
       <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.quickSection}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickRow}>
@@ -893,6 +913,41 @@ const styles = StyleSheet.create({
   weekCardFooterText: {
     fontFamily: 'Lato_400Regular',
     fontSize: 13,
+    color: Colors.textSecondary,
+  },
+
+  milestonesCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: Colors.textPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  milestonesCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+  milestonesIcon: {
+    fontSize: 26,
+  },
+  milestonesLabel: {
+    fontFamily: 'Lato_700Bold',
+    fontSize: 15,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  milestonesSubLabel: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 12,
     color: Colors.textSecondary,
   },
 });

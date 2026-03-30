@@ -206,6 +206,26 @@ export const pregnancyWeeks = pgTable("pregnancy_weeks", {
   affirmation: text("affirmation"),
 });
 
+export const milestones = pgTable("milestones", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  weekNumber: integer("week_number").notNull(),
+  trimester: integer("trimester").notNull(),
+  description: text("description"),
+  icon: text("icon"),
+  orderIndex: integer("order_index"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const userMilestones = pgTable("user_milestones", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  milestoneId: uuid("milestone_id").notNull().references(() => milestones.id, { onDelete: "cascade" }),
+  isCompleted: boolean("is_completed").default(false),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPromptResponseSchema = createInsertSchema(userPromptResponses).omit({ id: true, completedAt: true });
 export const insertMemorySchema = createInsertSchema(memories).omit({ id: true, createdAt: true });

@@ -71,6 +71,8 @@ Premium, luxury aesthetic inspired by brands like Aesop. Key design tokens defin
 7. **journal_entries** - Journal entries (can originate from prompts or be freeform)
 8. **quizzes / quiz_questions / user_quiz_results** - Self-discovery quiz system (schema defined, feature planned)
 9. **roleplay_scenarios / roleplay_sessions** - Practice conversation system (schema defined, feature planned)
+10. **milestones** - 15 seeded pregnancy milestones (title, weekNumber, trimester, description, icon, orderIndex)
+11. **user_milestones** - Per-user milestone completion tracking (userId, milestoneId, isCompleted, completedAt)
 
 ### Profile Calculation System
 
