@@ -76,6 +76,10 @@ export const memories = pgTable("memories", {
   mediaThumbnailUrl: text("media_thumbnail_url"),
   tags: text("tags").array(),
   trimester: integer("trimester"),
+  mimeType: text("mime_type"),
+  fileSize: integer("file_size"),
+  storagePath: text("storage_path"),
+  duration: integer("duration"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

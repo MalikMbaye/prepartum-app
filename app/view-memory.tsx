@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform,
-  Alert, Image, Dimensions, Modal
+  Alert, Image, Dimensions, Modal, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -234,6 +234,18 @@ export default function ViewMemoryScreen() {
             <AudioPlayer uri={memory.mediaUrls[0]} />
           ) : null}
 
+          {memory.type === 'pdf' && memory.mediaUrls?.[0] ? (
+            <Pressable
+              style={({ pressed }) => [vs.pdfBtn, pressed && { opacity: 0.75 }]}
+              onPress={() => Linking.openURL(memory.mediaUrls![0])}
+              testID="view-document-button"
+            >
+              <Feather name="file-text" size={18} color={Colors.textPrimary} />
+              <Text style={vs.pdfBtnText}>View Document</Text>
+              <Feather name="external-link" size={14} color={Colors.textSecondary} />
+            </Pressable>
+          ) : null}
+
           {memory.content ? (
             <Text style={vs.content}>{memory.content}</Text>
           ) : null}
@@ -275,6 +287,8 @@ const vs = StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 32 },
   tag: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.accentPink + '40', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },
   tagText: { fontFamily: 'Lato_400Regular', fontSize: 13, color: Colors.textSecondary },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.accentPeach, borderRadius: 16, padding: 16, marginBottom: 16 },
+  pdfBtnText: { flex: 1, fontFamily: 'Lato_700Bold', fontSize: 15, color: Colors.textPrimary },
   savedAt: { fontFamily: 'Lato_400Regular', fontSize: 12, color: Colors.textLight, textAlign: 'center' },
   notFoundText: { fontFamily: 'PlayfairDisplay_600SemiBold', fontSize: 18, color: Colors.textSecondary, marginBottom: 20 },
   backBtn: { backgroundColor: Colors.accentPink, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 },

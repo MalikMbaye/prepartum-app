@@ -157,7 +157,7 @@ interface AppContextValue {
   addPromptResponse: (data: { promptId: string; responseText: string; savedToJournal?: boolean }) => Promise<void>;
   updatePromptResponse: (id: string, data: { responseText: string; savedToJournal?: boolean }) => Promise<void>;
   memories: MemoryData[];
-  addMemory: (data: { content?: string; type?: string; title?: string; memoryDate?: string; tags?: string[]; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }) => Promise<MemoryData>;
+  addMemory: (data: { content?: string; type?: string; title?: string; memoryDate?: string; tags?: string[]; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number; mimeType?: string; fileSize?: number; storagePath?: string; duration?: number }) => Promise<MemoryData>;
   updateMemory: (id: string, data: { content?: string; title?: string; memoryDate?: string; tags?: string[]; type?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }) => Promise<void>;
   deleteMemory: (id: string) => Promise<void>;
   tasks: UserTaskData[];
@@ -386,7 +386,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function addMemory(data: { content?: string; type?: string; title?: string; memoryDate?: string; tags?: string[]; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }): Promise<MemoryData> {
+  async function addMemory(data: { content?: string; type?: string; title?: string; memoryDate?: string; tags?: string[]; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number; mimeType?: string; fileSize?: number; storagePath?: string; duration?: number }): Promise<MemoryData> {
     if (!profile?.id) throw new Error('No profile');
     try {
       const res = await apiRequest('POST', `/api/users/${profile.id}/memories`, data);

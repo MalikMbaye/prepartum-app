@@ -10,8 +10,34 @@ import jwt from "jsonwebtoken";
 import { db } from "./db";
 import { milestones, userMilestones } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import multer from "multer";
+import { Client } from "@replit/object-storage";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "prepartum-secret-key";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+let _objectStorageClient: Client | null = null;
+function getObjectStorageClient(): Client {
+  if (!_objectStorageClient) {
+    _objectStorageClient = new Client();
+  }
+  return _objectStorageClient;
+}
+
+function authMiddleware(req: Request, res: Response, next: Function) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  try {
+    const token = authHeader.slice(7);
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    (req as any).userId = decoded.userId;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -573,6 +599,39 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
       res.json(created);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/upload", authMiddleware, upload.single("file"), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file provided" });
+      }
+      const file = req.file;
+      const userId = (req as any).userId;
+      const ext = file.originalname.split('.').pop() || 'bin';
+      const objectKey = `memories/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+      const client = getObjectStorageClient();
+      const uploadResult = await client.uploadFromBytes(objectKey, file.buffer, {
+        headers: { "Content-Type": file.mimetype },
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error("Upload failed: " + uploadResult.error?.message);
+      }
+
+      const publicUrl = `https://objectstorage.replit.com/${objectKey}`;
+
+      res.json({
+        url: publicUrl,
+        storagePath: objectKey,
+        mimeType: file.mimetype,
+        fileSize: file.size,
+      });
+    } catch (e: any) {
+      console.error("Upload error:", e);
+      res.status(500).json({ message: e.message || "Upload failed" });
     }
   });
 

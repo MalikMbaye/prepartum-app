@@ -28,7 +28,7 @@ export interface IStorage {
   updatePromptResponse(id: string, userId: string, data: { responseText: string; savedToJournal?: boolean }): Promise<PromptResponse | undefined>;
 
   getUserMemories(userId: string): Promise<Memory[]>;
-  createMemory(data: { userId: string; type: string; content?: string; title?: string; memoryDate?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; tags?: string[]; trimester?: number }): Promise<Memory>;
+  createMemory(data: { userId: string; type: string; content?: string; title?: string; memoryDate?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; tags?: string[]; trimester?: number; mimeType?: string; fileSize?: number; storagePath?: string; duration?: number }): Promise<Memory>;
   updateMemory(id: string, userId: string, data: { content?: string; title?: string; memoryDate?: string; tags?: string[]; type?: string; mediaUrls?: string[]; mediaThumbnailUrl?: string; trimester?: number }): Promise<Memory | undefined>;
   deleteMemory(id: string, userId: string): Promise<boolean>;
 
@@ -156,6 +156,10 @@ export class DatabaseStorage implements IStorage {
     mediaThumbnailUrl?: string;
     tags?: string[];
     trimester?: number;
+    mimeType?: string;
+    fileSize?: number;
+    storagePath?: string;
+    duration?: number;
   }): Promise<Memory> {
     const [memory] = await db.insert(memories).values({
       userId: data.userId,
@@ -167,6 +171,10 @@ export class DatabaseStorage implements IStorage {
       mediaThumbnailUrl: data.mediaThumbnailUrl,
       tags: data.tags || [],
       trimester: data.trimester,
+      mimeType: data.mimeType,
+      fileSize: data.fileSize,
+      storagePath: data.storagePath,
+      duration: data.duration,
     }).returning();
     return memory;
   }

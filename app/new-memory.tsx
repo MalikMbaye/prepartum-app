@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, Pressable,
-  Alert, Platform, Image, Modal, ActivityIndicator
+  Alert, Platform, Image, Modal, ActivityIndicator, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
@@ -14,6 +15,10 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { getApiUrl } from '@/lib/query-client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const AUTH_TOKEN_KEY = '@prepartum_auth_token';
 
 function tryHaptic() {
   try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
@@ -28,6 +33,34 @@ function formatDateToYMD(date: Date): string {
 function formatDisplayDate(dateStr: string) {
   const [y, m, d] = dateStr.split('-').map(Number);
   return `${MONTHS_LONG[m - 1]} ${d}, ${y}`;
+}
+
+async function uploadFileToServer(uri: string, mimeType: string, filename: string): Promise<{ url: string; storagePath: string; mimeType: string; fileSize: number }> {
+  const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+  const baseUrl = getApiUrl();
+  const uploadUrl = new URL('/api/upload', baseUrl).toString();
+
+  const formData = new FormData();
+  formData.append('file', {
+    uri,
+    type: mimeType,
+    name: filename,
+  } as any);
+
+  const res = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Upload failed: ${res.status} ${text}`);
+  }
+
+  return res.json();
 }
 
 function DatePickerModal({
@@ -169,6 +202,7 @@ export default function NewMemoryScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const [recordingObj, setRecordingObj] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -177,6 +211,12 @@ export default function NewMemoryScreen() {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [pdfUri, setPdfUri] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState<string | null>(null);
+  const [uploadedMediaData, setUploadedMediaData] = useState<{
+    url: string; storagePath: string; mimeType: string; fileSize: number;
+  } | null>(null);
 
   function calcTrimester(): number | null {
     if (!profile?.dueDate) return null;
@@ -192,7 +232,9 @@ export default function NewMemoryScreen() {
 
   async function pickPhotos() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow photo library access.'); return; }
+    if (status !== 'granted' && status !== 'limited') {
+      Alert.alert('Permission needed', 'Please allow photo library access.'); return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images', allowsMultipleSelection: true, quality: 0.8, selectionLimit: 6,
     });
@@ -204,6 +246,23 @@ export default function NewMemoryScreen() {
     if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow camera access.'); return; }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
     if (!result.canceled) { tryHaptic(); setPhotos(prev => [...prev, result.assets[0].uri].slice(0, 6)); }
+  }
+
+  async function pickDocument() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      tryHaptic();
+      setPdfUri(asset.uri);
+      setPdfName(asset.name || 'document.pdf');
+      setUploadedMediaData(null);
+    } catch (e) {
+      Alert.alert('Error', 'Could not open document picker.');
+    }
   }
 
   async function startRecording() {
@@ -257,36 +316,114 @@ export default function NewMemoryScreen() {
   function discardVoice() {
     sound?.unloadAsync(); setSound(null);
     setVoiceUri(null); setRecordSeconds(0);
+    setUploadedMediaData(null);
   }
 
   async function save() {
-    if (type === 'text' && !content.trim() && !title.trim()) { Alert.alert('Empty Memory', 'Please write something before saving.'); return; }
-    if (type === 'photo' && photos.length === 0) { Alert.alert('No Photos', 'Please add at least one photo.'); return; }
-    if (type === 'voice' && !voiceUri) { Alert.alert('No Recording', 'Please record a voice memo first.'); return; }
+    if (type === 'text' && !content.trim() && !title.trim()) {
+      Alert.alert('Empty Memory', 'Please write something before saving.'); return;
+    }
+    if (type === 'photo' && photos.length === 0) {
+      Alert.alert('No Photos', 'Please add at least one photo.'); return;
+    }
+    if (type === 'voice' && !voiceUri) {
+      Alert.alert('No Recording', 'Please record a voice memo first.'); return;
+    }
+    if (type === 'pdf' && !pdfUri) {
+      Alert.alert('No Document', 'Please select a PDF document first.'); return;
+    }
 
     setSaving(true);
     try {
+      let mediaUrls: string[] = [];
+      let mediaThumbnailUrl: string | undefined;
+      let mimeType: string | undefined;
+      let fileSize: number | undefined;
+      let storagePath: string | undefined;
+      let duration: number | undefined;
+
+      if (type === 'photo' && photos.length > 0) {
+        setUploading(true);
+        const uploadedUrls: string[] = [];
+        for (let i = 0; i < photos.length; i++) {
+          const uri = photos[i];
+          const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
+          const mime = ext === 'png' ? 'image/png' : ext === 'heic' ? 'image/heic' : 'image/jpeg';
+          try {
+            const result = await uploadFileToServer(uri, mime, `photo_${Date.now()}_${i}.${ext}`);
+            uploadedUrls.push(result.url);
+            if (i === 0) {
+              mimeType = result.mimeType;
+              fileSize = result.fileSize;
+              storagePath = result.storagePath;
+            }
+          } catch {
+            uploadedUrls.push(uri);
+          }
+        }
+        setUploading(false);
+        mediaUrls = uploadedUrls;
+        mediaThumbnailUrl = uploadedUrls[0];
+
+      } else if (type === 'voice' && voiceUri) {
+        setUploading(true);
+        try {
+          const result = await uploadFileToServer(voiceUri, 'audio/m4a', `voice_${Date.now()}.m4a`);
+          mediaUrls = [result.url];
+          mimeType = result.mimeType;
+          fileSize = result.fileSize;
+          storagePath = result.storagePath;
+          duration = recordSeconds;
+        } catch {
+          mediaUrls = [voiceUri];
+          duration = recordSeconds;
+        }
+        setUploading(false);
+
+      } else if (type === 'pdf' && pdfUri) {
+        setUploading(true);
+        try {
+          const result = await uploadFileToServer(pdfUri, 'application/pdf', pdfName || 'document.pdf');
+          mediaUrls = [result.url];
+          mimeType = result.mimeType;
+          fileSize = result.fileSize;
+          storagePath = result.storagePath;
+        } catch {
+          mediaUrls = [];
+        }
+        setUploading(false);
+      }
+
       await addMemory({
         type,
         title: title.trim() || undefined,
         content: content.trim() || undefined,
         memoryDate: dateStr,
         tags,
-        mediaUrls: type === 'photo' ? photos : voiceUri ? [voiceUri] : [],
-        mediaThumbnailUrl: type === 'photo' && photos.length > 0 ? photos[0] : undefined,
+        mediaUrls,
+        mediaThumbnailUrl,
         trimester: calcTrimester() ?? undefined,
+        mimeType,
+        fileSize,
+        storagePath,
+        duration,
       });
       tryHaptic();
       router.back();
-    } catch { Alert.alert('Error', 'Could not save memory. Please try again.'); }
-    finally { setSaving(false); }
+    } catch {
+      Alert.alert('Error', 'Could not save memory. Please try again.');
+    } finally {
+      setSaving(false);
+      setUploading(false);
+    }
   }
 
-  const typeColor = type === 'photo' ? Colors.accentPink : type === 'voice' ? Colors.accentBlue : Colors.accentPeach;
-  const typeIcon = type === 'photo' ? 'camera' : type === 'voice' ? 'mic' : 'edit-3';
-  const typeLabel = type === 'photo' ? 'Photo Memory' : type === 'voice' ? 'Voice Memo' : 'Written Memory';
+  const typeColor = type === 'photo' ? Colors.accentPink : type === 'voice' ? Colors.accentBlue : type === 'pdf' ? Colors.accentPeach : Colors.accentPeach;
+  const typeIcon = type === 'photo' ? 'camera' : type === 'voice' ? 'mic' : type === 'pdf' ? 'file-text' : 'edit-3';
+  const typeLabel = type === 'photo' ? 'Photo Memory' : type === 'voice' ? 'Voice Memo' : type === 'pdf' ? 'Document' : 'Written Memory';
   const mins = Math.floor(recordSeconds / 60);
   const secs = recordSeconds % 60;
+  const isBusy = saving || uploading;
 
   return (
     <View style={[s.container, { paddingTop: insets.top + webTop }]}>
@@ -298,10 +435,20 @@ export default function NewMemoryScreen() {
           <Feather name={typeIcon as any} size={13} color={Colors.textPrimary} />
           <Text style={s.typePillText}>{typeLabel}</Text>
         </View>
-        <Pressable onPress={save} disabled={saving} style={s.saveBtn} testID="save-memory-button">
-          {saving ? <ActivityIndicator size="small" color={Colors.textPrimary} /> : <Text style={s.saveBtnText}>Save</Text>}
+        <Pressable onPress={save} disabled={isBusy} style={s.saveBtn} testID="save-memory-button">
+          {isBusy
+            ? <ActivityIndicator size="small" color={Colors.textPrimary} />
+            : <Text style={s.saveBtnText}>Save</Text>
+          }
         </Pressable>
       </View>
+
+      {uploading && (
+        <View style={s.uploadBanner}>
+          <ActivityIndicator size="small" color={Colors.textPrimary} />
+          <Text style={s.uploadBannerText}>Uploading to cloud...</Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={[s.body, { paddingBottom: insets.bottom + webBot + 40 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.duration(350)} style={s.sec}>
@@ -414,6 +561,44 @@ export default function NewMemoryScreen() {
           </Animated.View>
         )}
 
+        {type === 'pdf' && (
+          <Animated.View entering={FadeInDown.delay(100).duration(350)} style={[s.sec, s.pdfSec]}>
+            {!pdfUri ? (
+              <Pressable onPress={pickDocument} style={s.pdfPickBtn} testID="pick-document-button">
+                <Feather name="file-text" size={36} color={Colors.textLight} />
+                <Text style={s.pdfPickTitle}>Select a PDF</Text>
+                <Text style={s.pdfPickHint}>Tap to browse your documents</Text>
+              </Pressable>
+            ) : (
+              <View style={s.pdfSelected}>
+                <View style={s.pdfFileRow}>
+                  <View style={s.pdfIconWrap}>
+                    <Feather name="file-text" size={28} color={Colors.textPrimary} />
+                  </View>
+                  <View style={s.pdfFileInfo}>
+                    <Text style={s.pdfFileName} numberOfLines={2}>{pdfName}</Text>
+                    <Text style={s.pdfFileType}>PDF Document</Text>
+                  </View>
+                  <Pressable onPress={() => { setPdfUri(null); setPdfName(null); setUploadedMediaData(null); }} style={s.pdfRemove}>
+                    <Ionicons name="close-circle" size={22} color={Colors.textLight} />
+                  </Pressable>
+                </View>
+                <Pressable onPress={pickDocument} style={s.pdfChangeBtn}>
+                  <Text style={s.pdfChangeBtnText}>Choose different file</Text>
+                </Pressable>
+              </View>
+            )}
+            <TextInput
+              style={[s.captionInput, { marginTop: 16 }]}
+              placeholder="Add a note about this document..."
+              placeholderTextColor={Colors.textLight}
+              value={content} onChangeText={setContent}
+              multiline textAlignVertical="top"
+              testID="pdf-note-input"
+            />
+          </Animated.View>
+        )}
+
         <Animated.View entering={FadeInDown.delay(150).duration(350)} style={s.sec}>
           <Text style={s.secLabel}>Tags</Text>
           <TagInput tags={tags} onChange={setTags} />
@@ -436,6 +621,8 @@ const s = StyleSheet.create({
   typePillText: { fontFamily: 'Lato_700Bold', fontSize: 13, color: Colors.textPrimary },
   saveBtn: { backgroundColor: Colors.accentPink, paddingHorizontal: 18, paddingVertical: 8, borderRadius: 14, minWidth: 60, alignItems: 'center' },
   saveBtnText: { fontFamily: 'Lato_700Bold', fontSize: 15, color: Colors.textPrimary },
+  uploadBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: Colors.accentBlue + '60' },
+  uploadBannerText: { fontFamily: 'Lato_400Regular', fontSize: 13, color: Colors.textPrimary },
   body: { paddingHorizontal: 20, paddingTop: 8 },
   sec: { marginBottom: 24 },
   secLabel: { fontFamily: 'Lato_700Bold', fontSize: 11, color: Colors.textSecondary, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 },
@@ -469,4 +656,17 @@ const s = StyleSheet.create({
   playerBtns: { flexDirection: 'row', gap: 12 },
   playerBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, flex: 1, justifyContent: 'center' },
   playerBtnText: { fontFamily: 'Lato_700Bold', fontSize: 14, color: Colors.textPrimary },
+  pdfSec: { backgroundColor: Colors.white, borderRadius: 20, padding: 20 },
+  pdfPickBtn: { alignItems: 'center', gap: 12, paddingVertical: 32 },
+  pdfPickTitle: { fontFamily: 'Lato_700Bold', fontSize: 16, color: Colors.textPrimary },
+  pdfPickHint: { fontFamily: 'Lato_400Regular', fontSize: 14, color: Colors.textSecondary },
+  pdfSelected: { gap: 12 },
+  pdfFileRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pdfIconWrap: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.accentPeach, alignItems: 'center', justifyContent: 'center' },
+  pdfFileInfo: { flex: 1 },
+  pdfFileName: { fontFamily: 'Lato_700Bold', fontSize: 14, color: Colors.textPrimary },
+  pdfFileType: { fontFamily: 'Lato_400Regular', fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  pdfRemove: { padding: 4 },
+  pdfChangeBtn: { alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: Colors.border },
+  pdfChangeBtnText: { fontFamily: 'Lato_400Regular', fontSize: 13, color: Colors.textSecondary },
 });

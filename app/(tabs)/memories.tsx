@@ -64,7 +64,7 @@ function MemoryCard({ memory, index }: { memory: MemoryData; index: number }) {
           <Text style={styles.cardDate}>{formatMemoryDate(memory.memoryDate)}</Text>
           <View style={styles.typeChip}>
             <Feather
-              name={memory.type === 'photo' ? 'camera' : memory.type === 'voice' ? 'mic' : 'edit-3'}
+              name={memory.type === 'photo' ? 'camera' : memory.type === 'voice' ? 'mic' : memory.type === 'pdf' ? 'file-text' : 'edit-3'}
               size={11}
               color={Colors.textSecondary}
             />
@@ -133,6 +133,7 @@ const ADD_TYPES = [
   { key: 'text', icon: 'edit-3' as const, label: 'Write a note', color: Colors.accentPeach },
   { key: 'photo', icon: 'camera' as const, label: 'Add a photo', color: Colors.accentPink },
   { key: 'voice', icon: 'mic' as const, label: 'Record voice memo', color: Colors.accentBlue },
+  { key: 'pdf', icon: 'file-text' as const, label: 'Attach document', color: '#E8D5F5' },
 ];
 
 export default function MemoriesScreen() {
