@@ -29,6 +29,7 @@ interface DailyPrompt {
   category: string;
   weekNumber: number | null;
   dayOfWeek: number | null;
+  childConnection?: string | null;
 }
 
 interface PromptResponseData {

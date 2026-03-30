@@ -65,7 +65,9 @@ export default function PromptResponseScreen() {
     weekNumber?: string;
   }>();
 
-  const { addPromptResponse, addJournalEntry, promptResponses, profile } = useApp();
+  const { addPromptResponse, addJournalEntry, promptResponses, profile, prompts } = useApp();
+  const currentPrompt = prompts.find(p => p.id === promptId);
+  const childConnection = currentPrompt?.childConnection ?? null;
 
   const [screen, setScreen] = useState<1 | 2 | 3>(1);
   const [responseText, setResponseText] = useState('');
@@ -351,6 +353,13 @@ export default function PromptResponseScreen() {
           {affirmation}
         </Animated.Text>
 
+        {!!childConnection && (
+          <Animated.View entering={FadeIn.delay(500).duration(600)} style={styles.childConnectionCard}>
+            <Text style={styles.childConnectionIcon}>🌱</Text>
+            <Text style={styles.childConnectionText}>{childConnection}</Text>
+          </Animated.View>
+        )}
+
         <Animated.View entering={FadeInDown.delay(560).duration(380)}>
           <Pressable
             onPress={() => {
@@ -580,6 +589,29 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     lineHeight: 30,
+  },
+  childConnectionCard: {
+    backgroundColor: '#F5E1DA',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    alignItems: 'flex-start',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+    gap: 10,
+  },
+  childConnectionIcon: {
+    fontSize: 22,
+  },
+  childConnectionText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: '#5D5066',
+    fontStyle: 'italic',
+    lineHeight: 24,
   },
   toggleBtn: {
     flexDirection: 'row',

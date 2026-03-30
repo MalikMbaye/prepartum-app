@@ -1,0 +1,61 @@
+In the file app/prompt-response.tsx, I want to add a "future child connection" 
+to Screen 3 (the celebration/affirmation screen).
+
+Currently Screen 3 shows:
+- Animated checkmark
+- Persona-aware affirmation text
+- "Save to Journal" checkbox
+- "Done" button
+
+I want to add a new element between the affirmation and the "Save to Journal" 
+checkbox. It should be a soft card that connects the reflection topic to the 
+user's future child.
+
+Here is how it should work:
+
+1. Each prompt in the DB already has a category (mindset/relationships/physical) 
+and a closing_reframe field. Add a new optional field called child_connection 
+to the prompts table in shared/schema.ts — it is a text field, nullable.
+
+2. In app/prompt-response.tsx Screen 3, after the affirmation text, if 
+child_connection exists on the prompt, render a soft card with:
+- A small icon (a simple heart or seedling — use a text emoji "🌱")
+- The child_connection text in italic, warm style
+- Styled in Warm Peach (#F5E1DA) background, Deep Plum-Gray (#5D5066) text
+- Border radius 16px, padding 20px
+- No border, subtle shadow
+
+3. For prompts that don't yet have a child_connection, show nothing — 
+the card is optional.
+
+4. Update the server/seed.ts to add child_connection text to these 5 
+existing prompts as examples:
+
+- Prompt about generational patterns → 
+  child_connection: "The cycles you examine today are the ones your child 
+  will never have to carry."
+
+- Prompt about conflict/anger → 
+  child_connection: "How you handle hard moments now is teaching your child 
+  what safety feels like before they're even born."
+
+- Prompt about fear of birth → 
+  child_connection: "Every fear you face in pregnancy is one less shadow 
+  your child inherits from you."
+
+- Prompt about identity shift → 
+  child_connection: "The woman you're becoming is the first role model your 
+  child will ever have."
+
+- Prompt about asking for help → 
+  child_connection: "When you let people support you, you're showing your 
+  child that receiving love is not weakness."
+
+5. Make sure the child_connection card fades in with a gentle opacity 
+animation (0 → 1 over 600ms) after the affirmation appears.
+
+Do not change any other screens or logic. Only modify:
+- shared/schema.ts (add field)
+- app/prompt-response.tsx (render the card on Screen 3)
+- server/seed.ts (add child_connection to 5 prompts)
+- server/storage.ts if needed to include the new field in prompt queries
