@@ -186,7 +186,44 @@ export async function calculateUserProfile(userId: string): Promise<CalculatedPr
     category_priority: categoryPriority,
   };
 
-  // 8. Update user record
+  // 8. Derive persona from flags + season
+  const goalAnswer = answersByQuestionId.get("3.10");
+  type PersonaKey = 'anxious_planner' | 'supported_nurturer' | 'solo_warrior' | 'healing_mother' | 'faith_anchored';
+  let persona: PersonaKey;
+
+  if (profileFlags.solo_parenting || profileFlags.single_mother) {
+    persona = 'solo_warrior';
+  } else if (
+    profileFlags.mental_health_worsening ||
+    profileFlags.active_mental_health ||
+    profileFlags.low_mood ||
+    profileFlags.emotional_numbness ||
+    profileFlags.maternal_wound ||
+    profileFlags.mother_loss
+  ) {
+    persona = 'healing_mother';
+  } else {
+    const hasAnxietyFlags =
+      profileFlags.burnout_risk ||
+      profileFlags.birth_avoidant ||
+      profileFlags.career_anxiety ||
+      profileFlags.sleep_anxiety ||
+      profileFlags.identity_concern;
+    const goalSignalsAnxiety = goalAnswer === 'A' || goalAnswer === 'B';
+    const anxiousSeason = currentSeason === 'tender' || currentSeason === 'grounding';
+
+    if ((hasAnxietyFlags || goalSignalsAnxiety) && anxiousSeason) {
+      persona = 'anxious_planner';
+    } else if (currentSeason === 'integrating') {
+      persona = 'faith_anchored';
+    } else {
+      persona = 'supported_nurturer';
+    }
+  }
+
+  profileFlags.persona = persona;
+
+  // 9. Update user record
   await db.update(users).set({
     intakeCompleted: true,
     onboardingCompleted: true,
