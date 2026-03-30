@@ -1,477 +1,467 @@
 # PrePartum — Database Schema Reference
 
-Generated: 2025-03-30  
-Source of truth: `shared/schema.ts`
+> **Read by Claude Code to understand database structure without needing database credentials.**  
+> Source of truth: `shared/schema.ts`  
+> Date generated: March 30, 2026
 
 ---
 
 ## Summary
 
-| Stat | Value |
+| Item | Value |
 |------|-------|
 | Total tables | 18 |
 | Total prompts (seeded) | 145 |
 | ORM | Drizzle ORM (`drizzle-orm/pg-core`) |
-| Database | Neon Serverless PostgreSQL |
-| UUID generation | `gen_random_uuid()` (Postgres built-in) |
-
-### Columns added in recent sessions (March 2025)
-
-| Table | Column | Data Type | Reason |
-|-------|--------|-----------|--------|
-| `prompts` | `persona_tags` | `text[]` | Persona personalization — targets prompts to specific user personas |
-| `prompts` | `context` | `text` | Prompt enrichment — scene-setting text shown before the main body |
-| `users` | `accepted_terms_at` | `timestamptz` | Legal compliance — timestamp when user accepted Terms of Service |
-| `users` | `accepted_terms_version` | `text` | Legal compliance — version string of the accepted ToS (e.g. `'1.0'`) |
-| `memories` | `mime_type` | `text` | Media upload — MIME type of the uploaded file |
-| `memories` | `file_size` | `integer` | Media upload — file size in bytes |
-| `memories` | `storage_path` | `text` | Media upload — object storage key for the file |
-| `memories` | `duration` | `integer` | Media upload — duration in seconds for audio/video files |
+| Database engine | Neon Serverless PostgreSQL |
+| UUID strategy | `gen_random_uuid()` (Postgres built-in, used as default on all uuid PKs) |
 
 ---
 
 ## Tables
 
-### 1. `users`
+---
 
-Stores user profile, calculated preferences, and app state.
+### 1. `users` (TS: `users`)
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `name` | `text` | NOT NULL | — | Display name |
-| `email` | `text` | nullable | — | Optional email address |
-| `password_hash` | `text` | nullable | — | Bcrypt-hashed password |
-| `due_date` | `date` | nullable | — | Estimated due date |
-| `pregnancy_week` | `integer` | nullable | — | Current pregnancy week (calculated) |
-| `focus_areas` | `text[]` | nullable | — | Selected focus areas: `mindset`, `relationships`, `physical` |
-| `notification_time` | `time` | nullable | — | Daily reminder time preference |
-| `notifications_enabled` | `boolean` | nullable | `true` | Push notification toggle |
-| `onboarding_completed` | `boolean` | nullable | `false` | Whether initial onboarding is done |
-| `current_season` | `text` | nullable | — | Active emotional season: `tender`, `grounding`, `expanding`, `restorative`, `integrating`, or `mixed` |
-| `season_scores` | `jsonb` | nullable | — | Raw season score totals `{ tender, grounding, expanding, restorative, integrating }` |
-| `intake_completed` | `boolean` | nullable | `false` | Whether deep intake questionnaire is done |
-| `profile_flags` | `jsonb` | nullable | — | Derived flags from intake: `persona`, `relationship_context`, `boundary_style`, `single_mother`, etc. |
-| `preferences` | `jsonb` | nullable | — | Derived preferences: `format_preference`, `prompt_length`, `emotional_bandwidth`, `category_priority` |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
-| `updated_at` | `timestamptz` | nullable | `now()` | Row update timestamp |
-| `season_last_updated` | `timestamptz` | nullable | — | When the season was last recalculated by the cron job |
-| `accepted_terms_at` | `timestamptz` | nullable | — | When the user accepted the Terms of Service |
-| `accepted_terms_version` | `text` | nullable | — | Version string of the accepted ToS (e.g. `'1.0'`) |
+Stores every user's profile, calculated emotional season, persona, app preferences, and legal consent state.
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `name` | `name` | `text` | NOT NULL | — |
+| `email` | `email` | `text` | YES | — |
+| `passwordHash` | `password_hash` | `text` | YES | — |
+| `dueDate` | `due_date` | `date` | YES | — |
+| `pregnancyWeek` | `pregnancy_week` | `integer` | YES | — |
+| `focusAreas` | `focus_areas` | `text[]` | YES | — |
+| `notificationTime` | `notification_time` | `time` | YES | — |
+| `notificationsEnabled` | `notifications_enabled` | `boolean` | YES | `true` |
+| `onboardingCompleted` | `onboarding_completed` | `boolean` | YES | `false` |
+| `currentSeason` | `current_season` | `text` | YES | — |
+| `seasonScores` | `season_scores` | `jsonb` | YES | — |
+| `intakeCompleted` | `intake_completed` | `boolean` | YES | `false` |
+| `profileFlags` | `profile_flags` | `jsonb` | YES | — |
+| `preferences` | `preferences` | `jsonb` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
+| `updatedAt` | `updated_at` | `timestamptz` | YES | `now()` |
+| `seasonLastUpdated` | `season_last_updated` | `timestamptz` | YES | — |
+| `acceptedTermsAt` | `accepted_terms_at` | `timestamptz` | YES | — |
+| `acceptedTermsVersion` | `accepted_terms_version` | `text` | YES | — |
+
+**Foreign keys:** none  
+**Primary key:** `id`
 
 ---
 
-### 2. `prompts`
+### 2. `prompts` (TS: `prompts`)
 
-Seeded prompt library — not user-generated. 145 prompts as of March 2025.
+Seeded prompt library — 145 prompts covering all 5 personas, 3 categories, and all trimesters. Never user-generated.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `title` | `text` | nullable | — | Short display title |
-| `body` | `text` | NOT NULL | — | Main prompt question/content |
-| `category` | `text` | NOT NULL | — | One of: `mindset`, `relationships`, `physical` |
-| `week_number` | `integer` | nullable | — | Target pregnancy week (null = any week) |
-| `day_of_week` | `integer` | nullable | — | 0–6 target day (null = any day) |
-| `season` | `text` | nullable | — | Single target season (legacy; prefer `seasons[]`) |
-| `season_week` | `integer` | nullable | — | Week within a season cycle |
-| `emotional_tone` | `text` | nullable | — | Emotional register of the prompt |
-| `depth` | `text` | nullable | — | Depth level: `light`, `medium`, `deep` |
-| `tags` | `text[]` | nullable | — | General-purpose tags |
-| `seasons` | `text[]` | nullable | — | Array of seasons this prompt is relevant to |
-| `relevance_tags` | `text[]` | nullable | — | Keywords used for dynamic prompt matching |
-| `addresses_fear` | `text` | nullable | — | Name of the specific fear this prompt targets |
-| `format` | `text` | nullable | — | Suggested format: `voice`, `action`, `text`, `mixed` |
-| `estimated_energy` | `text` | nullable | — | Effort level: `low`, `medium`, `high` |
-| `intensity` | `integer` | nullable | — | 1–5 emotional intensity scale |
-| `required_flags` | `text[]` | nullable | — | Profile flags required for this prompt to show |
-| `excluded_flags` | `text[]` | nullable | — | Profile flags that suppress this prompt |
-| `trimester` | `integer` | nullable | — | Target trimester: 1, 2, or 3 (null = any) |
-| `child_connection` | `text` | nullable | — | Reflection bridging the response to the baby |
-| `context` | `text` | nullable | — | Scene-setting text shown before the main body on Screen 1 |
-| `closing_reframe` | `text` | nullable | — | Compassionate reframe shown on Screen 3 after response |
-| `persona_tags` | `text[]` | nullable | — | Persona keys this prompt targets: `anxious_planner`, `solo_warrior`, etc. |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `title` | `title` | `text` | YES | — |
+| `body` | `body` | `text` | NOT NULL | — |
+| `category` | `category` | `text` | NOT NULL | — |
+| `weekNumber` | `week_number` | `integer` | YES | — |
+| `dayOfWeek` | `day_of_week` | `integer` | YES | — |
+| `season` | `season` | `text` | YES | — |
+| `seasonWeek` | `season_week` | `integer` | YES | — |
+| `emotionalTone` | `emotional_tone` | `text` | YES | — |
+| `depth` | `depth` | `text` | YES | — |
+| `tags` | `tags` | `text[]` | YES | — |
+| `seasons` | `seasons` | `text[]` | YES | — |
+| `relevanceTags` | `relevance_tags` | `text[]` | YES | — |
+| `addressesFear` | `addresses_fear` | `text` | YES | — |
+| `format` | `format` | `text` | YES | — |
+| `estimatedEnergy` | `estimated_energy` | `text` | YES | — |
+| `intensity` | `intensity` | `integer` | YES | — |
+| `requiredFlags` | `required_flags` | `text[]` | YES | — |
+| `excludedFlags` | `excluded_flags` | `text[]` | YES | — |
+| `trimester` | `trimester` | `integer` | YES | — |
+| `childConnection` | `child_connection` | `text` | YES | — |
+| `context` | `context` | `text` | YES | — |
+| `closingReframe` | `closing_reframe` | `text` | YES | — |
+| `personaTags` | `persona_tags` | `text[]` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
-
----
-
-### 3. `user_prompt_responses`
-
-Records every time a user responds to a prompt.
-
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `prompt_id` | `uuid` | NOT NULL | — | FK → `prompts.id` ON DELETE CASCADE |
-| `response_text` | `text` | NOT NULL | — | User's written response |
-| `completed_at` | `timestamptz` | nullable | `now()` | When the response was submitted |
-| `saved_to_journal` | `boolean` | nullable | `false` | Whether the response was also saved as a journal entry |
-
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
-- `prompt_id` → `prompts.id` (CASCADE DELETE)
-
-**Indexes:** Primary key on `id`
+**Foreign keys:** none  
+**Primary key:** `id`
 
 ---
 
-### 4. `memories`
+### 3. `user_prompt_responses` (TS: `userPromptResponses`)
 
-User-created memory bank entries. Supports text, photo, voice, and PDF document types.
+Records every time a user submits a response to a prompt.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `type` | `text` | NOT NULL | `'text'` | One of: `text`, `photo`, `voice`, `pdf` |
-| `title` | `text` | nullable | — | Optional title |
-| `content` | `text` | nullable | — | Text body of the memory |
-| `memory_date` | `date` | NOT NULL | `CURRENT_DATE` | Date the memory is associated with |
-| `media_urls` | `text[]` | nullable | — | Public URLs of uploaded media (object storage) |
-| `media_thumbnail_url` | `text` | nullable | — | URL of thumbnail image for the card view |
-| `tags` | `text[]` | nullable | — | User-applied tags |
-| `trimester` | `integer` | nullable | — | Trimester (1, 2, 3) — calculated from date if not provided |
-| `mime_type` | `text` | nullable | — | MIME type of the primary uploaded file |
-| `file_size` | `integer` | nullable | — | File size in bytes |
-| `storage_path` | `text` | nullable | — | Object storage key, e.g. `memories/{userId}/{timestamp}.pdf` |
-| `duration` | `integer` | nullable | — | Duration in seconds for audio/video files |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
-| `updated_at` | `timestamptz` | nullable | `now()` | Row update timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `promptId` | `prompt_id` | `uuid` | NOT NULL | — |
+| `responseText` | `response_text` | `text` | NOT NULL | — |
+| `completedAt` | `completed_at` | `timestamptz` | YES | `now()` |
+| `savedToJournal` | `saved_to_journal` | `boolean` | YES | `false` |
 
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
+- `prompt_id` → `prompts.id` ON DELETE CASCADE  
 
-**Indexes:** Primary key on `id`
+**Primary key:** `id`
 
 ---
 
-### 5. `tasks`
+### 4. `memories` (TS: `memories`)
 
-Seeded task template library — shared across all users.
+User-created memory bank entries; supports text notes, photos, voice memos, and PDF documents uploaded to object storage.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `title` | `text` | NOT NULL | — | Task title |
-| `description` | `text` | nullable | — | Optional longer description |
-| `category` | `text` | NOT NULL | — | Category / trimester grouping |
-| `is_template` | `boolean` | nullable | `true` | Whether this is a seeded template |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `type` | `type` | `text` | NOT NULL | `'text'` |
+| `title` | `title` | `text` | YES | — |
+| `content` | `content` | `text` | YES | — |
+| `memoryDate` | `memory_date` | `date` | NOT NULL | `CURRENT_DATE` |
+| `mediaUrls` | `media_urls` | `text[]` | YES | — |
+| `mediaThumbnailUrl` | `media_thumbnail_url` | `text` | YES | — |
+| `tags` | `tags` | `text[]` | YES | — |
+| `trimester` | `trimester` | `integer` | YES | — |
+| `mimeType` | `mime_type` | `text` | YES | — |
+| `fileSize` | `file_size` | `integer` | YES | — |
+| `storagePath` | `storage_path` | `text` | YES | — |
+| `duration` | `duration` | `integer` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
+| `updatedAt` | `updated_at` | `timestamptz` | YES | `now()` |
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
 
----
-
-### 6. `user_tasks`
-
-Per-user task completion state, linked to task templates.
-
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `task_id` | `uuid` | NOT NULL | — | FK → `tasks.id` ON DELETE CASCADE |
-| `completed` | `boolean` | nullable | `false` | Whether the task is done |
-| `completed_at` | `timestamptz` | nullable | — | When the task was completed |
-
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
-- `task_id` → `tasks.id` (CASCADE DELETE)
-
-**Indexes:** Primary key on `id`
+**Primary key:** `id`
 
 ---
 
-### 7. `quizzes`
+### 5. `tasks` (TS: `tasks`)
 
-Self-discovery quiz definitions. Schema defined; feature in progress.
+Seeded task template library shared across all users; categorised by trimester and topic.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `title` | `text` | NOT NULL | — | Quiz title |
-| `description` | `text` | nullable | — | Summary of the quiz |
-| `category` | `text` | nullable | — | Category grouping |
-| `question_count` | `integer` | nullable | — | Number of questions |
-| `estimated_minutes` | `integer` | nullable | — | Estimated completion time |
-| `result_types` | `jsonb` | nullable | — | Map of possible result types and descriptions |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `title` | `title` | `text` | NOT NULL | — |
+| `description` | `description` | `text` | YES | — |
+| `category` | `category` | `text` | NOT NULL | — |
+| `isTemplate` | `is_template` | `boolean` | YES | `true` |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
+**Foreign keys:** none  
+**Primary key:** `id`
 
 ---
 
-### 8. `quiz_questions`
+### 6. `user_tasks` (TS: `userTasks`)
 
-Questions belonging to a quiz.
+Per-user task completion tracking; links each user to the shared task templates.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `quiz_id` | `uuid` | NOT NULL | — | FK → `quizzes.id` ON DELETE CASCADE |
-| `question_text` | `text` | NOT NULL | — | The question text |
-| `options` | `jsonb` | nullable | — | Array of answer options |
-| `order_number` | `integer` | nullable | — | Display order within the quiz |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `taskId` | `task_id` | `uuid` | NOT NULL | — |
+| `completed` | `completed` | `boolean` | YES | `false` |
+| `completedAt` | `completed_at` | `timestamptz` | YES | — |
 
-**Foreign Keys:**
-- `quiz_id` → `quizzes.id` (CASCADE DELETE)
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
+- `task_id` → `tasks.id` ON DELETE CASCADE  
 
-**Indexes:** Primary key on `id`
-
----
-
-### 9. `user_quiz_results`
-
-Stores a user's completed quiz attempt and result.
-
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `quiz_id` | `uuid` | NOT NULL | — | FK → `quizzes.id` ON DELETE CASCADE |
-| `answers` | `jsonb` | nullable | — | Raw answer data |
-| `result_type` | `text` | nullable | — | Resulting type/category key |
-| `score` | `integer` | nullable | — | Numeric score if applicable |
-| `insights` | `text` | nullable | — | Personalized insight text |
-| `completed_at` | `timestamptz` | nullable | `now()` | When the quiz was finished |
-
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
-- `quiz_id` → `quizzes.id` (CASCADE DELETE)
-
-**Indexes:** Primary key on `id`
+**Primary key:** `id`
 
 ---
 
-### 10. `roleplay_scenarios`
+### 7. `quizzes` (TS: `quizzes`)
 
-Practice conversation scenario definitions. Schema defined; feature in progress.
+Self-discovery quiz definitions; schema defined, feature in progress.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `title` | `text` | NOT NULL | — | Scenario title |
-| `description` | `text` | nullable | — | Brief overview |
-| `category` | `text` | nullable | — | Category grouping |
-| `opening_prompt` | `text` | nullable | — | AI's opening message to start the conversation |
-| `system_context` | `text` | nullable | — | System prompt for the AI role |
-| `role` | `text` | nullable | — | Role the AI plays: `partner`, `doctor`, `mother`, etc. |
-| `practice_points` | `jsonb` | nullable | — | List of communication skills being practiced |
-| `context_setup` | `text` | nullable | — | Scene description shown to user before starting |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `title` | `title` | `text` | NOT NULL | — |
+| `description` | `description` | `text` | YES | — |
+| `category` | `category` | `text` | YES | — |
+| `questionCount` | `question_count` | `integer` | YES | — |
+| `estimatedMinutes` | `estimated_minutes` | `integer` | YES | — |
+| `resultTypes` | `result_types` | `jsonb` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
-
----
-
-### 11. `roleplay_sessions`
-
-Stores a user's roleplay conversation session.
-
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `scenario_id` | `uuid` | NOT NULL | — | FK → `roleplay_scenarios.id` ON DELETE CASCADE |
-| `messages` | `jsonb` | nullable | — | Full conversation message array `[{ role, content }]` |
-| `feedback` | `jsonb` | nullable | — | AI-generated post-session feedback object |
-| `completed_at` | `timestamptz` | nullable | — | When the session was finished |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
-
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
-- `scenario_id` → `roleplay_scenarios.id` (CASCADE DELETE)
-
-**Indexes:** Primary key on `id`
+**Foreign keys:** none  
+**Primary key:** `id`
 
 ---
 
-### 12. `journal_entries`
+### 8. `quiz_questions` (TS: `quizQuestions`)
 
-Free-form and prompt-derived journal entries.
+Individual questions belonging to a quiz.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `title` | `text` | nullable | — | Optional title |
-| `content` | `text` | NOT NULL | — | Journal entry body |
-| `category` | `text` | nullable | `'general'` | Category: `mindset`, `relationships`, `physical`, `general` |
-| `prompt_response_id` | `uuid` | nullable | — | FK → `user_prompt_responses.id` ON DELETE SET NULL |
-| `from_prompt` | `boolean` | nullable | `false` | Whether this originated from a prompt response |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `quizId` | `quiz_id` | `uuid` | NOT NULL | — |
+| `questionText` | `question_text` | `text` | NOT NULL | — |
+| `options` | `options` | `jsonb` | YES | — |
+| `orderNumber` | `order_number` | `integer` | YES | — |
 
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
-- `prompt_response_id` → `user_prompt_responses.id` (SET NULL on delete)
+**Foreign keys:**  
+- `quiz_id` → `quizzes.id` ON DELETE CASCADE  
 
-**Indexes:** Primary key on `id`
+**Primary key:** `id`
 
 ---
 
-### 13. `intake_questions`
+### 9. `user_quiz_results` (TS: `userQuizResults`)
 
-The deep intake questionnaire — seeded on startup (24 questions).
+Stores a completed quiz attempt including raw answers, result type, and generated insights.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `question_id` | `text` | NOT NULL | — | Short string key: `Q1.1`, `Q2.3`, etc. |
-| `phase` | `integer` | NOT NULL | `1` | Phase grouping within the questionnaire |
-| `question_text` | `text` | NOT NULL | — | The question shown to the user |
-| `question_type` | `text` | NOT NULL | `'single_select'` | One of: `single_select`, `multi_select`, `scale`, `text` |
-| `answer_options` | `jsonb` | nullable | — | Array of `{ value, label, flags?, scores? }` |
-| `category` | `text` | nullable | — | Thematic category |
-| `order_number` | `integer` | nullable | — | Display order within the phase |
-| `required` | `boolean` | nullable | `true` | Whether a response is required |
-| `scoring_map` | `jsonb` | nullable | — | Maps answer values → season score deltas + profile flags |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `quizId` | `quiz_id` | `uuid` | NOT NULL | — |
+| `answers` | `answers` | `jsonb` | YES | — |
+| `resultType` | `result_type` | `text` | YES | — |
+| `score` | `score` | `integer` | YES | — |
+| `insights` | `insights` | `text` | YES | — |
+| `completedAt` | `completed_at` | `timestamptz` | YES | `now()` |
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
+- `quiz_id` → `quizzes.id` ON DELETE CASCADE  
 
----
-
-### 14. `intake_responses`
-
-Stores each user's answer to each intake question.
-
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `question_id` | `uuid` | NOT NULL | — | FK → `intake_questions.id` ON DELETE CASCADE |
-| `answer` | `text` | NOT NULL | — | Selected answer value |
-| `answer_data` | `jsonb` | nullable | — | Full answer object (used for multi-select arrays) |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
-
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
-- `question_id` → `intake_questions.id` (CASCADE DELETE)
-
-**Indexes:** Primary key on `id`
+**Primary key:** `id`
 
 ---
 
-### 15. `closing_reframes`
+### 10. `roleplay_scenarios` (TS: `roleplayScenarios`)
 
-Seeded closing reframe statements used in the prompt reflection system.
+Seeded practice conversation scenarios; the AI plays a defined role (partner, doctor, etc.) to help the user rehearse difficult conversations.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `season` | `text` | NOT NULL | — | Season this reframe belongs to |
-| `category` | `text` | nullable | — | Category: `mindset`, `relationships`, `physical` |
-| `original_thought` | `text` | NOT NULL | — | The anxious/limiting thought being reframed |
-| `reframed_thought` | `text` | NOT NULL | — | The compassionate reframe |
-| `tone` | `text` | nullable | — | Tone: `gentle`, `empowering`, `grounding`, etc. |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `title` | `title` | `text` | NOT NULL | — |
+| `description` | `description` | `text` | YES | — |
+| `category` | `category` | `text` | YES | — |
+| `openingPrompt` | `opening_prompt` | `text` | YES | — |
+| `systemContext` | `system_context` | `text` | YES | — |
+| `role` | `role` | `text` | YES | — |
+| `practicePoints` | `practice_points` | `jsonb` | YES | — |
+| `contextSetup` | `context_setup` | `text` | YES | — |
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
-
----
-
-### 16. `pregnancy_weeks`
-
-Reference data for all 40 pregnancy weeks — baby development, body changes, affirmations.
-
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `week_number` | `integer` | NOT NULL | — | **Primary key** (1–40) |
-| `trimester` | `integer` | NOT NULL | — | 1, 2, or 3 |
-| `theme` | `text` | nullable | — | Weekly theme |
-| `baby_size_comparison` | `text` | nullable | — | Colloquial size comparison, e.g. `"a lemon"` |
-| `baby_size_emoji` | `text` | nullable | — | Emoji representing the size |
-| `baby_weight_grams` | `decimal` | nullable | — | Approximate baby weight in grams |
-| `baby_length_cm` | `decimal` | nullable | — | Approximate baby length in cm |
-| `baby_development` | `text` | nullable | — | Key developmental milestones this week |
-| `mom_body_changes` | `text` | nullable | — | Common maternal body changes |
-| `common_symptoms` | `text` | nullable | — | Typical symptoms |
-| `suggested_focus` | `text` | nullable | — | Recommended focus for the user |
-| `affirmation` | `text` | nullable | — | Weekly affirmation |
-
-**Foreign Keys:** none  
-**Indexes:** Primary key on `week_number`
+**Foreign keys:** none  
+**Primary key:** `id`
 
 ---
 
-### 17. `milestones`
+### 11. `roleplay_sessions` (TS: `roleplaySessions`)
 
-Seeded pregnancy milestones (15 total) shown on the milestone calendar.
+Stores a user's live roleplay conversation including the full message history and AI-generated post-session feedback.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `title` | `text` | NOT NULL | — | Milestone name |
-| `week_number` | `integer` | NOT NULL | — | Pregnancy week this milestone occurs |
-| `trimester` | `integer` | NOT NULL | — | 1, 2, or 3 |
-| `description` | `text` | nullable | — | What this milestone means for the mother |
-| `icon` | `text` | nullable | — | Icon name or emoji |
-| `order_index` | `integer` | nullable | — | Display order |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `scenarioId` | `scenario_id` | `uuid` | NOT NULL | — |
+| `messages` | `messages` | `jsonb` | YES | — |
+| `feedback` | `feedback` | `jsonb` | YES | — |
+| `completedAt` | `completed_at` | `timestamptz` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
 
-**Foreign Keys:** none  
-**Indexes:** Primary key on `id`
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
+- `scenario_id` → `roleplay_scenarios.id` ON DELETE CASCADE  
+
+**Primary key:** `id`
 
 ---
 
-### 18. `user_milestones`
+### 12. `journal_entries` (TS: `journalEntries`)
 
-Per-user milestone completion tracking.
+Free-form journal entries; may originate from a prompt response or be written independently.
 
-| Column | PG Type | Nullable | Default | Notes |
-|--------|---------|----------|---------|-------|
-| `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Primary key |
-| `user_id` | `uuid` | NOT NULL | — | FK → `users.id` ON DELETE CASCADE |
-| `milestone_id` | `uuid` | NOT NULL | — | FK → `milestones.id` ON DELETE CASCADE |
-| `is_completed` | `boolean` | nullable | `false` | Whether the milestone has been marked complete |
-| `completed_at` | `timestamptz` | nullable | — | When the milestone was completed |
-| `created_at` | `timestamptz` | nullable | `now()` | Row creation timestamp |
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `title` | `title` | `text` | YES | — |
+| `content` | `content` | `text` | NOT NULL | — |
+| `category` | `category` | `text` | YES | `'general'` |
+| `promptResponseId` | `prompt_response_id` | `uuid` | YES | — |
+| `fromPrompt` | `from_prompt` | `boolean` | YES | `false` |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
 
-**Foreign Keys:**
-- `user_id` → `users.id` (CASCADE DELETE)
-- `milestone_id` → `milestones.id` (CASCADE DELETE)
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
+- `prompt_response_id` → `user_prompt_responses.id` ON DELETE SET NULL  
 
-**Indexes:** Primary key on `id`
+**Primary key:** `id`
+
+---
+
+### 13. `intake_questions` (TS: `intakeQuestions`)
+
+The 24 deep intake questionnaire questions seeded at startup; used to calculate season scores, profile flags, and persona.
+
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `questionId` | `question_id` | `text` | NOT NULL | — |
+| `phase` | `phase` | `integer` | NOT NULL | `1` |
+| `questionText` | `question_text` | `text` | NOT NULL | — |
+| `questionType` | `question_type` | `text` | NOT NULL | `'single_select'` |
+| `answerOptions` | `answer_options` | `jsonb` | YES | — |
+| `category` | `category` | `text` | YES | — |
+| `orderNumber` | `order_number` | `integer` | YES | — |
+| `required` | `required` | `boolean` | YES | `true` |
+| `scoringMap` | `scoring_map` | `jsonb` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
+
+**Foreign keys:** none  
+**Primary key:** `id`
+
+---
+
+### 14. `intake_responses` (TS: `intakeResponses`)
+
+Stores each user's answer to each intake question; used by `profile-calculator.ts` to derive persona and season.
+
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `questionId` | `question_id` | `uuid` | NOT NULL | — |
+| `answer` | `answer` | `text` | NOT NULL | — |
+| `answerData` | `answer_data` | `jsonb` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
+
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
+- `question_id` → `intake_questions.id` ON DELETE CASCADE  
+
+**Primary key:** `id`
+
+---
+
+### 15. `closing_reframes` (TS: `closingReframes`)
+
+Seeded library of compassionate reframe statements shown at the end of prompt responses.
+
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `season` | `season` | `text` | NOT NULL | — |
+| `category` | `category` | `text` | YES | — |
+| `originalThought` | `original_thought` | `text` | NOT NULL | — |
+| `reframedThought` | `reframed_thought` | `text` | NOT NULL | — |
+| `tone` | `tone` | `text` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
+
+**Foreign keys:** none  
+**Primary key:** `id`
+
+---
+
+### 16. `pregnancy_weeks` (TS: `pregnancyWeeks`)
+
+Reference table for all 40 pregnancy weeks covering baby development, maternal changes, symptoms, and affirmations.
+
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `weekNumber` | `week_number` | `integer` | NOT NULL | — |
+| `trimester` | `trimester` | `integer` | NOT NULL | — |
+| `theme` | `theme` | `text` | YES | — |
+| `babySizeComparison` | `baby_size_comparison` | `text` | YES | — |
+| `babySizeEmoji` | `baby_size_emoji` | `text` | YES | — |
+| `babyWeightGrams` | `baby_weight_grams` | `decimal` | YES | — |
+| `babyLengthCm` | `baby_length_cm` | `decimal` | YES | — |
+| `babyDevelopment` | `baby_development` | `text` | YES | — |
+| `momBodyChanges` | `mom_body_changes` | `text` | YES | — |
+| `commonSymptoms` | `common_symptoms` | `text` | YES | — |
+| `suggestedFocus` | `suggested_focus` | `text` | YES | — |
+| `affirmation` | `affirmation` | `text` | YES | — |
+
+**Foreign keys:** none  
+**Primary key:** `week_number`
+
+---
+
+### 17. `milestones` (TS: `milestones`)
+
+15 seeded pregnancy milestones shown on the milestone calendar, each associated with a specific week.
+
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `title` | `title` | `text` | NOT NULL | — |
+| `weekNumber` | `week_number` | `integer` | NOT NULL | — |
+| `trimester` | `trimester` | `integer` | NOT NULL | — |
+| `description` | `description` | `text` | YES | — |
+| `icon` | `icon` | `text` | YES | — |
+| `orderIndex` | `order_index` | `integer` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
+
+**Foreign keys:** none  
+**Primary key:** `id`
+
+---
+
+### 18. `user_milestones` (TS: `userMilestones`)
+
+Per-user milestone completion state; created on demand when a user marks a milestone complete or incomplete.
+
+| Column (TS) | Postgres column | Type | Nullable | Default |
+|---|---|---|---|---|
+| `id` | `id` | `uuid` | NOT NULL | `gen_random_uuid()` |
+| `userId` | `user_id` | `uuid` | NOT NULL | — |
+| `milestoneId` | `milestone_id` | `uuid` | NOT NULL | — |
+| `isCompleted` | `is_completed` | `boolean` | YES | `false` |
+| `completedAt` | `completed_at` | `timestamptz` | YES | — |
+| `createdAt` | `created_at` | `timestamptz` | YES | `now()` |
+
+**Foreign keys:**  
+- `user_id` → `users.id` ON DELETE CASCADE  
+- `milestone_id` → `milestones.id` ON DELETE CASCADE  
+
+**Primary key:** `id`
 
 ---
 
 ## Foreign Key Map
 
 ```
-users (1) ──< user_prompt_responses (N)    via user_id
-users (1) ──< memories (N)                 via user_id
-users (1) ──< user_tasks (N)               via user_id
-users (1) ──< user_quiz_results (N)        via user_id
-users (1) ──< roleplay_sessions (N)        via user_id
-users (1) ──< journal_entries (N)          via user_id
-users (1) ──< intake_responses (N)         via user_id
-users (1) ──< user_milestones (N)          via user_id
+users (1) ──────────────────────< user_prompt_responses (N)   [user_id → users.id, CASCADE]
+users (1) ──────────────────────< memories (N)                [user_id → users.id, CASCADE]
+users (1) ──────────────────────< user_tasks (N)              [user_id → users.id, CASCADE]
+users (1) ──────────────────────< user_quiz_results (N)       [user_id → users.id, CASCADE]
+users (1) ──────────────────────< roleplay_sessions (N)       [user_id → users.id, CASCADE]
+users (1) ──────────────────────< journal_entries (N)         [user_id → users.id, CASCADE]
+users (1) ──────────────────────< intake_responses (N)        [user_id → users.id, CASCADE]
+users (1) ──────────────────────< user_milestones (N)         [user_id → users.id, CASCADE]
 
-prompts (1) ──< user_prompt_responses (N)  via prompt_id
+prompts (1) ────────────────────< user_prompt_responses (N)   [prompt_id → prompts.id, CASCADE]
 
-tasks (1) ──< user_tasks (N)               via task_id
+tasks (1) ──────────────────────< user_tasks (N)              [task_id → tasks.id, CASCADE]
 
-quizzes (1) ──< quiz_questions (N)         via quiz_id
-quizzes (1) ──< user_quiz_results (N)      via quiz_id
+quizzes (1) ────────────────────< quiz_questions (N)          [quiz_id → quizzes.id, CASCADE]
+quizzes (1) ────────────────────< user_quiz_results (N)       [quiz_id → quizzes.id, CASCADE]
 
-roleplay_scenarios (1) ──< roleplay_sessions (N)   via scenario_id
+roleplay_scenarios (1) ─────────< roleplay_sessions (N)       [scenario_id → roleplay_scenarios.id, CASCADE]
 
-intake_questions (1) ──< intake_responses (N)       via question_id
+intake_questions (1) ───────────< intake_responses (N)        [question_id → intake_questions.id, CASCADE]
 
-milestones (1) ──< user_milestones (N)     via milestone_id
+milestones (1) ─────────────────< user_milestones (N)         [milestone_id → milestones.id, CASCADE]
 
-user_prompt_responses (1) ──< journal_entries (N)   via prompt_response_id  [SET NULL on delete]
+user_prompt_responses (1) ──────< journal_entries (N)         [prompt_response_id → user_prompt_responses.id, SET NULL]
 ```
 
 ---
@@ -479,67 +469,176 @@ user_prompt_responses (1) ──< journal_entries (N)   via prompt_response_id  
 ## JSONB Column Reference
 
 ### `users.season_scores`
-```json
-{ "tender": 0, "grounding": 0, "expanding": 0, "restorative": 0, "integrating": 0 }
-```
 
-### `users.profile_flags`
+Calculated by `server/profile-calculator.ts` from intake responses. Updated by the weekly cron job in `server/season-updater.ts`.
+
 ```json
 {
-  "persona": "anxious_planner | supported_nurturer | solo_warrior | healing_mother | faith_anchored",
-  "relationship_context": "secure | mixed | strained | unstable | solo",
-  "support_density": 2,
-  "boundary_style": "direct | self_reliant | indirect | avoidant | adaptive",
-  "single_mother": false,
-  "has_partner": true
+  "tender": 4,
+  "grounding": 2,
+  "expanding": 1,
+  "restorative": 3,
+  "integrating": 0
 }
 ```
 
-### `users.preferences`
+All five keys are always present. The dominant key (or "mixed" if top two are within 2 points) determines `current_season`.
+
+---
+
+### `users.profile_flags`
+
+Calculated by `server/profile-calculator.ts`. Contains every flag produced by intake question scoring maps plus the derived `persona` key.
+
 ```json
 {
-  "format_preference": "voice | action | text | mixed",
-  "prompt_length": "short | medium | long",
+  "persona": "anxious_planner",
+
+  "single_mother": true,
+  "solo_parenting": true,
+  "relationship_complicated": true,
+  "lives_alone": true,
+
+  "birth_avoidant": true,
+  "identity_concern": true,
+  "relationship_concern": true,
+  "mental_health_concern": true,
+  "bonding_guilt": true,
+  "sleep_anxiety": true,
+  "hyper_independent": true,
+  "low_support": true,
+  "intergenerational_healing": true,
+  "low_mood": true,
+  "burnout_risk": true,
+  "self_care_guilt": true,
+  "partner_disconnect": true,
+  "relationship_strain": true,
+  "conflict_avoidant": true,
+  "peer_isolation": true,
+  "social_withdrawal": true,
+  "body_image_concern": true,
+  "career_anxiety": true,
+  "financial_stress": true,
+  "mental_health_history": true,
+  "active_mental_health": true,
+  "mental_health_worsening": true,
+  "emotional_suppression": true,
+  "screen_time_concern": true,
+  "maternal_wound": true,
+  "mother_loss": true,
+  "emotional_numbness": true
+}
+```
+
+Only flags that scored `true` for that user are present — absent keys mean the flag was not set.
+
+**Persona derivation logic** (in priority order, `server/profile-calculator.ts`):
+1. `solo_parenting || single_mother` → `solo_warrior`
+2. `mental_health_worsening || active_mental_health || low_mood || emotional_numbness || maternal_wound || mother_loss` → `healing_mother`
+3. Anxiety flags + tender/grounding dominant season → `anxious_planner`
+4. Dominant `integrating` season → `faith_anchored`
+5. Default → `supported_nurturer`
+
+**Valid `persona` values:** `anxious_planner` | `supported_nurturer` | `solo_warrior` | `healing_mother` | `faith_anchored`
+
+---
+
+### `users.preferences`
+
+Calculated by `server/profile-calculator.ts` from intake answers about format, energy, and category priority.
+
+```json
+{
+  "format_preference": "text",
+  "prompt_length": "medium",
   "emotional_bandwidth": 3,
   "category_priority": ["mindset", "relationships", "physical"]
 }
 ```
 
-### `intake_questions.answer_options` (array)
+| Field | Values |
+|-------|--------|
+| `format_preference` | `"voice"` \| `"action"` \| `"text"` \| `"mixed"` |
+| `prompt_length` | `"short"` \| `"medium"` \| `"long"` |
+| `emotional_bandwidth` | `1` – `5` (1 = depleted, 5 = fully resourced) |
+| `category_priority` | Array of `"mindset"`, `"relationships"`, `"physical"` in priority order |
+
+---
+
+### `roleplay_sessions.messages`
+
+The full conversation history; appended to as the session progresses.
+
 ```json
 [
-  {
-    "value": "option_key",
-    "label": "Human readable label",
-    "flags": { "flag_name": true },
-    "scores": { "tender": 1, "expanding": 2 }
-  }
+  { "role": "assistant", "content": "Opening message from the AI playing the scenario role." },
+  { "role": "user",      "content": "User's response." },
+  { "role": "assistant", "content": "AI's next reply." }
 ]
 ```
 
-### `intake_questions.scoring_map`
+`role` is always `"user"` or `"assistant"`.
+
+---
+
+### `roleplay_sessions.feedback`
+
+AI-generated post-session feedback object; written by `server/routes.ts` `POST /api/roleplay-sessions/:id/feedback` using Claude Sonnet.
+
 ```json
 {
-  "option_key": {
-    "scores": { "tender": 2, "restorative": 1 },
-    "flags": { "single_mother": true }
+  "overallScore": 4,
+  "summary": "2-3 sentences of warm, encouraging overall assessment.",
+  "strengths": ["Specific strength 1", "Specific strength 2"],
+  "improvements": ["Area for growth 1", "Area for growth 2"],
+  "practicePointScores": [
+    { "point": "Practice point text", "score": 4, "note": "Brief note." }
+  ],
+  "encouragement": "A warm, motivating closing message."
+}
+```
+
+`overallScore` and each `practicePointScores[n].score` are integers 1–5.
+
+---
+
+### `intake_questions.answer_options`
+
+Array of answer choices shown to the user for each question.
+
+```json
+[
+  { "value": "A", "label": "Human-readable answer text" },
+  { "value": "B", "label": "Another option" },
+  { "value": "C", "label": "Another option" }
+]
+```
+
+For multi-select questions, `value` entries can include optional flag hints, but those are handled by `scoring_map` not here.
+
+---
+
+### `intake_questions.scoring_map`
+
+Maps answer value keys to season score deltas and profile flag assignments. Used by `server/profile-calculator.ts`.
+
+```json
+{
+  "A": {
+    "season_points": { "tender": 1, "grounding": 1 },
+    "flags": { "identity_concern": true }
+  },
+  "B": {
+    "season_points": { "grounding": 2 }
+  },
+  "C": {
+    "flags": { "birth_avoidant": true }
+  },
+  "D": {
+    "season_points": { "tender": 2 },
+    "flags": { "emotional_suppression": true }
   }
 }
 ```
 
-### `roleplay_sessions.messages` (array)
-```json
-[{ "role": "user | assistant", "content": "message text" }]
-```
-
-### `roleplay_sessions.feedback`
-```json
-{
-  "overallScore": 4,
-  "summary": "Warm overall assessment",
-  "strengths": ["strength 1", "strength 2"],
-  "improvements": ["area 1", "area 2"],
-  "practicePointScores": [{ "point": "...", "score": 4, "note": "..." }],
-  "encouragement": "Closing motivational message"
-}
-```
+Both `season_points` and `flags` are optional per answer key. Keys match the `value` fields in `answer_options`. For multi-select questions, the stored `answer` is a comma-separated string of selected values, each scored independently.
