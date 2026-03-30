@@ -117,7 +117,6 @@ export async function getDailyPrompts(userId: string): Promise<DailyPrompt[]> {
 
       const persona = (profileFlags.persona as string) || '';
       if (persona) {
-        if (p.personaTags && p.personaTags.includes(persona)) score += 25;
         if (p.personaTags && p.personaTags.includes(persona)) score += 20;
         if (persona === 'healing_mother') {
           if (p.depth === 'deep') score -= 8;

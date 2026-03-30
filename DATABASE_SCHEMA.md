@@ -11,7 +11,7 @@
 | Item | Value |
 |------|-------|
 | Total tables | 18 |
-| Total prompts (seeded) | 145 |
+| Total prompts (seeded) | 95 (in seed.ts) |
 | ORM | Drizzle ORM (`drizzle-orm/pg-core`) |
 | Database engine | Neon Serverless PostgreSQL |
 | UUID strategy | `gen_random_uuid()` (Postgres built-in, used as default on all uuid PKs) |

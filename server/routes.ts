@@ -197,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/update-all-seasons", async (_req: Request, res: Response) => {
+  app.post("/api/admin/update-all-seasons", authMiddleware, async (_req: Request, res: Response) => {
     try {
       const result = await runSeasonUpdateForAllUsers();
       res.json(result);
