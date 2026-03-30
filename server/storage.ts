@@ -64,6 +64,21 @@ export interface IStorage {
   getPregnancyWeek(weekNumber: number): Promise<PregnancyWeek | undefined>;
 }
 
+// Drizzle requires Date objects for timestamp columns. JSON transport always
+// converts Date → ISO string, so we must convert back before hitting the ORM.
+function parseUserTimestamps(data: any): any {
+  const result = { ...data };
+  const TIMESTAMP_FIELDS = ['acceptedTermsAt', 'seasonLastUpdated', 'createdAt', 'updatedAt'];
+  for (const field of TIMESTAMP_FIELDS) {
+    if (result[field] !== undefined && result[field] !== null) {
+      if (typeof result[field] === 'string') {
+        result[field] = new Date(result[field]);
+      }
+    }
+  }
+  return result;
+}
+
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -71,12 +86,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(data: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(data).returning();
+    const [user] = await db.insert(users).values(parseUserTimestamps(data)).returning();
     return user;
   }
 
   async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
-    const [user] = await db.update(users).set({ ...data, updatedAt: new Date() }).where(eq(users.id, id)).returning();
+    const [user] = await db.update(users)
+      .set({ ...parseUserTimestamps(data), updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
     return user;
   }
 
