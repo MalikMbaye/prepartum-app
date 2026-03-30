@@ -28,7 +28,7 @@ const DEFAULT_PERSONA: PersonaKey = 'supported_nurturer';
 
 export const PERSONA_CONFIG: Record<PersonaKey, PersonaConfig> = {
   anxious_planner: {
-    displayName: 'Anxious Planner',
+    displayName: 'The Intentional Planner',
     partnerTerm: 'your partner or support person',
     villageTerm: 'your people',
     homeScreenEmphasis: 'tasks',
@@ -40,7 +40,7 @@ export const PERSONA_CONFIG: Record<PersonaKey, PersonaConfig> = {
     personaBadge: {
       background: '#F5D6D6',
       textColor: '#7A2C2C',
-      label: 'Anxious Planner',
+      label: 'The Intentional Planner',
       description: 'Your experience is structured for preparation and clarity.',
     },
     scenarioKeywords: ['hospital', 'advocacy', 'ob', 'birth preference', 'support team', 'hard question'],
@@ -82,7 +82,7 @@ export const PERSONA_CONFIG: Record<PersonaKey, PersonaConfig> = {
     scenarioKeywords: ['limits', 'asking for help', 'advocating for yourself', 'medical', 'alone'],
   },
   healing_mother: {
-    displayName: 'Healing Mother',
+    displayName: 'The Grounded Mother',
     partnerTerm: 'your support person',
     villageTerm: 'your people',
     homeScreenEmphasis: 'body',
@@ -94,7 +94,7 @@ export const PERSONA_CONFIG: Record<PersonaKey, PersonaConfig> = {
     personaBadge: {
       background: '#E8D4E8',
       textColor: '#4A1A5E',
-      label: 'Healing Mother',
+      label: 'The Grounded Mother',
       description: 'Your experience moves at your pace.',
     },
     scenarioKeywords: ['loss', 'trauma', 'past', 'pace', 'provider', 'processing'],
