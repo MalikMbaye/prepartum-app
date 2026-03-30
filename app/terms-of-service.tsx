@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Platform, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -90,6 +90,15 @@ export default function TermsOfServiceScreen() {
           For questions about these Terms, please contact us at{' '}
           <Text style={styles.link}>support@prepartumapp.com</Text>.
         </Text>
+
+        <Pressable
+          onPress={() => Linking.openURL(`https://${process.env.EXPO_PUBLIC_DOMAIN}/terms`)}
+          style={styles.webLinkRow}
+        >
+          <Text style={styles.webLinkText}>
+            View full version at {process.env.EXPO_PUBLIC_DOMAIN}/terms
+          </Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -166,6 +175,17 @@ const styles = StyleSheet.create({
   },
   link: {
     color: '#7B6E8E',
+    textDecorationLine: 'underline',
+  },
+  webLinkRow: {
+    marginTop: 28,
+    alignItems: 'center',
+  },
+  webLinkText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 11,
+    color: '#9B8A99',
+    textAlign: 'center',
     textDecorationLine: 'underline',
   },
 });

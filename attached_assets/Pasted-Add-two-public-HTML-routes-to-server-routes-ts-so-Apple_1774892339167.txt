@@ -1,0 +1,55 @@
+Add two public HTML routes to server/routes.ts so Apple 
+can access them as required for App Store submission.
+
+1. GET /privacy
+   Returns a full HTML page with the Privacy Policy content.
+   Must be publicly accessible with no auth required.
+   
+   Content to include:
+   - PrePartum Privacy Policy
+   - Last updated: March 30, 2026
+   - What we collect: name, email, due date, intake 
+     responses, reflection answers, photos, voice notes
+   - Why: to personalize your experience
+   - Who we share with: Anthropic (AI roleplay only), 
+     Apple/Google (app distribution). We never sell data.
+   - How long: until you delete your account
+   - Your rights: delete all data from Settings
+   - Contact: privacy@prepartumapp.com
+   - Medical disclaimer: this is a wellness app, not 
+     a medical app. Not a substitute for professional care.
+
+2. GET /terms
+   Returns a full HTML page with the Terms of Service.
+   Must be publicly accessible with no auth required.
+   
+   Content to include:
+   - PrePartum Terms of Service
+   - Last updated: March 30, 2026
+   - What the app is: a prenatal wellness tool. 
+     Not medical advice. Not a substitute for 
+     professional mental health care.
+   - Your content: you own your journal entries, 
+     voice notes, and memories. We store them for you.
+   - Acceptable use: no misuse or sharing other 
+     users' data
+   - Limitation of liability
+   - Governing law: State of California
+   - Contact: support@prepartumapp.com
+
+Style both pages with clean HTML and inline CSS:
+   - Background: #FFF8F5
+   - Text: #5D5066
+   - Font: Georgia for headings, system sans-serif for body
+   - Max-width: 680px, centered, padding 40px 24px
+   - Heading size: 28px, body 16px, line-height 1.7
+
+3. In app/privacy-policy.tsx and app/terms-of-service.tsx,
+   update the in-app screens to also show a link at the 
+   bottom: "View full version at [your Replit app URL]/privacy"
+
+4. In app/settings.tsx, update the Privacy Policy and 
+   Terms of Service links to open the public Replit URLs 
+   in the device browser using Linking.openURL()
+
+Do not change any other files.

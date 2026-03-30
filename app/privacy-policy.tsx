@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Platform, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,6 +87,15 @@ export default function PrivacyPolicyScreen() {
             PrePartum is a wellness tool, not a medical application. It does not provide medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider for medical concerns during pregnancy.
           </Text>
         </View>
+
+        <Pressable
+          onPress={() => Linking.openURL(`https://${process.env.EXPO_PUBLIC_DOMAIN}/privacy`)}
+          style={styles.webLinkRow}
+        >
+          <Text style={styles.webLinkText}>
+            View full version at {process.env.EXPO_PUBLIC_DOMAIN}/privacy
+          </Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -179,5 +188,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textPrimary,
     lineHeight: 20,
+  },
+  webLinkRow: {
+    marginTop: 28,
+    alignItems: 'center',
+  },
+  webLinkText: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 11,
+    color: '#9B8A99',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform,
-  Alert, TextInput, Switch,
+  Alert, TextInput, Switch, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -521,7 +521,7 @@ export default function SettingsScreen() {
 
             <Pressable
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => router.push('/privacy-policy')}
+              onPress={() => Linking.openURL(`https://${process.env.EXPO_PUBLIC_DOMAIN}/privacy`)}
             >
               <View style={styles.rowLeft}>
                 <View style={[styles.rowIcon, { backgroundColor: Colors.accentBlue }]}>
@@ -536,7 +536,7 @@ export default function SettingsScreen() {
 
             <Pressable
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => router.push('/terms-of-service')}
+              onPress={() => Linking.openURL(`https://${process.env.EXPO_PUBLIC_DOMAIN}/terms`)}
             >
               <View style={styles.rowLeft}>
                 <View style={[styles.rowIcon, { backgroundColor: Colors.accentBlue }]}>

@@ -53,6 +53,139 @@ function requireOwnership(req: Request, res: Response, next: Function) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  app.get("/privacy", (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — PrePartum</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #FFF8F5; color: #5D5066; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.7; padding: 40px 24px 80px; }
+    .wrap { max-width: 680px; margin: 0 auto; }
+    h1 { font-family: Georgia, serif; font-size: 28px; color: #5D5066; margin-bottom: 8px; }
+    .meta { font-size: 13px; color: #9B8A99; margin-bottom: 32px; }
+    h2 { font-family: Georgia, serif; font-size: 20px; color: #5D5066; margin-top: 36px; margin-bottom: 10px; }
+    p { margin-bottom: 14px; }
+    ul { padding-left: 20px; margin-bottom: 14px; }
+    li { margin-bottom: 6px; }
+    .disclaimer { background: #F5E1DA; border-radius: 10px; padding: 16px 20px; margin-top: 36px; font-size: 14px; }
+    a { color: #7B6E8E; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PrePartum Privacy Policy</h1>
+  <p class="meta">Last updated: March 30, 2026</p>
+
+  <p>PrePartum is a prenatal wellness tool designed to support your emotional and mental preparation for motherhood. Your privacy matters deeply to us.</p>
+
+  <h2>What We Collect</h2>
+  <p>We collect the information you provide when using PrePartum, including:</p>
+  <ul>
+    <li>Your name and email address</li>
+    <li>Your due date and pregnancy week</li>
+    <li>Intake questionnaire responses</li>
+    <li>Daily reflection answers and journal entries</li>
+    <li>Photos and voice recordings you add to your memory bank</li>
+    <li>A unique user ID generated when you create your account</li>
+  </ul>
+
+  <h2>Why We Collect It</h2>
+  <p>We use your information to personalize your experience, deliver relevant daily reflections, power the app's features, and improve the quality of the content we provide. We do not use your data for advertising.</p>
+
+  <h2>Who We Share It With</h2>
+  <p>We share your data only with the third-party services required to operate the app:</p>
+  <ul>
+    <li><strong>Anthropic</strong> — used only for the AI roleplay feature, and only the content of that conversation is shared</li>
+    <li><strong>Apple / Google</strong> — for app distribution through their respective stores</li>
+  </ul>
+  <p>We never sell your data. We never share your personal information with advertisers or data brokers.</p>
+
+  <h2>How Long We Keep It</h2>
+  <p>We retain your data for as long as your account exists. If you delete your account, all of your personal data is permanently deleted from our systems within 30 days.</p>
+
+  <h2>Your Rights</h2>
+  <p>You can delete all your data at any time from the Settings screen in the app. You may also request a copy of your data or ask us to correct inaccurate information by contacting us.</p>
+
+  <h2>Contact</h2>
+  <p>If you have questions about this Privacy Policy or how your data is handled, please contact us at <a href="mailto:privacy@prepartumapp.com">privacy@prepartumapp.com</a>.</p>
+
+  <div class="disclaimer">
+    <strong>Medical Disclaimer:</strong> PrePartum is a wellness app, not a medical application. It does not provide medical advice, diagnosis, or treatment. It is not a substitute for professional care. Always consult a qualified healthcare provider for medical concerns during pregnancy.
+  </div>
+</div>
+</body>
+</html>`);
+  });
+
+  app.get("/terms", (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — PrePartum</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #FFF8F5; color: #5D5066; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.7; padding: 40px 24px 80px; }
+    .wrap { max-width: 680px; margin: 0 auto; }
+    h1 { font-family: Georgia, serif; font-size: 28px; color: #5D5066; margin-bottom: 8px; }
+    .meta { font-size: 13px; color: #9B8A99; margin-bottom: 32px; }
+    h2 { font-family: Georgia, serif; font-size: 20px; color: #5D5066; margin-top: 36px; margin-bottom: 10px; }
+    p { margin-bottom: 14px; }
+    ul { padding-left: 20px; margin-bottom: 14px; }
+    li { margin-bottom: 6px; }
+    a { color: #7B6E8E; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PrePartum Terms of Service</h1>
+  <p class="meta">Last updated: March 30, 2026</p>
+
+  <p>By using PrePartum, you agree to these Terms of Service. Please read them carefully.</p>
+
+  <h2>What PrePartum Is</h2>
+  <p>PrePartum is a prenatal wellness tool designed to support your mental and emotional preparation for motherhood. It provides daily reflections, journaling tools, a memory bank, task checklists, self-discovery quizzes, and AI-assisted practice conversations.</p>
+  <p>PrePartum is not a medical application. It is not a substitute for professional mental health care, therapy, obstetric care, or any other medical or clinical service. If you are experiencing a mental health crisis or a medical emergency, please contact a qualified professional or emergency services immediately.</p>
+
+  <h2>Your Content</h2>
+  <p>You own your journal entries, voice notes, memories, and all other content you create within PrePartum. We store your content on your behalf to provide the service. We do not claim ownership of anything you write, record, or upload.</p>
+  <p>By using the app, you grant PrePartum a limited license to store and display your content solely for the purpose of providing the service to you.</p>
+
+  <h2>Acceptable Use</h2>
+  <p>You agree to use PrePartum only for its intended personal wellness purposes. You agree not to:</p>
+  <ul>
+    <li>Attempt to access or misuse another user's account or data</li>
+    <li>Reverse engineer, copy, or redistribute any part of the app</li>
+    <li>Use the app in any way that violates applicable laws</li>
+    <li>Use the AI roleplay feature to generate harmful or abusive content</li>
+  </ul>
+
+  <h2>Limitation of Liability</h2>
+  <p>PrePartum is provided "as is" without warranties of any kind. We are not liable for any health outcomes, decisions you make based on app content, or any indirect, incidental, or consequential damages arising from your use of the app.</p>
+  <p>The wellness content in PrePartum is for informational and reflective purposes only. Always consult a qualified healthcare provider for medical questions during your pregnancy.</p>
+
+  <h2>Account Deletion</h2>
+  <p>You may delete your account and all associated data at any time from the Settings screen. Upon deletion, your data will be permanently removed from our systems within 30 days.</p>
+
+  <h2>Governing Law</h2>
+  <p>These Terms of Service are governed by the laws of the State of California, without regard to its conflict of law provisions.</p>
+
+  <h2>Changes to These Terms</h2>
+  <p>We may update these Terms from time to time. We will notify you of significant changes through the app. Continued use of PrePartum after changes are posted constitutes your acceptance of the updated Terms.</p>
+
+  <h2>Contact</h2>
+  <p>For questions about these Terms, please contact us at <a href="mailto:support@prepartumapp.com">support@prepartumapp.com</a>.</p>
+</div>
+</body>
+</html>`);
+  });
+
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { email, password, name } = req.body;
