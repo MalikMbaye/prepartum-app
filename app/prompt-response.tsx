@@ -24,9 +24,9 @@ const CATEGORY_AFFIRMATIONS: Record<string, string> = {
 };
 
 const ACTION_BY_CATEGORY: Record<string, string> = {
-  mindset: "Take 5 minutes to sit quietly with what you just wrote. Don't analyze it. Just let it be.",
-  relationships: "Share one sentence from your reflection with someone you trust today, even just a text.",
-  physical: "Put one hand on your belly and breathe into your response for 60 seconds.",
+  mindset: "Take 5 minutes to sit with what you just wrote. Do not analyze it. Just let it be.",
+  relationships: "Share one sentence from your reflection with someone you trust today. Even a text is enough.",
+  physical: "Put one hand on your belly. Breathe into your response for 60 seconds.",
 };
 
 function PulsingGlow({ color }: { color: string }) {
@@ -192,21 +192,20 @@ export default function PromptResponseScreen() {
             {weekNumber ? `Week ${weekNumber}` : 'Today'} · {catLabel}
           </Animated.Text>
 
-          <Animated.Text entering={FadeInDown.delay(180).duration(380)} style={styles.contextTitle}>
+          {!!promptContext && (
+            <Animated.View entering={FadeInDown.delay(140).duration(380)} style={styles.contextCard}>
+              <Text style={styles.contextCardText}>{promptContext}</Text>
+            </Animated.View>
+          )}
+
+          <Animated.Text entering={FadeInDown.delay(220).duration(380)} style={styles.contextTitle}>
             {promptTitle || promptText}
           </Animated.Text>
 
           {!!promptTitle && (
-            <Animated.Text entering={FadeInDown.delay(280).duration(380)} style={styles.contextExcerpt}>
+            <Animated.Text entering={FadeInDown.delay(320).duration(380)} style={styles.contextExcerpt}>
               {firstSentence}
             </Animated.Text>
-          )}
-
-          {!!promptContext && (
-            <Animated.View entering={FadeInDown.delay(360).duration(380)} style={styles.whyMattersBox}>
-              <Text style={styles.whyMattersLabel}>WHY THIS MATTERS</Text>
-              <Text style={styles.whyMattersText}>{promptContext}</Text>
-            </Animated.View>
           )}
         </ScrollView>
 
@@ -391,8 +390,8 @@ export default function PromptResponseScreen() {
           </Animated.View>
         )}
 
-        <Animated.View entering={FadeInDown.delay(600).duration(380)} style={[styles.actionCard, { borderLeftColor: catColor }]}>
-          <Text style={styles.actionCardLabel}>WHAT YOU CAN DO TODAY</Text>
+        <Animated.View entering={FadeInDown.delay(600).duration(380)} style={styles.actionCard}>
+          <Text style={styles.actionCardLabel}>SOMETHING TO TRY TODAY</Text>
           <Text style={styles.actionCardText}>{todayAction}</Text>
         </Animated.View>
 
@@ -661,28 +660,20 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
 
-  // Screen 1 - Why this matters
-  whyMattersBox: {
-    backgroundColor: Colors.cardBg,
-    borderRadius: 14,
-    padding: 18,
+  // Screen 1 - Context card
+  contextCard: {
+    backgroundColor: '#FFF0EC',
+    borderRadius: 12,
+    padding: 16,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.accentBlue,
-    marginTop: 8,
+    borderLeftColor: '#F5D6D6',
+    marginBottom: 20,
   },
-  whyMattersLabel: {
-    fontFamily: 'Lato_700Bold',
-    fontSize: 10,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  whyMattersText: {
+  contextCardText: {
     fontFamily: 'Lato_400Regular',
-    fontSize: 15,
-    color: Colors.textSecondary,
-    lineHeight: 24,
+    fontSize: 14,
+    color: '#5D5066',
+    lineHeight: 21,
   },
 
   // Screen 3 - Closing reframe + action
@@ -696,17 +687,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   actionCard: {
-    backgroundColor: Colors.cardBg,
-    borderRadius: 14,
-    padding: 18,
-    borderLeftWidth: 3,
+    backgroundColor: '#F5E1DA',
+    borderRadius: 12,
+    padding: 16,
     width: '100%',
     gap: 8,
   },
   actionCardLabel: {
     fontFamily: 'Lato_700Bold',
     fontSize: 10,
-    color: Colors.textSecondary,
+    color: '#993C1D',
     textTransform: 'uppercase' as const,
     letterSpacing: 1,
   },
