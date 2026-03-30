@@ -294,12 +294,15 @@ export default function IntakeScreen() {
   }
 
   async function calculateProfile() {
+    let derivedPersona = 'supported_nurturer';
+
     if (profile?.id) {
       try {
         const res = await apiRequest('POST', `/api/users/${profile.id}/intake/complete`, {});
         const data = await res.json();
         const calculatedProfile = data.profile;
 
+        derivedPersona = calculatedProfile.profileFlags?.persona || 'supported_nurturer';
         setCalculatedSeason(calculatedProfile.currentSeason);
 
         const flagKeys = Object.keys(calculatedProfile.profileFlags || {});
@@ -323,7 +326,7 @@ export default function IntakeScreen() {
     }
 
     await new Promise(resolve => setTimeout(resolve, 2500));
-    setScreen('complete');
+    router.replace({ pathname: '/persona-reveal', params: { persona: derivedPersona } });
   }
 
   function handleBeginJourney() {

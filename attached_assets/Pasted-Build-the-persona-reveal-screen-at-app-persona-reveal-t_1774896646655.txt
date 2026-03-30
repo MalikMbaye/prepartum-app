@@ -1,0 +1,63 @@
+Build the persona reveal screen at app/persona-reveal.tsx.
+
+The screen receives the calculated persona as a route param.
+Read PERSONA_CONFIG from lib/persona.ts for display names 
+and descriptions.
+
+Display in order:
+1. Small label: "Your PrePartum profile" in 12px #9B8A99
+2. Persona display name from PERSONA_CONFIG in 28px 
+   Georgia serif #5D5066
+3. One-line description from PERSONA_CONFIG in 15px 
+   #9B8A99 centered, max-width 280px
+4. Soft divider line
+5. Explanation paragraph per persona. No em dashes:
+
+   intentional_planner: "Your reflection questions will 
+   focus on building trust in yourself and releasing what 
+   you cannot control. The app will meet you with 
+   structure, clarity, and calm."
+
+   solo_warrior: "Your reflection questions will never 
+   assume a partner is present. The app will focus on 
+   building your village, honoring your strength, and 
+   making sure you never feel alone in this."
+
+   healing_mother / grounded_mother: "Your reflection 
+   questions will be gentle and trauma-informed. The app 
+   will move at your pace, with space to process whatever 
+   this pregnancy is bringing up."
+
+   faith_anchored: "Your reflection questions will honor 
+   your spiritual life as the foundation it is. Faith, 
+   purpose, and meaning will run through everything the 
+   app offers you."
+
+   supported_nurturer: "Your reflection questions will 
+   focus on deepening your relationships and preparing 
+   the people around you for this journey. You have 
+   support. Now let the app help you use it well."
+
+6. Primary button: "This is me. Let's begin."
+   Background #F5D6D6, text #72243E, border-radius 12
+   Navigates to router.replace('/(tabs)')
+
+7. Secondary text link: "See all 5 profiles"
+   Opens a bottom sheet showing all 5 personas with 
+   names and one-line descriptions. Each has a 
+   "Choose this one" button that calls 
+   PATCH /api/users/:userId with { profileFlags: 
+   { ...existing, persona: selectedPersona } }
+   Then navigates to router.replace('/(tabs)')
+
+In app/intake.tsx, after the processing animation 
+completes, navigate to persona-reveal:
+router.replace({ 
+  pathname: '/persona-reveal', 
+  params: { persona: calculatedPersona } 
+})
+
+Add /persona-reveal to app/_layout.tsx router stack.
+
+Background #FFF8F5. Centered layout. Generous padding.
+Do not change any other files.
