@@ -284,7 +284,7 @@ const weekData = [
   },
   {
     weekNumber: 29, trimester: 3, theme: 'Preparing & Trusting',
-    babySizeComparison: 'zucchini', babySizeEmoji: '🥒',
+    babySizeComparison: 'butternut squash', babySizeEmoji: '🎃',
     babyWeightGrams: '1153', babyLengthCm: '38.6',
     babyDevelopment: 'Bones fully developed but still soft. Muscles and lungs maturing. Baby can distinguish light from dark.',
     momBodyChanges: 'Heartburn at peak. Swelling in feet and ankles worsens.',
