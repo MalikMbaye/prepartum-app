@@ -1,0 +1,130 @@
+The Memory Bank needs a major upgrade before TestFlight. 
+There are 5 things to fix and build. Do them all together.
+
+---
+
+CRITICAL FIX 1: Upload files to Supabase Storage
+
+Right now photos and voice notes are saved as local 
+file:// paths on the device. If a user gets a new phone, 
+all her memories are gone. Fix this by uploading all 
+media to Supabase Storage.
+
+In server/routes.ts, add a new upload endpoint:
+POST /api/upload
+- Accepts multipart/form-data with a file field
+- Uploads to Supabase Storage bucket called "memories"
+- Returns the public URL of the uploaded file
+- Requires auth
+
+Set up Supabase Storage client using the existing 
+SUPABASE_URL and SUPABASE_SERVICE_KEY environment 
+variables.
+
+In app/new-memory.tsx, after a photo is selected or 
+voice note is recorded, upload the file to 
+POST /api/upload before saving the memory. 
+Store the returned public Supabase URL in mediaUrls 
+instead of the local file:// path.
+
+---
+
+FIX 2: iOS limited photo access bug
+
+In app/new-memory.tsx line 195, the permission check 
+rejects iOS 14+ "limited" access because it only 
+accepts 'granted'. Change:
+
+if (status !== 'granted')
+
+To:
+
+if (status !== 'granted' && status !== 'limited')
+
+This allows users who chose "Select Photos" on iOS to 
+still use the photo picker.
+
+---
+
+NEW FEATURE 3: PDF upload
+
+Add PDF upload capability to the Memory Bank.
+
+In app/new-memory.tsx:
+- Add a new "Document" option alongside the existing 
+  photo/voice options
+- Use expo-document-picker to let users select PDF files 
+  from their phone
+- Install expo-document-picker if not present
+- Upload the PDF to Supabase Storage via POST /api/upload
+- Store the returned URL in mediaUrls
+- In view-memory.tsx, if mediaType is "pdf", show a 
+  "View Document" button that opens the URL in the 
+  device browser using Linking.openURL
+
+---
+
+NEW FEATURE 4: Database schema upgrade
+
+In shared/schema.ts, add these columns to the memories 
+table:
+
+- mimeType: text (e.g. "image/jpeg", "audio/m4a", 
+  "application/pdf")
+- fileSize: integer (bytes)
+- storagePath: text (Supabase Storage path)
+- duration: integer (seconds, for voice memos)
+
+Run SQL migration:
+ALTER TABLE memories ADD COLUMN IF NOT EXISTS 
+  mime_type text;
+ALTER TABLE memories ADD COLUMN IF NOT EXISTS 
+  file_size integer;
+ALTER TABLE memories ADD COLUMN IF NOT EXISTS 
+  storage_path text;
+ALTER TABLE memories ADD COLUMN IF NOT EXISTS 
+  duration integer;
+
+Update server/storage.ts memory queries to include 
+these new fields.
+
+Update app/new-memory.tsx to populate these fields 
+when creating a memory.
+
+---
+
+FIX 5: iOS permission strings in app.json
+
+Under ios.infoPlist add (if not already added by 
+the privacy prompt):
+
+NSCameraUsageDescription: "PrePartum uses your camera 
+to capture pregnancy photos for your memory bank."
+
+NSMicrophoneUsageDescription: "PrePartum uses your 
+microphone to record voice notes for your memories."
+
+NSPhotoLibraryUsageDescription: "PrePartum accesses 
+your photo library so you can add pregnancy photos 
+to your memory bank."
+
+NSPhotoLibraryAddUsageDescription: "PrePartum saves 
+photos to your library when you export memories."
+
+Also add expo-image-picker and expo-av and 
+expo-document-picker to the plugins array in app.json 
+so iOS permission strings are properly injected at 
+build time.
+
+---
+
+Files to modify:
+- app.json (permissions + plugins)
+- shared/schema.ts (4 new columns)
+- server/routes.ts (add /api/upload endpoint)
+- app/new-memory.tsx (upload to Supabase, PDF picker, 
+  limited access fix, populate new fields)
+- app/view-memory.tsx (PDF viewer button)
+- server/storage.ts (include new columns in queries)
+
+Do not change any other files.
