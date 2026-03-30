@@ -274,7 +274,7 @@ const weekData = [
   },
   {
     weekNumber: 28, trimester: 3, theme: 'Preparing & Trusting',
-    babySizeComparison: 'eggplant', babySizeEmoji: '🍆',
+    babySizeComparison: 'zucchini', babySizeEmoji: '🥒',
     babyWeightGrams: '1005', babyLengthCm: '37.6',
     babyDevelopment: 'Third trimester begins. Baby can blink. REM sleep cycles begin — baby may be dreaming.',
     momBodyChanges: 'Shortness of breath intensifies. Back pain increases.',
@@ -284,7 +284,7 @@ const weekData = [
   },
   {
     weekNumber: 29, trimester: 3, theme: 'Preparing & Trusting',
-    babySizeComparison: 'eggplant', babySizeEmoji: '🍆',
+    babySizeComparison: 'zucchini', babySizeEmoji: '🥒',
     babyWeightGrams: '1153', babyLengthCm: '38.6',
     babyDevelopment: 'Bones fully developed but still soft. Muscles and lungs maturing. Baby can distinguish light from dark.',
     momBodyChanges: 'Heartburn at peak. Swelling in feet and ankles worsens.',

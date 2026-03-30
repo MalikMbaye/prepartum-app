@@ -11,6 +11,7 @@ import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
 import { getCategoryColor, getCategoryLabel } from '@/lib/prompts-data';
 import { getPersonaConfig, sanitizeForPersona, personaAffirmation } from '@/lib/persona';
+import PregnancyProgress from '@/components/PregnancyProgress';
 
 type PregnancyWeekData = {
   weekNumber: number;
@@ -182,6 +183,15 @@ export default function HomeScreen() {
     ? personaAffirmation(weekData.affirmation, persona)
     : null;
 
+  const dueDate = profile?.dueDate || '';
+  const currentWeek = useMemo(() => {
+    if (!dueDate) return 20;
+    const daysUntilDue = Math.ceil(
+      (new Date(dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return Math.max(1, Math.min(40, 40 - Math.floor(daysUntilDue / 7)));
+  }, [dueDate]);
+
   function renderEmphasisCard() {
     const emphasis = personaConfig.homeScreenEmphasis;
 
@@ -288,6 +298,15 @@ export default function HomeScreen() {
             <Text style={styles.weekLabel}>Your pregnancy journey</Text>
           )}
         </View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(125).duration(500)}>
+        <PregnancyProgress currentWeek={currentWeek} dueDate={dueDate} />
+        {!dueDate && (
+          <Text style={styles.dueDateHint}>
+            Add your due date in Settings to see your exact progress.
+          </Text>
+        )}
       </Animated.View>
 
       {weekData && (
@@ -520,6 +539,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textSecondary,
     letterSpacing: 0.2,
+  },
+  dueDateHint: {
+    fontFamily: 'Lato_400Regular',
+    fontSize: 11,
+    color: '#9B8A99',
+    textAlign: 'center',
+    marginTop: -12,
+    marginBottom: 16,
   },
 
   sectionTitle: {

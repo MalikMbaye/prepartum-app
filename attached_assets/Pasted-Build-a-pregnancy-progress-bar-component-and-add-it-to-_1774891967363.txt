@@ -1,0 +1,147 @@
+Build a pregnancy progress bar component and add it to 
+the home dashboard.
+
+---
+
+PART 1 — Create components/PregnancyProgress.tsx
+
+The component receives: currentWeek (number), dueDate (string)
+
+Use this exact fruit list, no changes:
+
+const FRUITS_BY_WEEK = [
+  {w:1,  e:'🌱', n:'poppy seed'},
+  {w:2,  e:'🫐', n:'blueberry'},
+  {w:3,  e:'🫘', n:'kidney bean'},
+  {w:4,  e:'🫘', n:'lentil'},
+  {w:5,  e:'🍓', n:'strawberry'},
+  {w:6,  e:'🍇', n:'sweet pea'},
+  {w:7,  e:'🫐', n:'blueberry'},
+  {w:8,  e:'🍓', n:'raspberry'},
+  {w:9,  e:'🍇', n:'grape'},
+  {w:10, e:'🫒', n:'olive'},
+  {w:11, e:'🍑', n:'fig'},
+  {w:12, e:'🍋', n:'lime'},
+  {w:13, e:'🍋', n:'lemon'},
+  {w:14, e:'🍋', n:'lemon'},
+  {w:15, e:'🍎', n:'apple'},
+  {w:16, e:'🥑', n:'avocado'},
+  {w:17, e:'🍐', n:'pear'},
+  {w:18, e:'🫑', n:'bell pepper'},
+  {w:19, e:'🥭', n:'mango'},
+  {w:20, e:'🍌', n:'banana'},
+  {w:21, e:'🥕', n:'carrot'},
+  {w:22, e:'🌽', n:'corn'},
+  {w:23, e:'🥭', n:'large mango'},
+  {w:24, e:'🌽', n:'ear of corn'},
+  {w:25, e:'🥦', n:'cauliflower'},
+  {w:26, e:'🥬', n:'lettuce head'},
+  {w:27, e:'🥦', n:'broccoli'},
+  {w:28, e:'🥒', n:'zucchini'},
+  {w:29, e:'🎃', n:'butternut squash'},
+  {w:30, e:'🥥', n:'coconut'},
+  {w:31, e:'🍍', n:'pineapple'},
+  {w:32, e:'🥥', n:'large coconut'},
+  {w:33, e:'🍍', n:'large pineapple'},
+  {w:34, e:'🍈', n:'cantaloupe'},
+  {w:35, e:'🍈', n:'honeydew'},
+  {w:36, e:'🍉', n:'small watermelon'},
+  {w:37, e:'🍊', n:'grapefruit'},
+  {w:38, e:'🎃', n:'small pumpkin'},
+  {w:39, e:'🍉', n:'watermelon'},
+  {w:40, e:'🍉', n:'watermelon'}
+];
+
+const currentFruit = FRUITS_BY_WEEK[currentWeek - 1];
+
+Also search the entire codebase for these emojis and 
+remove or replace them everywhere they appear:
+- 🍆 (eggplant) — replace with 🥒
+
+Trimester theme descriptions. No em dashes anywhere:
+
+First (Weeks 1-12):
+  theme: "Beginning and becoming"
+  description: "This is a season of quiet transformation.
+  The biggest changes are invisible to the world,
+  and sometimes to you."
+
+Second (Weeks 13-27):
+  theme: "Growing and connecting"
+  description: "This is a season of deepening.
+  Your body is finding its rhythm and so are you."
+
+Third (Weeks 28-40):
+  theme: "Preparing and trusting"
+  description: "This is a season of arrival.
+  Everything you have been building is about
+  to meet the world."
+
+Display in this order:
+
+1. Header row
+   Left: "Week {currentWeek} of 40"
+   Right: percentage complete e.g. "35%"
+
+2. Three trimester dots with labels
+   Dot 1: Weeks 1-12
+   Dot 2: Weeks 13-27
+   Dot 3: Weeks 28-40
+   Past trimesters: filled #C9A0B4
+   Current trimester: filled #5D5066
+   Future trimesters: outlined #EDD8E0
+
+3. Progress bar
+   Height: 8px, track #F0E0D0, fill #C9A0B4, 
+   border-radius 4px
+   Thumb: fruit emoji at fontSize 22, absolutely 
+   positioned at current percentage point
+
+4. Week labels below bar
+   Left: Week 1, center: Week {currentWeek}, 
+   right: Week 40
+
+5. Three stat cards in a row
+   Weeks done | Weeks left | Trimester number
+   Background #FFF8F5, border 0.5px #EDD8E0,
+   border-radius 10, text center
+
+6. Baby size card
+   Left: fruit emoji fontSize 32
+   Right top: "Your baby is the size of a" 
+   in 11px #9B8A99
+   Right bottom: fruit name in 13px #5D5066
+   Background #FFF8F5, border-radius 12,
+   border 0.5px #EDD8E0, padding 12, flex row
+
+7. Trimester context card
+   Left border 3px solid #BBD4E3
+   Background #EEF5F9, border-radius 12, padding 12
+   Label: 9px uppercase #185FA5
+   Description: 12px #5D5066, line-height 1.5
+
+---
+
+PART 2 — In app/(tabs)/index.tsx
+
+Import PregnancyProgress and add it between the 
+greeting and the daily reflection questions.
+
+Calculate currentWeek from dueDate:
+
+const daysUntilDue = Math.ceil(
+  (new Date(dueDate) - new Date()) / (1000 * 60 * 60 * 24)
+)
+const currentWeek = Math.max(1, Math.min(40,
+  40 - Math.floor(daysUntilDue / 7)
+))
+
+If dueDate is not set, default to week 20 and show 
+below the component in 11px #9B8A99:
+"Add your due date in Settings to see your exact progress."
+
+---
+
+No new database tables needed.
+dueDate already exists on the users table.
+Do not change any other files.
