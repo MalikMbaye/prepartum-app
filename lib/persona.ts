@@ -137,7 +137,7 @@ export function personaAffirmation(baseAffirmation: string, persona: string): st
   if (!baseAffirmation) return baseAffirmation;
   switch (persona as PersonaKey) {
     case 'healing_mother':
-      return `Right where you are — ${baseAffirmation}`;
+      return `Right where you are. ${baseAffirmation}`;
     case 'faith_anchored': {
       const lower = baseAffirmation.toLowerCase();
       if (lower.includes('faith') || lower.includes('trust')) return baseAffirmation;

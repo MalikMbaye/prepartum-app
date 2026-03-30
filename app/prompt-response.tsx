@@ -25,7 +25,7 @@ const CATEGORY_AFFIRMATIONS: Record<string, string> = {
 
 const ACTION_BY_CATEGORY: Record<string, string> = {
   mindset: "Take 5 minutes to sit quietly with what you just wrote. Don't analyze it. Just let it be.",
-  relationships: "Share one sentence from your reflection with someone you trust today — even just a text.",
+  relationships: "Share one sentence from your reflection with someone you trust today, even just a text.",
   physical: "Put one hand on your belly and breathe into your response for 60 seconds.",
 };
 
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     color: Colors.canvas,
   },
 
-  // Screen 3 — Celebration
+  // Screen 3 - Celebration
   celebrationContainer: {
     alignItems: 'center',
     paddingHorizontal: 32,
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
 
-  // Screen 1 — Why this matters
+  // Screen 1 - Why this matters
   whyMattersBox: {
     backgroundColor: Colors.cardBg,
     borderRadius: 14,
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 
-  // Screen 3 — Closing reframe + action
+  // Screen 3 - Closing reframe + action
   closingReframeText: {
     fontFamily: 'PlayfairDisplay_400Regular',
     fontSize: 15,
