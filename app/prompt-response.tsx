@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
-  Platform, KeyboardAvoidingView, ScrollView,
+  Platform, KeyboardAvoidingView, ScrollView, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -125,6 +125,11 @@ export default function PromptResponseScreen() {
     } catch (e) {
       console.error('Error saving response:', e);
       setIsSaving(false);
+      Alert.alert(
+        "Could not save",
+        "Your reflection was not saved. Please try again.",
+        [{ text: "OK" }]
+      );
     }
   }
 

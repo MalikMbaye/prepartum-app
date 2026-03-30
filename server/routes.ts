@@ -13,7 +13,10 @@ import { eq, and } from "drizzle-orm";
 import multer from "multer";
 import { Client } from "@replit/object-storage";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "prepartum-secret-key";
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET environment variable is required");
+}
+const JWT_SECRET = process.env.SESSION_SECRET;
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 let _objectStorageClient: Client | null = null;
@@ -37,6 +40,15 @@ function authMiddleware(req: Request, res: Response, next: Function) {
   } catch {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
+}
+
+function requireOwnership(req: Request, res: Response, next: Function) {
+  const requestedUserId = req.params.userId;
+  const authenticatedUserId = (req as any).userId;
+  if (requestedUserId && requestedUserId !== authenticatedUserId) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -165,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/daily-prompts", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/daily-prompts", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const dailyPrompts = await getDailyPrompts(req.params.userId);
       res.json(dailyPrompts);
@@ -175,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/update-season", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/update-season", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const result = await updateUserSeasonWeekly(req.params.userId);
       res.json(result);
@@ -195,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/prompt-responses", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/prompt-responses", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const responses = await storage.getUserPromptResponses(req.params.userId);
       res.json(responses);
@@ -204,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/prompt-responses", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/prompt-responses", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const response = await storage.createPromptResponse({
         userId: req.params.userId,
@@ -216,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:userId/prompt-responses/:id", async (req: Request, res: Response) => {
+  app.put("/api/users/:userId/prompt-responses/:id", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const updated = await storage.updatePromptResponse(req.params.id, req.params.userId, req.body);
       if (!updated) return res.status(404).json({ message: "Response not found" });
@@ -226,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/memories", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/memories", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const result = await storage.getUserMemories(req.params.userId);
       res.json(result);
@@ -235,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/memories", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/memories", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const memory = await storage.createMemory({ userId: req.params.userId, ...req.body });
       res.json(memory);
@@ -244,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:userId/memories/:id", async (req: Request, res: Response) => {
+  app.put("/api/users/:userId/memories/:id", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const updated = await storage.updateMemory(req.params.id, req.params.userId, req.body);
       if (!updated) return res.status(404).json({ message: "Memory not found" });
@@ -254,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/users/:userId/memories/:id", async (req: Request, res: Response) => {
+  app.delete("/api/users/:userId/memories/:id", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteMemory(req.params.id, req.params.userId);
       if (!deleted) return res.status(404).json({ message: "Memory not found" });
@@ -264,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/tasks", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/tasks", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       await storage.initUserTasks(req.params.userId);
       const result = await storage.getUserTasks(req.params.userId);
@@ -274,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/tasks", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/tasks", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const result = await storage.createCustomTask(req.params.userId, req.body);
       res.json(result);
@@ -283,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:userId/tasks/:id/toggle", async (req: Request, res: Response) => {
+  app.put("/api/users/:userId/tasks/:id/toggle", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const ut = await storage.toggleUserTask(req.params.id, req.params.userId);
       if (!ut) return res.status(404).json({ message: "Task not found" });
@@ -293,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/journal", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/journal", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const result = await storage.getUserJournalEntries(req.params.userId);
       res.json(result);
@@ -302,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/journal", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/journal", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const entry = await storage.createJournalEntry({ userId: req.params.userId, ...req.body });
       res.json(entry);
@@ -311,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/users/:userId/journal/:id", async (req: Request, res: Response) => {
+  app.delete("/api/users/:userId/journal/:id", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteJournalEntry(req.params.id, req.params.userId);
       if (!deleted) return res.status(404).json({ message: "Entry not found" });
@@ -340,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/quiz-results", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/quiz-results", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const result = await storage.getUserQuizResults(req.params.userId);
       res.json(result);
@@ -349,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/quiz-results", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/quiz-results", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const result = await storage.createQuizResult({
         userId: req.params.userId,
@@ -380,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:userId/roleplay-sessions", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/roleplay-sessions", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const result = await storage.getUserSessions(req.params.userId);
       res.json(result);
@@ -389,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/:userId/roleplay-sessions", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/roleplay-sessions", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const { scenarioId } = req.body;
       const scenario = await storage.getScenario(scenarioId);
@@ -439,7 +451,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages: apiMessages,
       });
 
-      const aiContent = response.content[0];
+      const aiContent = response.content?.[0];
+      if (!aiContent) {
+        return res.status(500).json({ error: "AI response was empty" });
+      }
       const aiText = aiContent.type === "text" ? aiContent.text : "";
       messages.push({ role: "assistant", content: aiText });
 
@@ -499,7 +514,11 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
         messages: [{ role: "user", content: feedbackPrompt }],
       });
 
-      const feedbackText = response.content[0].type === "text" ? response.content[0].text : "{}";
+      const feedbackContent = response.content?.[0];
+      if (!feedbackContent) {
+        return res.status(500).json({ error: "AI response was empty" });
+      }
+      const feedbackText = feedbackContent.type === "text" ? feedbackContent.text : "{}";
       let feedback;
       try {
         const jsonMatch = feedbackText.match(/\{[\s\S]*\}/);
@@ -528,7 +547,7 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
     }
   });
 
-  app.get("/api/users/:userId/intake-responses", async (req: Request, res: Response) => {
+  app.get("/api/users/:userId/intake-responses", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const responses = await storage.getUserIntakeResponses(req.params.userId);
       res.json(responses);
@@ -537,7 +556,7 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
     }
   });
 
-  app.post("/api/users/:userId/intake-responses", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/intake-responses", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const { questionId, answer, answerData } = req.body;
       const response = await storage.saveIntakeResponse({
@@ -552,7 +571,7 @@ Be encouraging and constructive. Focus on what they did well first. Use warm, su
     }
   });
 
-  app.post("/api/users/:userId/intake/complete", async (req: Request, res: Response) => {
+  app.post("/api/users/:userId/intake/complete", authMiddleware, requireOwnership, async (req: Request, res: Response) => {
     try {
       const profile = await calculateUserProfile(req.params.userId);
       const user = await storage.getUser(req.params.userId);
