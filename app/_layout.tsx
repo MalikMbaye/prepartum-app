@@ -36,6 +36,8 @@ function RootLayoutNav() {
       <Stack.Screen name="pregnancy-weeks" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="sign-in" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="sign-up" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="privacy-policy" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="terms-of-service" options={{ headerShown: false, presentation: 'modal' }} />
     </Stack>
   );
 }

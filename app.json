@@ -15,10 +15,18 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.prepartum"
+      "bundleIdentifier": "com.prepartum",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PrePartum uses your camera to add photos to your pregnancy memory bank.",
+        "NSMicrophoneUsageDescription": "PrePartum uses your microphone to record voice notes for your memories and reflections.",
+        "NSPhotoLibraryUsageDescription": "PrePartum accesses your photo library so you can add pregnancy photos to your memory bank.",
+        "NSPhotoLibraryAddUsageDescription": "PrePartum saves photos to your library when you export your memories."
+      }
     },
     "android": {
       "package": "com.prepartum",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#FFF8F5",
         "foregroundImage": "./assets/images/icon.png"

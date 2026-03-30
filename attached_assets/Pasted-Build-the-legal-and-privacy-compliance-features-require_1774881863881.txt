@@ -1,0 +1,128 @@
+Build the legal and privacy compliance features required for 
+App Store submission. Four things:
+
+---
+
+1. iOS PERMISSION STRINGS in app.json
+
+Under ios.infoPlist add:
+{
+  "NSCameraUsageDescription": "PrePartum uses your camera to 
+  add photos to your pregnancy memory bank.",
+  "NSMicrophoneUsageDescription": "PrePartum uses your 
+  microphone to record voice notes for your memories and 
+  reflections.",
+  "NSPhotoLibraryUsageDescription": "PrePartum accesses your 
+  photo library so you can add pregnancy photos to your 
+  memory bank.",
+  "NSPhotoLibraryAddUsageDescription": "PrePartum saves 
+  photos to your library when you export your memories."
+}
+
+Also add under ios:
+  "buildNumber": "1"
+
+Also add under android:
+  "versionCode": 1
+
+---
+
+2. PRIVACY POLICY SCREEN at app/privacy-policy.tsx
+
+A scrollable screen with the following content:
+
+Title: Privacy Policy
+Last updated: March 30, 2026
+
+Sections:
+- What we collect: Name, email, due date, intake responses, 
+  reflection answers, photos, voice recordings, user ID
+- Why we collect it: To personalize your experience and 
+  power app features
+- Who we share it with: Supabase (database storage), 
+  Anthropic (AI roleplay feature only), Apple/Google 
+  (app distribution). We never sell your data.
+- How long we keep it: Until you delete your account
+- Your rights: You can delete all your data at any time 
+  from Settings
+- Contact: privacy@prepartumapp.com
+- This app is a wellness tool, not a medical app. It does 
+  not provide medical advice.
+
+Style: Luminous Editorial (#FFF8F5 background, #5D5066 text,
+serif headings, generous padding, scrollable)
+
+---
+
+3. TERMS OF SERVICE SCREEN at app/terms-of-service.tsx
+
+A scrollable screen with the following content:
+
+Title: Terms of Service
+Last updated: March 30, 2026
+
+Sections:
+- What PrePartum is: A prenatal wellness app for mental 
+  and emotional preparation. Not a medical app. Not a 
+  substitute for professional mental health care.
+- Your content: You own your journal entries, voice notes, 
+  and memories. We store them on your behalf.
+- Acceptable use: No misuse, no sharing other users' data
+- Limitation of liability: PrePartum is not liable for 
+  health outcomes
+- Governing law: State of California
+- Contact: support@prepartumapp.com
+
+Same styling as Privacy Policy screen.
+
+---
+
+4. TERMS ACCEPTANCE in onboarding
+
+On the LAST step of onboarding (before the celebration 
+screen), add:
+
+- A checkbox (default unchecked, required to proceed)
+- Label: "I agree to the Privacy Policy and Terms of Service"
+- "Privacy Policy" is a tappable link opening 
+  app/privacy-policy.tsx
+- "Terms of Service" is a tappable link opening 
+  app/terms-of-service.tsx
+- The "Continue" or "Get Started" button is DISABLED 
+  until the checkbox is ticked
+- When accepted, save to users table:
+  acceptedTermsAt: current timestamp
+  acceptedTermsVersion: "1.0"
+
+Add these two columns to the users table in 
+shared/schema.ts:
+  acceptedTermsAt: timestamp
+  acceptedTermsVersion: text
+
+Run SQL migration:
+ALTER TABLE users ADD COLUMN IF NOT EXISTS 
+  accepted_terms_at timestamp;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS 
+  accepted_terms_version text;
+
+---
+
+5. NAVIGATION
+
+Add privacy-policy and terms-of-service to the router 
+stack in app/_layout.tsx so they are accessible.
+
+Also update app/settings.tsx — replace the placeholder 
+Privacy Policy and Terms of Service URLs with navigation 
+to the new screens.
+
+---
+
+Files to create/modify:
+- app.json
+- app/privacy-policy.tsx (create)
+- app/terms-of-service.tsx (create)  
+- app/onboarding.tsx (add checkbox to last step)
+- shared/schema.ts (add 2 columns)
+- app/_layout.tsx (add routes)
+- app/settings.tsx (fix links)

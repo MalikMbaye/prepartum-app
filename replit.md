@@ -62,7 +62,7 @@ Premium, luxury aesthetic inspired by brands like Aesop. Key design tokens defin
 
 ### Database Tables
 
-1. **users** - Profile data (name, due date, pregnancy week, focus areas, notification preferences, onboarding status, season_last_updated)
+1. **users** - Profile data (name, due date, pregnancy week, focus areas, notification preferences, onboarding status, season_last_updated, acceptedTermsAt, acceptedTermsVersion)
 2. **prompts** - Seeded prompt library (title, body, category, week number, day of week, seasons[], relevanceTags[], personaTags[], context, closingReframe, childConnection, depth, format, intensity, trimester, requiredFlags[], excludedFlags[], addressesFear)
 3. **user_prompt_responses** - User responses to prompts
 4. **memories** - Text/photo/voice memories with title, memoryDate, mediaUrls[], mediaThumbnailUrl, trimester, tags

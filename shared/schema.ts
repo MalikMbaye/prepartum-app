@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   seasonLastUpdated: timestamp("season_last_updated", { withTimezone: true }),
+  acceptedTermsAt: timestamp("accepted_terms_at", { withTimezone: true }),
+  acceptedTermsVersion: text("accepted_terms_version"),
 });
 
 export const prompts = pgTable("prompts", {

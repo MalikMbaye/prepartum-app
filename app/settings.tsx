@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform,
-  Alert, TextInput, Switch, Linking,
+  Alert, TextInput, Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -521,7 +521,7 @@ export default function SettingsScreen() {
 
             <Pressable
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => Linking.openURL('https://preparepartum.com/privacy')}
+              onPress={() => router.push('/privacy-policy')}
             >
               <View style={styles.rowLeft}>
                 <View style={[styles.rowIcon, { backgroundColor: Colors.accentBlue }]}>
@@ -529,14 +529,14 @@ export default function SettingsScreen() {
                 </View>
                 <Text style={styles.rowLabel}>Privacy Policy</Text>
               </View>
-              <Feather name="external-link" size={14} color={Colors.textLight} />
+              <Feather name="chevron-right" size={14} color={Colors.textLight} />
             </Pressable>
 
             <View style={styles.divider} />
 
             <Pressable
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-              onPress={() => Linking.openURL('https://preparepartum.com/terms')}
+              onPress={() => router.push('/terms-of-service')}
             >
               <View style={styles.rowLeft}>
                 <View style={[styles.rowIcon, { backgroundColor: Colors.accentBlue }]}>
@@ -544,7 +544,7 @@ export default function SettingsScreen() {
                 </View>
                 <Text style={styles.rowLabel}>Terms of Service</Text>
               </View>
-              <Feather name="external-link" size={14} color={Colors.textLight} />
+              <Feather name="chevron-right" size={14} color={Colors.textLight} />
             </Pressable>
           </View>
         </Animated.View>

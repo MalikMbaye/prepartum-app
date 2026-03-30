@@ -42,6 +42,7 @@ export default function OnboardingScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [preferredTime, setPreferredTime] = useState('9:00 AM');
   const [dateError, setDateError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const webBottomInset = Platform.OS === 'web' ? 34 : 0;
@@ -82,6 +83,8 @@ export default function OnboardingScreen() {
         focusAreas: focusAreas.length > 0 ? focusAreas : ['mindset', 'relationships', 'physical'],
         notificationsEnabled,
         onboardingCompleted: true,
+        acceptedTermsAt: new Date().toISOString(),
+        acceptedTermsVersion: '1.0',
       });
       router.replace('/intake');
     } catch (e) {
@@ -123,7 +126,7 @@ export default function OnboardingScreen() {
   const canProceed =
     step === 0 ||
     step === 3 ||
-    step === 4 ||
+    (step === 4 && termsAccepted) ||
     (step === 1 && name.trim().length > 0) ||
     (step === 2 && focusAreas.length > 0);
 
@@ -371,6 +374,38 @@ export default function OnboardingScreen() {
                   </View>
                   <Text style={styles.readyFeatureText}>Preparation tasks</Text>
                 </View>
+              </Animated.View>
+
+              <Animated.View entering={FadeInUp.delay(1000).duration(500)} style={styles.termsRow}>
+                <Pressable
+                  onPress={() => { tryHaptic(); setTermsAccepted(v => !v); }}
+                  style={styles.termsCheckbox}
+                  testID="terms-checkbox"
+                  hitSlop={8}
+                >
+                  {termsAccepted
+                    ? <Ionicons name="checkbox" size={22} color={Colors.textPrimary} />
+                    : <Ionicons name="square-outline" size={22} color={Colors.textLight} />
+                  }
+                </Pressable>
+                <Text style={styles.termsLabel}>
+                  I agree to the{' '}
+                  <Text
+                    style={styles.termsLink}
+                    onPress={() => router.push('/privacy-policy')}
+                    testID="terms-privacy-link"
+                  >
+                    Privacy Policy
+                  </Text>
+                  {' '}and{' '}
+                  <Text
+                    style={styles.termsLink}
+                    onPress={() => router.push('/terms-of-service')}
+                    testID="terms-tos-link"
+                  >
+                    Terms of Service
+                  </Text>
+                </Text>
               </Animated.View>
             </Animated.View>
           )}
@@ -782,6 +817,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     fontSize: 15,
     color: Colors.textPrimary,
+  },
+
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 24,
+    paddingHorizontal: 4,
+    gap: 10,
+  },
+  termsCheckbox: {
+    marginTop: 1,
+  },
+  termsLabel: {
+    flex: 1,
+    fontFamily: 'Lato_400Regular',
+    fontSize: 13,
+    color: Colors.textLight,
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: Colors.textPrimary,
+    textDecorationLine: 'underline',
+    fontFamily: 'Lato_700Bold',
   },
 
   bottomSection: {
